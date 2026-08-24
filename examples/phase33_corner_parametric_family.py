@@ -1,0 +1,11 @@
+from qedcalc.operations.corner import corner_q0_parametric_family
+f=corner_q0_parametric_family()
+print('Phase-33 corner q=0 parametric family')
+print('a=',f.a,'b=',f.b,'c=',f.c,'r=',f.r,'s=',f.s)
+print('Delta=',f.Delta)
+print('W=',f.W)
+print('Omega=',f.Omega)
+print('multiplicities diagram4/5=',f.multiplicity4,f.multiplicity5)
+print('q derivative diagram4=',f.qderivative4_k,f.qderivative4_l)
+print('q derivative diagram5=',f.qderivative5_k,f.qderivative5_l)
+print('Phase-33 corner q=0 parametric family: PASS')

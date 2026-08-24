@@ -1,0 +1,26 @@
+# QEDCalc calculation conventions
+# Greek commands may be written in LaTeX form where applicable.
+
+[Spacetime]
+metric_signature = +---
+dimreg_dimension = 4 - 2*epsilon
+
+[Gauge]
+gauge = feynman
+
+[Renormalization]
+renormalization_scheme = on_shell
+dimreg_subtraction = MSbar
+msbar_factor = true
+
+[Subdiagram]
+# These flags state which normalization factors belong to a contracted
+# one-loop subdiagram. They do not cause an interactive prompt.
+subdiagram_include_coupling = true
+subdiagram_include_loop_measure = true
+subdiagram_include_i = true
+
+[Normalization]
+coupling_symbol = e
+loop_measure_denominator_latex = (2\pi)^4
+loop_i_factor_latex = i

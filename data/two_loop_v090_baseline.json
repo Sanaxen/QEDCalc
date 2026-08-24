@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "release": "0.90.0",
+  "diagram_multiplicities": {
+    "crossed_ladder": 1,
+    "ordinary_ladder": 1,
+    "corner": 2,
+    "self_energy_insertion": 2,
+    "vacuum_polarization": 1
+  },
+  "basis": ["1", "pi^2", "zeta(3)", "pi^2 ln 2", "ln(1/rho)"],
+  "coefficients": {
+    "crossed_ladder": ["1/6", "13/36", "5/4", "-5/6", "0"],
+    "ordinary_ladder": ["11/48", "1/18", "0", "0", "0"],
+    "corner_pair": ["-67/24", "1/18", "-1/2", "1/3", "1"],
+    "self_energy_pair": ["11/24", "-1/18", "0", "0", "-1"],
+    "vacuum_polarization": ["119/36", "-1/3", "0", "0", "0"],
+    "total": ["197/144", "1/12", "3/4", "-1/2", "0"]
+  },
+  "historical_provenance": {
+    "crossed_ladder_karplus_kroll_gap": "1/32",
+    "origin_resolved": false
+  }
+}

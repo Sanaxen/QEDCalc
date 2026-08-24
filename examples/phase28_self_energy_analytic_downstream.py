@@ -1,0 +1,20 @@
+import sympy as sp
+from qedcalc.operations.self_energy import (
+    self_energy_finite_audit, finite_part_expected, total_self_energy_coefficient,
+)
+rho=sp.Symbol('rho', positive=True)
+a=self_energy_finite_audit(rho)
+print('Phase-28 self-energy analytic downstream regeneration')
+print('One-variable residual:', a.one_variable_residual)
+print('finite ln(a):', a.finite_ln_a)
+print('finite ln(1-a):', a.finite_ln_one_minus_a)
+print('endpoint-safe pair:', a.finite_endpoint_pair)
+print('rational:', a.finite_rational)
+print('A_A generated:', a.finite_total)
+print('A_A checkpoint difference:', sp.simplify(a.finite_total-finite_part_expected()))
+print('A1 limit:', a.ir_A1_limit)
+print('J finite:', a.ir_J_finite)
+print('A_B:', a.ir_B_asymptotic)
+print('A_S generated:', a.total_asymptotic)
+print('A_S checkpoint difference:', sp.simplify(a.total_asymptotic-total_self_energy_coefficient(rho)))
+print('Phase-28 self-energy analytic downstream regeneration: PASS' if a.one_variable_residual==0 and sp.simplify(a.total_asymptotic-total_self_energy_coefficient(rho))==0 else 'FAIL')
