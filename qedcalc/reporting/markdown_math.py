@@ -10,6 +10,8 @@ Policy:
   are still too long;
 - place relation/arithmetic operators at the END of a line, never at the start;
 - prefer breaks after top-level ``=``, ``+``, ``-``, ``\times`` and ``\cdot``;
+- normalize pre-existing continuation rows such as ``+ term`` by moving the
+  binary operator to the end of the preceding row;
 - for long product chains, whitespace is a safe presentation-only fallback.
 """
 from __future__ import annotations
@@ -27,6 +29,8 @@ _STRUCTURED_OTHER = (
     r"\begin{gathered}",
     r"\begin{multline}",
 )
+
+_LEADING_OPERATORS = (r"\times", r"\cdot", "=", "+", "-")
 
 
 def _visible_len(s: str) -> int:
@@ -145,6 +149,46 @@ def _wrap_expression(expr: str, max_width: int) -> list[str]:
     return expanded
 
 
+def _leading_operator(row: str) -> tuple[str | None, str]:
+    """Return a leading binary/relation operator and the remaining row text."""
+    s = row.lstrip()
+    for op in _LEADING_OPERATORS:
+        if s.startswith(op):
+            rest = s[len(op):].lstrip()
+            return op, rest
+    return None, row
+
+
+def _append_operator_before_break(line: str, op: str) -> str:
+    """Move ``op`` to the end of an already-rendered previous aligned row."""
+    s = line.rstrip()
+    if s.endswith(r"\\"):
+        body = s[:-2].rstrip()
+        return f"{body} {op} \\\\"
+    return f"{s} {op}"
+
+
+def _normalize_continuation_rows(rows: list[str]) -> list[str]:
+    """Ensure no continuation row begins with a binary/relation operator.
+
+    The first row may legitimately begin with unary ``-``. For later rows, a
+    leading ``+``, ``-``, ``=``, ``\\times`` or ``\\cdot`` is interpreted as a
+    continuation operator and moved to the previous row. This changes layout
+    only; mathematical token order is preserved.
+    """
+    if len(rows) < 2:
+        return rows
+    out = [rows[0]]
+    for row in rows[1:]:
+        op, rest = _leading_operator(row)
+        if op is not None and rest:
+            out[-1] = f"{out[-1].rstrip()} {op}"
+            out.append(rest)
+        else:
+            out.append(row)
+    return out
+
+
 def _strip_row_syntax(line: str) -> tuple[str, bool, str]:
     """Return (math body, had_row_break, indentation/alignment prefix)."""
     s = line.rstrip()
@@ -166,6 +210,8 @@ def _reflow_aligned(expr: str, max_width: int) -> str:
     """Reflow overlong rows in an existing aligned environment."""
     out: list[str] = []
     inside = False
+    math_row_count = 0
+
     for line in expr.strip().splitlines():
         stripped = line.strip()
         if stripped.startswith(r"\begin{aligned}"):
@@ -181,16 +227,28 @@ def _reflow_aligned(expr: str, max_width: int) -> str:
             continue
 
         body, had_break, prefix = _strip_row_syntax(line)
-        wrapped = _wrap_expression(body, max_width)
-        if len(wrapped) == 1:
-            out.append(prefix + wrapped[0] + (r" \\" if had_break else ""))
-            continue
 
+        # Existing documents sometimes put a binary operator at the beginning of
+        # an aligned continuation row. Move it to the preceding rendered row
+        # before doing any further wrapping.
+        if math_row_count > 0:
+            op, rest = _leading_operator(body)
+            if op is not None and rest:
+                # Find the immediately preceding mathematical output row. The
+                # environment declaration and blank lines are skipped naturally.
+                for j in range(len(out) - 1, -1, -1):
+                    prev = out[j].strip()
+                    if prev and not prev.startswith(r"\begin{aligned}"):
+                        out[j] = _append_operator_before_break(out[j], op)
+                        break
+                body = rest
+
+        wrapped = _normalize_continuation_rows(_wrap_expression(body, max_width))
         for i, row in enumerate(wrapped):
-            # Every intermediate row must break. The last row keeps the original
-            # row-break status so surrounding aligned semantics are preserved.
             needs_break = i < len(wrapped) - 1 or had_break
             out.append(prefix + row + (r" \\" if needs_break else ""))
+            math_row_count += 1
+
     return "\n".join(out)
 
 
@@ -207,7 +265,7 @@ def _wrap_plain_display(expr: str, max_width: int) -> str:
     if any(marker in compact for marker in _STRUCTURED_OTHER):
         return expr.strip()
 
-    lines = _wrap_expression(expr, max_width)
+    lines = _normalize_continuation_rows(_wrap_expression(expr, max_width))
     if len(lines) <= 1:
         return expr.strip()
 
