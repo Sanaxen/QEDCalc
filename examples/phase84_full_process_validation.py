@@ -17,35 +17,54 @@ def validate_math_layout(name: str, text: str) -> None:
         if not lines:
             continue
 
-        structured = any("\\begin{" in line for line in lines)
-        if not structured:
+        aligned = any(r"\begin{aligned}" in line for line in lines)
+        other_structured = any(
+            marker in block
+            for marker in (
+                r"\begin{alignedat}", r"\begin{split}", r"\begin{cases}",
+                r"\begin{array}", r"\begin{matrix}", r"\begin{pmatrix}",
+                r"\begin{bmatrix}", r"\begin{gathered}", r"\begin{multline}",
+            )
+        )
+
+        if not aligned and not other_structured:
             longest = max(len(line) for line in lines)
             if longest > 120:
                 raise AssertionError(f"{name}: long unwrapped display line ({longest} chars)")
-            # A short standalone expression is allowed to begin with a unary
-            # minus. The no-operator-at-line-start rule concerns continuation
-            # lines created by wrapping.
             continue
 
-        # For aligned displays, verify continuation rows after the first
-        # mathematical row. Environment declarations are skipped.
+        if other_structured and not aligned:
+            # The formatter intentionally does not rewrite cases/matrix/split-like
+            # grammar. Those environments have their own row semantics.
+            continue
+
         math_rows = []
         in_aligned = False
         for line in lines:
             stripped = line.strip()
-            if stripped.startswith(r"\begin{aligned"):
+            if stripped.startswith(r"\begin{aligned}"):
                 in_aligned = True
                 continue
-            if stripped.startswith(r"\end{aligned"):
+            if stripped.startswith(r"\end{aligned}"):
                 in_aligned = False
                 continue
             if in_aligned:
                 if stripped.startswith("&"):
                     stripped = stripped[1:].lstrip()
+                # Remove a presentation row break before length/operator checks.
+                if stripped.endswith(r"\\"):
+                    stripped = stripped[:-2].rstrip()
                 math_rows.append(stripped)
-        for row in math_rows[1:]:
-            if row.startswith(("=", "+", "-", r"\times", r"\cdot")):
-                raise AssertionError(f"{name}: wrapped continuation begins with operator: {row!r}")
+
+        for row_no, row in enumerate(math_rows, 1):
+            if len(row) > 140:
+                raise AssertionError(
+                    f"{name}: overlong aligned row {row_no} ({len(row)} chars)"
+                )
+            if row_no > 1 and row.startswith(("=", "+", "-", r"\times", r"\cdot")):
+                raise AssertionError(
+                    f"{name}: wrapped continuation begins with operator: {row!r}"
+                )
 
 
 expected = {
