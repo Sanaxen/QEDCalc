@@ -1,4 +1,6 @@
-# QEDCalc v0.70.0
+# QEDCalc v0.90.0
+
+<img src=https://github.com/Sanaxen/QEDCalc/blob/main/qed_diagrams_2loop.png>
 
 QEDCalc is an experimental toolkit for splitting long QED calculations into small processing functions while leaving the physical order of operations under user control.
 
