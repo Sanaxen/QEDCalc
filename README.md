@@ -14,10 +14,10 @@ Since v0.10.0, QEDCalc has included reusable foundations for two-loop and higher
 
 ## Documentation
 
-- `README.md`: Japanese Quick Start
-- `README_EN.md`: English Quick Start
-- `REFERENCE.md`: Japanese Reference Manual
-- `REFERENCE_EN.md`: English Reference Manual
+- `README_JP.md`: Japanese Quick Start
+- `README.md`: English Quick Start
+- `REFERENCE_JP.md`: Japanese Reference Manual
+- `REFERENCE.md`: English Reference Manual
 - `CHANGELOG.md`: Change history
 - `ROADMAP.md`: Development roadmap
 
