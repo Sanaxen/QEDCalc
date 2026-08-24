@@ -1,5 +1,7 @@
 # QEDCalc v0.90.0
 
+<img src=https://github.com/Sanaxen/QEDCalc/blob/main/qed_diagrams_2loop.png>  
+
 QEDCalc は、QED の長い計算を小さな処理関数へ分解し、人間が物理的な手順を決めながら計算を進めるための試作ツールです。
 
 既定の1ループ頂点補正サンプルでは、LaTeX 入力から処理を順番に適用し、最終的に
