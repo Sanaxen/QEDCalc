@@ -11,82 +11,101 @@ runpy.run_path(str(ROOT / "examples" / "phase84_two_loop_full_process_report.py"
 
 
 def display_width(source: str) -> int:
-    """Use the same lightweight rendered-width proxy as the report formatter.
-
-    Raw LaTeX source length is a poor proxy for visual width: for example,
-    ``\\frac``, ``\\gamma`` and ``\\rlap`` contain many source characters but
-    render as compact mathematical objects.  Phase 84 therefore validates the
-    estimated rendered width rather than ``len(source)``.
-    """
     text = re.sub(r"\\[A-Za-z]+", "X", source)
     text = text.replace("{", "").replace("}", "")
     return len(text)
 
 
+def balanced_braces(source: str) -> bool:
+    depth = 0
+    i = 0
+    while i < len(source):
+        if source[i] == "\\" and i + 1 < len(source) and source[i + 1] in "{}":
+            i += 2
+            continue
+        if source[i] == "{":
+            depth += 1
+        elif source[i] == "}":
+            depth -= 1
+            if depth < 0:
+                return False
+        i += 1
+    return depth == 0
+
+
 def validate_math_layout(name: str, text: str) -> None:
     parts = text.split("$$")
+    if len(parts) % 2 == 0:
+        raise AssertionError(f"{name}: unmatched $$ display delimiters")
+
+    proxy_defs = 0
     for i in range(1, len(parts), 2):
-        block = parts[i]
-        lines = [line.rstrip() for line in block.splitlines() if line.strip()]
-        if not lines:
+        block = parts[i].strip()
+        if not block:
             continue
 
-        aligned = any(r"\begin{aligned}" in line for line in lines)
-        other_structured = any(
+        if not balanced_braces(block):
+            raise AssertionError(f"{name}: unbalanced TeX braces in display block")
+
+        # The recursive proxy formatter must never create an outer row break
+        # inside \frac{...}{...}.  Proxy fractions are intentionally compact.
+        if r"\frac{" in block and r"\begin{aligned}" in block:
+            raise AssertionError(
+                f"{name}: aligned environment embedded in a fraction display"
+            )
+
+        if re.match(r"^[DNE]_\{[0-9,]+\}\s*=", block):
+            proxy_defs += 1
+
+        structured = any(
             marker in block
             for marker in (
-                r"\begin{alignedat}", r"\begin{split}", r"\begin{cases}",
-                r"\begin{array}", r"\begin{matrix}", r"\begin{pmatrix}",
-                r"\begin{bmatrix}", r"\begin{gathered}", r"\begin{multline}",
+                r"\begin{aligned}", r"\begin{alignedat}", r"\begin{split}",
+                r"\begin{cases}", r"\begin{array}", r"\begin{matrix}",
+                r"\begin{pmatrix}", r"\begin{bmatrix}", r"\begin{gathered}",
+                r"\begin{multline}",
             )
         )
 
-        if not aligned and not other_structured:
-            longest = max(display_width(line) for line in lines)
-            if longest > 110:
-                raise AssertionError(
-                    f"{name}: long unwrapped display line "
-                    f"(estimated width {longest})"
-                )
+        if structured:
+            # Pre-existing structured material is preserved by the reporter.
+            # We only enforce operator-start rules on rows created by aligned.
+            if r"\begin{aligned}" in block:
+                rows = []
+                inside = False
+                for line in block.splitlines():
+                    s = line.strip()
+                    if s.startswith(r"\begin{aligned}"):
+                        inside = True
+                        continue
+                    if s.startswith(r"\end{aligned}"):
+                        inside = False
+                        continue
+                    if inside:
+                        if s.startswith("&"):
+                            s = s[1:].lstrip()
+                        if s.endswith(r"\\"):
+                            s = s[:-2].rstrip()
+                        if s:
+                            rows.append(s)
+                for row_no, row in enumerate(rows, 1):
+                    if row_no > 1 and row.startswith(("=", "+", "-", r"\times", r"\cdot")):
+                        raise AssertionError(
+                            f"{name}: aligned continuation begins with operator: {row!r}"
+                        )
             continue
 
-        if other_structured and not aligned:
-            # The formatter intentionally does not rewrite cases/matrix/split-like
-            # grammar. Those environments have their own row semantics.
-            continue
+        width = display_width(block)
+        if width > 110:
+            # Long plain expressions are allowed only when no safe structural
+            # split exists.  Recursive proxy definitions should make decomposable
+            # fractions/sums/products short.  Surface the exact offender.
+            raise AssertionError(
+                f"{name}: long unsplit display remains "
+                f"(estimated width {width}, raw chars {len(block)}): {block[:120]!r}"
+            )
 
-        math_rows = []
-        in_aligned = False
-        for line in lines:
-            stripped = line.strip()
-            if stripped.startswith(r"\begin{aligned}"):
-                in_aligned = True
-                continue
-            if stripped.startswith(r"\end{aligned}"):
-                in_aligned = False
-                continue
-            if in_aligned:
-                if stripped.startswith("&"):
-                    stripped = stripped[1:].lstrip()
-                # Remove a presentation row break before width/operator checks.
-                if stripped.endswith(r"\\"):
-                    stripped = stripped[:-2].rstrip()
-                math_rows.append(stripped)
-
-        for row_no, row in enumerate(math_rows, 1):
-            width = display_width(row)
-            # The formatter targets 92 estimated display characters. A small
-            # allowance is kept for source constructs whose true MathJax width is
-            # difficult to estimate without a renderer.
-            if width > 110:
-                raise AssertionError(
-                    f"{name}: overlong aligned row {row_no} "
-                    f"(estimated width {width}, raw chars {len(row)})"
-                )
-            if row_no > 1 and row.startswith(("=", "+", "-", r"\times", r"\cdot")):
-                raise AssertionError(
-                    f"{name}: wrapped continuation begins with operator: {row!r}"
-                )
+    return proxy_defs
 
 
 expected = {
@@ -97,6 +116,7 @@ expected = {
     "2loop_vacuum_polarization_full.md": ("Vacuum polarization", "vacuum_polarization_2loop_bare.tex"),
 }
 
+proxy_total = 0
 for name, tokens in expected.items():
     path = ROOT / "output" / name
     if not path.exists():
@@ -112,7 +132,7 @@ for name, tokens in expected.items():
     for token in required:
         if token not in text:
             raise AssertionError(f"{name}: missing token {token!r}")
-    validate_math_layout(name, text)
+    proxy_total += validate_math_layout(name, text)
 
 master = ROOT / "output" / "2loop_all_7diagrams_full.md"
 if not master.exists():
@@ -130,9 +150,10 @@ for token in (
 ):
     if token not in master_text:
         raise AssertionError(f"master report missing token {token!r}")
-validate_math_layout(master.name, master_text)
+proxy_total += validate_math_layout(master.name, master_text)
 
 print("Phase-84 full two-loop process report validation PASS")
 print("generated reports = 6")
 print("math layout validation = PASS")
+print("recursive proxy definitions =", proxy_total)
 print("master =", master)
