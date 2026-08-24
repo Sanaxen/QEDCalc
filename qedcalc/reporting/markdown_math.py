@@ -1,21 +1,17 @@
 r"""Readable Markdown/LaTeX formatting for long display equations.
 
 Phase 84 uses a structure-preserving rule: never insert ``\\`` directly into
-an arbitrary TeX brace group.  Long expressions are instead replaced, for
+an arbitrary TeX brace group. Long expressions are instead replaced, for
 presentation only, by recursively defined local proxy symbols.
 
-Example::
+Recursive decomposition order:
+1. whole fractions -> numerator / denominator proxies;
+2. top-level sums and differences;
+3. explicit top-level products (``\\times`` / ``\\cdot``);
+4. implicit products, preferring original source-line boundaries and then safe
+   top-level whitespace boundaries.
 
-    D_1 = denominator
-    N_1 = N_{1,1} + N_{1,2}
-    N_{1,1} = ...
-    N_{1,2} = ...
-    F = N_1 / D_1
-
-If a proxy definition is still too long, the same decomposition is applied
-again.  Whole fractions, top-level sums/differences, and explicit top-level
-products (``\\times``/``\\cdot``) are decomposed recursively.  The original
-mathematical token order is preserved.
+If a proxy definition is still too long, the same process is applied again.
 """
 from __future__ import annotations
 
@@ -28,6 +24,8 @@ _STRUCTURED = (
     r"\begin{pmatrix}", r"\begin{bmatrix}", r"\begin{gathered}",
     r"\begin{multline}",
 )
+
+_BINDING_COMMANDS = (r"\int", r"\iint", r"\iiint", r"\oint", r"\sum", r"\prod", r"\lim")
 
 
 def _visible_len(source: str) -> int:
@@ -90,11 +88,6 @@ def _whole_fraction(expr: str) -> tuple[str, str, str] | None:
 
 
 def _top_level_ops(expr: str, operators: tuple[str, ...]) -> list[tuple[int, str]]:
-    """Find safe top-level binary operator positions.
-
-    Positions point to the beginning of the operator.  Braces, parentheses and
-    brackets must all be balanced at the split point.
-    """
     found: list[tuple[int, str]] = []
     brace = paren = bracket = 0
     i = 0
@@ -108,21 +101,14 @@ def _top_level_ops(expr: str, operators: tuple[str, ...]) -> list[tuple[int, str
                     found.append((i, token))
                 i += len(token)
                 continue
-        if ch == "{":
-            brace += 1
-        elif ch == "}":
-            brace = max(0, brace - 1)
-        elif ch == "(":
-            paren += 1
-        elif ch == ")":
-            paren = max(0, paren - 1)
-        elif ch == "[":
-            bracket += 1
-        elif ch == "]":
-            bracket = max(0, bracket - 1)
+        if ch == "{": brace += 1
+        elif ch == "}": brace = max(0, brace - 1)
+        elif ch == "(": paren += 1
+        elif ch == ")": paren = max(0, paren - 1)
+        elif ch == "[": bracket += 1
+        elif ch == "]": bracket = max(0, bracket - 1)
         elif brace == paren == bracket == 0 and ch in operators:
             prev = expr[:i].rstrip()
-            # Do not split unary + or -.
             if ch in "+-" and (not prev or prev[-1] in "=+-*/,("):
                 i += 1
                 continue
@@ -131,8 +117,79 @@ def _top_level_ops(expr: str, operators: tuple[str, ...]) -> list[tuple[int, str
     return found
 
 
-def _best_binary_split(expr: str) -> tuple[str, str, str] | None:
-    """Split near the middle, preferring +/-, then explicit products."""
+def _source_line_product_split(expr: str) -> tuple[str, str, str] | None:
+    """Split an implicit product at an original source newline near its middle."""
+    lines = [line.strip() for line in expr.splitlines() if line.strip()]
+    if len(lines) < 2:
+        return None
+    # Pick a balanced cut by visible width, not simply by line count.
+    total = sum(_visible_len(line) for line in lines)
+    running = 0
+    best_index = 1
+    best_distance = float("inf")
+    for i in range(1, len(lines)):
+        running += _visible_len(lines[i - 1])
+        distance = abs(running - total / 2)
+        if distance < best_distance:
+            best_distance = distance
+            best_index = i
+    left = " ".join(lines[:best_index]).strip()
+    right = " ".join(lines[best_index:]).strip()
+    if left and right:
+        return left, "", right
+    return None
+
+
+def _top_level_space_positions(expr: str) -> list[int]:
+    """Find safe top-level whitespace boundaries for implicit multiplication."""
+    positions: list[int] = []
+    brace = paren = bracket = 0
+    i = 0
+    while i < len(expr):
+        ch = expr[i]
+        if ch == "\\":
+            m = re.match(r"\\[A-Za-z]+", expr[i:])
+            if m:
+                i += len(m.group(0))
+                continue
+        if ch == "{": brace += 1
+        elif ch == "}": brace = max(0, brace - 1)
+        elif ch == "(": paren += 1
+        elif ch == ")": paren = max(0, paren - 1)
+        elif ch == "[": bracket += 1
+        elif ch == "]": bracket = max(0, bracket - 1)
+        elif ch.isspace() and brace == paren == bracket == 0:
+            start = i
+            while i < len(expr) and expr[i].isspace():
+                i += 1
+            left = expr[:start].rstrip()
+            right = expr[i:].lstrip()
+            if left and right:
+                # Avoid separating a binding operator from its immediate measure.
+                if not any(left.endswith(cmd) for cmd in _BINDING_COMMANDS):
+                    if not right.startswith(("d^", r"\limits", "_", "^")):
+                        positions.append(start)
+            continue
+        i += 1
+    return positions
+
+
+def _implicit_product_split(expr: str) -> tuple[str, str, str] | None:
+    s = _compact(expr)
+    positions = _top_level_space_positions(s)
+    if not positions:
+        return None
+    midpoint = len(s) / 2
+    pos = min(positions, key=lambda p: abs(p - midpoint))
+    left = s[:pos].strip()
+    right = s[pos:].strip()
+    if left and right:
+        return left, "", right
+    return None
+
+
+def _best_binary_split(expr: str, original_expr: str | None = None) -> tuple[str, str, str] | None:
+    """Split near the middle, preferring algebraic then implicit-product boundaries."""
     s = _compact(expr)
     if not s:
         return None
@@ -153,7 +210,13 @@ def _best_binary_split(expr: str) -> tuple[str, str, str] | None:
         right = s[pos + len(op):].strip()
         if left and right:
             return left, op, right
-    return None
+
+    if original_expr is not None:
+        source_split = _source_line_product_split(original_expr)
+        if source_split is not None:
+            return source_split
+
+    return _implicit_product_split(s)
 
 
 def _proxy_name(base: str, path: tuple[int, ...]) -> str:
@@ -164,11 +227,10 @@ def _proxy_name(base: str, path: tuple[int, ...]) -> str:
 @dataclass
 class _ProxyFormatter:
     max_width: int
-    max_depth: int = 16
+    max_depth: int = 20
 
     def definition_blocks(self, base: str, path: tuple[int, ...], expr: str,
                           depth: int = 0) -> list[str]:
-        """Return display blocks for one recursively decomposed definition."""
         name = _proxy_name(base, path)
         rhs = _compact(expr)
         direct = rf"{name}={rhs}"
@@ -186,20 +248,18 @@ class _ProxyFormatter:
             blocks += self.definition_blocks(base, path + (2,), denominator, depth + 1)
             return blocks
 
-        split = _best_binary_split(rhs)
+        split = _best_binary_split(rhs, expr)
         if split is not None:
             left, op, right = split
             l_name = _proxy_name(base, path + (1,))
             r_name = _proxy_name(base, path + (2,))
-            root = rf"{name}={l_name} {op} {r_name}"
+            join = f" {op} " if op else r"\,"
+            root = rf"{name}={l_name}{join}{r_name}"
             blocks = [self._display(root)]
             blocks += self.definition_blocks(base, path + (1,), left, depth + 1)
             blocks += self.definition_blocks(base, path + (2,), right, depth + 1)
             return blocks
 
-        # No safe structural split is known.  Keep the mathematically valid
-        # expression intact rather than risk corrupting TeX.  Validation reports
-        # this as an unsplittable long definition instead of rewriting it.
         return [self._display(direct)]
 
     @staticmethod
@@ -208,9 +268,7 @@ class _ProxyFormatter:
 
     def fraction_blocks(self, sign: str, numerator: str, denominator: str,
                         index: int) -> str:
-        """Create recursive D_i/N_i definitions followed by their compact ratio."""
         blocks: list[str] = []
-        # Denominator first, matching the human-readable convention requested.
         blocks += self.definition_blocks("D", (index,), denominator)
         blocks += self.definition_blocks("N", (index,), numerator)
         d_name = _proxy_name("D", (index,))
@@ -220,34 +278,23 @@ class _ProxyFormatter:
 
 
 def _safe_plain_wrap(expr: str, max_width: int) -> str:
-    """Wrap a non-fraction only when the split is structurally top-level."""
     s = _compact(expr)
     if _visible_len(s) <= max_width:
         return f"$$\n{s}\n$$"
     if any(marker in s for marker in _STRUCTURED):
-        # Existing structured TeX is left unchanged; rewriting nested alignment
-        # grammar is riskier than leaving a long but valid equation intact.
         return f"$$\n{expr.strip()}\n$$"
 
-    split = _best_binary_split(s)
+    formatter = _ProxyFormatter(max_width=max_width)
+    split = _best_binary_split(s, expr)
     if split is None:
         return f"$$\n{s}\n$$"
-
-    formatter = _ProxyFormatter(max_width=max_width)
-    # Generic long non-fractions use E_i proxies recursively.
-    blocks = formatter.definition_blocks("E", (1,), s)
+    blocks = formatter.definition_blocks("E", (1,), expr)
     blocks.append(formatter._display(_proxy_name("E", (1,))))
     return "\n\n".join(blocks)
 
 
 def format_markdown_math(text: str, max_width: int = 92) -> str:
-    """Format display equations with recursive proxy decomposition.
-
-    A long whole-display fraction is rendered as recursive ``D_i`` and ``N_i``
-    definitions followed by the compact ratio.  Proxy definitions are themselves
-    recursively decomposed until they fit or no mathematically safe split is
-    available.  No row break is injected inside arbitrary ``{...}`` groups.
-    """
+    """Format display equations with recursive proxy decomposition."""
     parts = text.split("$$")
     if len(parts) < 3:
         return text
