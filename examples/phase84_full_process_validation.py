@@ -33,6 +33,45 @@ def balanced_braces(source: str) -> bool:
     return depth == 0
 
 
+def balanced_left_right(source: str) -> bool:
+    """Require every display block to contain complete nested \\left/\\right pairs."""
+    stack: list[str] = []
+    pairs = {"(": ")", "[": "]", r"\{": r"\}"}
+    i = 0
+    while i < len(source):
+        if source.startswith(r"\left", i):
+            j = i + len(r"\left")
+            if source.startswith(r"\{", j):
+                opening = r"\{"
+                j += 2
+            elif j < len(source) and source[j] in "([":
+                opening = source[j]
+                j += 1
+            else:
+                i += len(r"\left")
+                continue
+            stack.append(pairs[opening])
+            i = j
+            continue
+        if source.startswith(r"\right", i):
+            j = i + len(r"\right")
+            if source.startswith(r"\}", j):
+                closing = r"\}"
+                j += 2
+            elif j < len(source) and source[j] in ")]":
+                closing = source[j]
+                j += 1
+            else:
+                return False
+            if not stack or stack[-1] != closing:
+                return False
+            stack.pop()
+            i = j
+            continue
+        i += 1
+    return not stack
+
+
 def validate_math_layout(name: str, text: str) -> None:
     parts = text.split("$$")
     if len(parts) % 2 == 0:
@@ -46,9 +85,11 @@ def validate_math_layout(name: str, text: str) -> None:
 
         if not balanced_braces(block):
             raise AssertionError(f"{name}: unbalanced TeX braces in display block")
+        if not balanced_left_right(block):
+            raise AssertionError(
+                f"{name}: unbalanced \\left/\\right delimiters in display block: {block[:120]!r}"
+            )
 
-        # The recursive proxy formatter must never create an outer row break
-        # inside \frac{...}{...}.  Proxy fractions are intentionally compact.
         if r"\frac{" in block and r"\begin{aligned}" in block:
             raise AssertionError(
                 f"{name}: aligned environment embedded in a fraction display"
@@ -68,8 +109,6 @@ def validate_math_layout(name: str, text: str) -> None:
         )
 
         if structured:
-            # Pre-existing structured material is preserved by the reporter.
-            # We only enforce operator-start rules on rows created by aligned.
             if r"\begin{aligned}" in block:
                 rows = []
                 inside = False
@@ -97,9 +136,6 @@ def validate_math_layout(name: str, text: str) -> None:
 
         width = display_width(block)
         if width > 110:
-            # Long plain expressions are allowed only when no safe structural
-            # split exists.  Recursive proxy definitions should make decomposable
-            # fractions/sums/products short.  Surface the exact offender.
             raise AssertionError(
                 f"{name}: long unsplit display remains "
                 f"(estimated width {width}, raw chars {len(block)}): {block[:120]!r}"
