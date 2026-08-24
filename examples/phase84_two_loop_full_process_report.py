@@ -3,14 +3,21 @@
 This reporting layer does not change physics. It combines raw LaTeX input,
 the detailed process manuals, recorded output Markdown, large algebra-table
 inventories, and the seven-diagram regression into complete process reports.
-It uses only the Python standard library.
+It also applies presentation-only line wrapping to long display equations so
+that GitHub/Markdown rendering does not clip them horizontally.
 """
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import re
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from qedcalc.reporting import format_markdown_math
+
 INPUT = ROOT / "input"
 OUTPUT = ROOT / "output"
 DOC = ROOT / "doc" / "QEDCalc_2loop_5sample_manuals_v2"
@@ -94,6 +101,11 @@ def demote(md: str) -> str:
     return "\n".join(out).strip()
 
 
+def readable(md: str) -> str:
+    """Apply presentation-only display-math wrapping after heading adjustment."""
+    return format_markdown_math(md, max_width=92)
+
+
 def nlines(path: Path) -> int:
     with path.open("r", encoding="utf-8", errors="replace") as f:
         return sum(1 for _ in f)
@@ -109,18 +121,20 @@ def graph_report(spec: GraphSpec):
         f"# QEDCalc two-loop full process report: {spec.title}", "",
         f"Diagram multiplicity: **{spec.multiplicity}**.", "",
         "This report records raw input, the human/QEDCalc handoff, actual output artifacts, large algebra tables, and release status.", "",
+        "Long display equations are wrapped automatically for readability. The mathematical content is unchanged, and continuation lines never begin with `=`, `+`, `-`, `\\times`, or `\\cdot`.", "",
         "## 1. Raw input expressions", "",
     ]
     for name in spec.inputs:
         p = INPUT / name
         require(p)
-        lines += [f"### `input/{name}`", "", "$$", text(p).strip(), "$$", ""]
+        raw_block = "$$\n" + text(p).strip() + "\n$$"
+        lines += [f"### `input/{name}`", "", readable(raw_block), ""]
 
     lines += [
         "## 2. Complete calculation-process guide", "",
         f"Source: `doc/QEDCalc_2loop_5sample_manuals_v2/{spec.manual}`", "",
         "This embedded guide states what a person derives, what is passed to QEDCalc, which program section performs the algebra, what QEDCalc returns, and how that output becomes the next input.", "",
-        demote(text(manual)), "",
+        readable(demote(text(manual))), "",
         "## 3. Recorded runtime artifacts", "",
         "| Artifact | Type | Lines | Bytes |", "| --- | --- | ---: | ---: |",
     ]
@@ -130,7 +144,7 @@ def graph_report(spec: GraphSpec):
     lines += ["", "## 4. Recorded Markdown stages", ""]
     if md_files:
         for i, p in enumerate(md_files, 1):
-            lines += [f"### 4.{i} `output/{p.name}`", "", demote(text(p)), "", "---", ""]
+            lines += [f"### 4.{i} `output/{p.name}`", "", readable(demote(text(p))), "", "---", ""]
     else:
         lines += ["No graph-specific runtime Markdown is currently stored.", ""]
 
@@ -149,7 +163,7 @@ def graph_report(spec: GraphSpec):
         lines.append(f"No Phase {spec.release_phase} Markdown artifact is currently stored; rerun that scientific phase when a freshly regenerated checkpoint is required.")
     lines += ["", "The reporter never fabricates a missing scientific artifact; documented stages and files actually present on disk remain explicitly distinguishable.", ""]
 
-    content = "\n".join(lines).rstrip() + "\n"
+    content = readable("\n".join(lines).rstrip() + "\n")
     out = OUTPUT / f"2loop_{spec.slug}_full.md"
     out.write_text(content, encoding="utf-8")
     return out, content
@@ -162,6 +176,7 @@ def master_report(reports):
     lines = [
         "# QEDCalc complete two-loop calculation record — all seven diagrams", "",
         "The five graph-class reports below represent 1 + 1 + 2 + 2 + 1 = 7 diagrams.", "",
+        "Long display equations are wrapped automatically for readable GitHub/Markdown rendering.", "",
         "## 1. Report index", "",
         "| Class | Multiplicity | Report |", "| --- | ---: | --- |",
     ]
@@ -172,7 +187,7 @@ def master_report(reports):
         lines += [f"### 2.{i} {spec.title}", "", f"Source: `output/{path.name}`", "", demote(content), "", "---", ""]
     lines += ["## 3. Exact seven-diagram assembly", "", demote(text(p82)), "", "---", "", "## 4. Complete two-loop regression", "", demote(text(p83)), ""]
     out = OUTPUT / "2loop_all_7diagrams_full.md"
-    out.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+    out.write_text(readable("\n".join(lines).rstrip() + "\n"), encoding="utf-8")
     return out
 
 
