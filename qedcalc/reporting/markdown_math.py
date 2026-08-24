@@ -10,8 +10,8 @@ Policy:
   are still too long;
 - place relation/arithmetic operators at the END of a line, never at the start;
 - prefer breaks after top-level ``=``, ``+``, ``-``, ``\times`` and ``\cdot``;
-- normalize pre-existing continuation rows such as ``+ term`` by moving the
-  binary operator to the end of the preceding row;
+- normalize pre-existing continuation rows such as ``+ term`` or a standalone
+  ``+`` row by moving the binary operator to the end of the preceding row;
 - for long product chains, whitespace is a safe presentation-only fallback.
 """
 from __future__ import annotations
@@ -94,17 +94,10 @@ def _operator_chunks(expr: str) -> list[str]:
 
 
 def _whitespace_chunks(expr: str) -> list[str]:
-    # Whitespace has no mathematical effect in ordinary LaTeX math mode. This
-    # fallback is therefore suitable for long noncommutative factor chains.
     return [x for x in re.split(r"\s+", expr.strip()) if x]
 
 
 def _hard_chunks(expr: str, max_width: int) -> list[str]:
-    """Last-resort break for a single token-like LaTeX string.
-
-    Prefer boundaries after closing braces/parentheses. This is display-only and
-    does not insert an arithmetic operator or alter token order.
-    """
     if _visible_len(expr) <= max_width:
         return [expr]
     pieces = re.split(r"(?<=[}\)])(?=\\|[A-Za-z0-9])", expr)
@@ -131,6 +124,8 @@ def _pack(chunks: list[str], max_width: int) -> list[str]:
 
 def _wrap_expression(expr: str, max_width: int) -> list[str]:
     compact = " ".join(line.strip() for line in expr.splitlines() if line.strip())
+    if not compact:
+        return []
     if _visible_len(compact) <= max_width:
         return [compact]
 
@@ -139,7 +134,6 @@ def _wrap_expression(expr: str, max_width: int) -> list[str]:
         chunks = _whitespace_chunks(expr)
     lines = _pack(chunks, max_width)
 
-    # If a single huge token remains, try structural brace/parenthesis boundaries.
     expanded: list[str] = []
     for line in lines:
         if _visible_len(line) > max_width:
@@ -150,17 +144,18 @@ def _wrap_expression(expr: str, max_width: int) -> list[str]:
 
 
 def _leading_operator(row: str) -> tuple[str | None, str]:
-    """Return a leading binary/relation operator and the remaining row text."""
+    """Return a leading operator and the remaining row text.
+
+    ``rest`` may be empty for an operator-only row such as ``+``.
+    """
     s = row.lstrip()
     for op in _LEADING_OPERATORS:
         if s.startswith(op):
-            rest = s[len(op):].lstrip()
-            return op, rest
+            return op, s[len(op):].lstrip()
     return None, row
 
 
 def _append_operator_before_break(line: str, op: str) -> str:
-    """Move ``op`` to the end of an already-rendered previous aligned row."""
     s = line.rstrip()
     if s.endswith(r"\\"):
         body = s[:-2].rstrip()
@@ -169,28 +164,26 @@ def _append_operator_before_break(line: str, op: str) -> str:
 
 
 def _normalize_continuation_rows(rows: list[str]) -> list[str]:
-    """Ensure no continuation row begins with a binary/relation operator.
+    """Move leading continuation operators onto the preceding row.
 
-    The first row may legitimately begin with unary ``-``. For later rows, a
-    leading ``+``, ``-``, ``=``, ``\\times`` or ``\\cdot`` is interpreted as a
-    continuation operator and moved to the previous row. This changes layout
-    only; mathematical token order is preserved.
+    Operator-only rows are consumed completely instead of being emitted as an
+    empty continuation row.
     """
     if len(rows) < 2:
         return rows
     out = [rows[0]]
     for row in rows[1:]:
         op, rest = _leading_operator(row)
-        if op is not None and rest:
+        if op is not None:
             out[-1] = f"{out[-1].rstrip()} {op}"
-            out.append(rest)
-        else:
-            out.append(row)
+            if rest:
+                out.append(rest)
+            continue
+        out.append(row)
     return out
 
 
 def _strip_row_syntax(line: str) -> tuple[str, bool, str]:
-    """Return (math body, had_row_break, indentation/alignment prefix)."""
     s = line.rstrip()
     had_break = s.endswith(r"\\")
     if had_break:
@@ -228,20 +221,19 @@ def _reflow_aligned(expr: str, max_width: int) -> str:
 
         body, had_break, prefix = _strip_row_syntax(line)
 
-        # Existing documents sometimes put a binary operator at the beginning of
-        # an aligned continuation row. Move it to the preceding rendered row
-        # before doing any further wrapping.
         if math_row_count > 0:
             op, rest = _leading_operator(body)
-            if op is not None and rest:
-                # Find the immediately preceding mathematical output row. The
-                # environment declaration and blank lines are skipped naturally.
+            if op is not None:
                 for j in range(len(out) - 1, -1, -1):
                     prev = out[j].strip()
                     if prev and not prev.startswith(r"\begin{aligned}"):
                         out[j] = _append_operator_before_break(out[j], op)
                         break
                 body = rest
+                # A standalone operator row has been fully absorbed into the
+                # preceding row. Preserve only its row-break meaning implicitly.
+                if not body:
+                    continue
 
         wrapped = _normalize_continuation_rows(_wrap_expression(body, max_width))
         for i, row in enumerate(wrapped):
@@ -260,8 +252,6 @@ def _wrap_plain_display(expr: str, max_width: int) -> str:
     if r"\begin{aligned}" in expr:
         return _reflow_aligned(expr, max_width)
 
-    # Other structured environments are left untouched because blindly inserting
-    # rows into cases/matrices/split can alter their LaTeX grammar.
     if any(marker in compact for marker in _STRUCTURED_OTHER):
         return expr.strip()
 
