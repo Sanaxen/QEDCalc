@@ -27,6 +27,11 @@ _STRUCTURED = (
 )
 
 _BINDING_COMMANDS = (r"\int", r"\iint", r"\iiint", r"\oint", r"\sum", r"\prod", r"\lim")
+_LEFT_RIGHT_PAIRS = {
+    "(": ")",
+    "[": "]",
+    r"\{": r"\}",
+}
 
 
 def _visible_len(source: str) -> int:
@@ -87,59 +92,128 @@ def _whole_fraction(expr: str) -> tuple[str, str, str] | None:
     return sign, numerator.strip(), denominator.strip()
 
 
+def _left_delimiter_at(s: str, pos: int) -> tuple[str, int] | None:
+    if not s.startswith(r"\left", pos):
+        return None
+    j = pos + len(r"\left")
+    if j >= len(s):
+        return None
+    if s.startswith(r"\{", j):
+        return r"\{", j + 2
+    if s[j] in "([":
+        return s[j], j + 1
+    return None
+
+
+def _right_delimiter_at(s: str, pos: int) -> tuple[str, int] | None:
+    if not s.startswith(r"\right", pos):
+        return None
+    j = pos + len(r"\right")
+    if j >= len(s):
+        return None
+    if s.startswith(r"\}", j):
+        return r"\}", j + 2
+    if s[j] in ")]":
+        return s[j], j + 1
+    return None
+
+
+def _matching_left_right_end(s: str, start: int = 0) -> int | None:
+    """Return the end index of the matching outer ``\\right...`` delimiter.
+
+    Nested ``\\left...\\right`` pairs are tracked explicitly.  This avoids the
+    earlier false assumption that a terminal ``\\right)`` necessarily matched
+    the first ``\\left(``.
+    """
+    first = _left_delimiter_at(s, start)
+    if first is None:
+        return None
+    first_open, pos = first
+    stack = [_LEFT_RIGHT_PAIRS[first_open]]
+    i = pos
+    while i < len(s):
+        left = _left_delimiter_at(s, i)
+        if left is not None:
+            opening, i = left
+            stack.append(_LEFT_RIGHT_PAIRS[opening])
+            continue
+        right = _right_delimiter_at(s, i)
+        if right is not None:
+            closing, end = right
+            if not stack or closing != stack[-1]:
+                return None
+            stack.pop()
+            if not stack:
+                return end
+            i = end
+            continue
+        i += 1
+    return None
+
+
 def _whole_outer_group(expr: str) -> tuple[str, str, str] | None:
-    """Return (open, inner, close) when one pair encloses the whole expression."""
+    """Return (opening, inner, closing) when one group encloses the whole RHS."""
     s = _compact(expr)
-    pairs = (
-        (r"\left(", r"\right)"),
-        (r"\left[", r"\right]"),
-        (r"\left\{", r"\right\}"),
-        ("(", ")"),
-        ("[", "]"),
-    )
-    for opening, closing in pairs:
+
+    lr = _left_delimiter_at(s, 0)
+    if lr is not None:
+        opening_token, content_start = lr
+        end = _matching_left_right_end(s, 0)
+        if end == len(s):
+            closing_token = _LEFT_RIGHT_PAIRS[opening_token]
+            closing_source = r"\right" + closing_token
+            inner_end = len(s) - len(closing_source)
+            inner = s[content_start:inner_end].strip()
+            if inner:
+                return r"\left" + opening_token, inner, closing_source
+
+    # Plain (...) / [...] outer groups.
+    for opening, closing in (("(", ")"), ("[", "]")):
         if not (s.startswith(opening) and s.endswith(closing)):
             continue
-        inner_start = len(opening)
-        inner_end = len(s) - len(closing)
-        inner = s[inner_start:inner_end].strip()
-        if not inner:
-            continue
-
-        # Verify that the outer delimiter really remains open until the end.
-        if opening in ("(", "["):
-            left_char = opening
-            right_char = closing
-            depth = 0
-            valid = True
-            for i, ch in enumerate(s):
-                if ch == left_char:
-                    depth += 1
-                elif ch == right_char:
-                    depth -= 1
-                    if depth == 0 and i != len(s) - 1:
-                        valid = False
-                        break
-            if not valid or depth != 0:
-                continue
-        # For \left...\right forms, SymPy-produced expressions use balanced
-        # delimiter pairs. A matching terminal \right token is sufficient for
-        # this presentation-only decomposition.
-        return opening, inner, closing
+        depth = 0
+        valid = True
+        for i, ch in enumerate(s):
+            if ch == opening:
+                depth += 1
+            elif ch == closing:
+                depth -= 1
+                if depth == 0 and i != len(s) - 1:
+                    valid = False
+                    break
+                if depth < 0:
+                    valid = False
+                    break
+        if valid and depth == 0:
+            inner = s[1:-1].strip()
+            if inner:
+                return opening, inner, closing
     return None
 
 
 def _top_level_ops(expr: str, operators: tuple[str, ...]) -> list[tuple[int, str]]:
     found: list[tuple[int, str]] = []
     brace = paren = bracket = 0
+    lr_depth = 0
     i = 0
     while i < len(expr):
+        left = _left_delimiter_at(expr, i)
+        if left is not None:
+            lr_depth += 1
+            i = left[1]
+            continue
+        right = _right_delimiter_at(expr, i)
+        if right is not None:
+            lr_depth = max(0, lr_depth - 1)
+            i = right[1]
+            continue
+
         ch = expr[i]
         if ch == "\\":
             m = re.match(r"\\[A-Za-z]+", expr[i:])
             if m:
                 token = m.group(0)
-                if brace == paren == bracket == 0 and token in operators:
+                if brace == paren == bracket == lr_depth == 0 and token in operators:
                     found.append((i, token))
                 i += len(token)
                 continue
@@ -149,7 +223,7 @@ def _top_level_ops(expr: str, operators: tuple[str, ...]) -> list[tuple[int, str
         elif ch == ")": paren = max(0, paren - 1)
         elif ch == "[": bracket += 1
         elif ch == "]": bracket = max(0, bracket - 1)
-        elif brace == paren == bracket == 0 and ch in operators:
+        elif brace == paren == bracket == lr_depth == 0 and ch in operators:
             prev = expr[:i].rstrip()
             if ch in "+-" and (not prev or prev[-1] in "=+-*/,("):
                 i += 1
@@ -183,8 +257,20 @@ def _source_line_product_split(expr: str) -> tuple[str, str, str] | None:
 def _top_level_space_positions(expr: str) -> list[int]:
     positions: list[int] = []
     brace = paren = bracket = 0
+    lr_depth = 0
     i = 0
     while i < len(expr):
+        left_delim = _left_delimiter_at(expr, i)
+        if left_delim is not None:
+            lr_depth += 1
+            i = left_delim[1]
+            continue
+        right_delim = _right_delimiter_at(expr, i)
+        if right_delim is not None:
+            lr_depth = max(0, lr_depth - 1)
+            i = right_delim[1]
+            continue
+
         ch = expr[i]
         if ch == "\\":
             m = re.match(r"\\[A-Za-z]+", expr[i:])
@@ -197,7 +283,7 @@ def _top_level_space_positions(expr: str) -> list[int]:
         elif ch == ")": paren = max(0, paren - 1)
         elif ch == "[": bracket += 1
         elif ch == "]": bracket = max(0, bracket - 1)
-        elif ch.isspace() and brace == paren == bracket == 0:
+        elif ch.isspace() and brace == paren == bracket == lr_depth == 0:
             start = i
             while i < len(expr) and expr[i].isspace():
                 i += 1
@@ -216,6 +302,15 @@ def _implicit_product_split(expr: str) -> tuple[str, str, str] | None:
     s = _compact(expr)
     positions = _top_level_space_positions(s)
     if not positions:
+        # If the expression begins with a complete \left...\right group followed
+        # by another factor without a safe whitespace candidate, split directly
+        # after that matched group.
+        end = _matching_left_right_end(s, 0)
+        if end is not None and end < len(s):
+            left = s[:end].strip()
+            right = s[end:].strip()
+            if left and right:
+                return left, "", right
         return None
     midpoint = len(s) / 2
     pos = min(positions, key=lambda p: abs(p - midpoint))
@@ -264,7 +359,7 @@ def _proxy_name(base: str, path: tuple[int, ...]) -> str:
 @dataclass
 class _ProxyFormatter:
     max_width: int
-    max_depth: int = 24
+    max_depth: int = 32
 
     def definition_blocks(self, base: str, path: tuple[int, ...], expr: str,
                           depth: int = 0) -> list[str]:
