@@ -320,9 +320,6 @@ def _spacing_product_split(expr: str) -> tuple[str, str, str] | None:
     left = s[:pos].strip()
     right = s[pos + len(token):].strip()
     if left and right:
-        # The original spacing token is presentation-only.  The proxy relation
-        # preserves the juxtaposition as an implicit product with standard thin
-        # spacing, independent of which spacing command SymPy emitted.
         return left, "", right
     return None
 
@@ -493,7 +490,6 @@ class _ProxyFormatter:
         return "\n\n".join(blocks)
 
     def assignment_blocks(self, lhs: str, rhs: str, index: int) -> str:
-        """Keep a semantic LHS visible and recursively proxy only its long RHS."""
         root = _proxy_name("E", (index,))
         blocks = [self._display(rf"{lhs}={root}")]
         blocks += self.definition_blocks("E", (index,), rhs)
@@ -535,7 +531,7 @@ def format_markdown_math(text: str, max_width: int = 92) -> str:
         parsed = _whole_fraction(expr)
         if parsed is not None:
             sign, numerator, denominator = parsed
-            if max(_visible_len(numerator), _visible_len(denominator)) > max_width:
+            if _visible_len(_compact(expr)) > max_width:
                 fraction_index += 1
                 out.append(formatter.fraction_blocks(sign, numerator, denominator,
                                                      fraction_index))
