@@ -1,6 +1,6 @@
 """Readable Markdown/LaTeX formatting for long display equations.
 
-The formatter changes presentation only.  It never changes the mathematical
+The formatter changes presentation only. It never changes the mathematical
 content and never asks SymPy to re-simplify an expression.
 
 Policy:
@@ -9,7 +9,7 @@ Policy:
 - wrap only long plain display blocks;
 - place relation/arithmetic operators at the END of a line, never at the start;
 - prefer breaks at top-level =, +, -, then \times / \cdot;
-- fall back to whitespace boundaries for long factor chains.
+- fall back to source line boundaries for long factor chains.
 """
 from __future__ import annotations
 
@@ -30,8 +30,6 @@ _STRUCTURED = (
 
 
 def _visible_len(s: str) -> int:
-    # A lightweight display-width proxy. Commands are counted by their payload,
-    # which is sufficient for deciding whether a line is obviously too long.
     t = re.sub(r"\\[A-Za-z]+", "X", s)
     t = t.replace("{", "").replace("}", "")
     return len(t)
@@ -66,8 +64,6 @@ def _top_level_breaks(expr: str) -> list[int]:
         elif ch == "]":
             bracket = max(0, bracket - 1)
         elif brace == paren == bracket == 0 and ch in "=+-":
-            # Avoid unary signs at the beginning and signs immediately after
-            # another operator/relation.
             prev = expr[:i].rstrip()
             if prev and prev[-1] not in "=+-*/,(":
                 out.append(i + 1)
@@ -78,8 +74,6 @@ def _top_level_breaks(expr: str) -> list[int]:
 def _chunks_from_breaks(expr: str) -> list[str]:
     breaks = _top_level_breaks(expr)
     if not breaks:
-        # Long noncommutative/factor chains often already contain whitespace
-        # line boundaries in the raw .tex input. Preserve those as safe breaks.
         return [x.strip() for x in expr.splitlines() if x.strip()]
     chunks: list[str] = []
     start = 0
@@ -120,8 +114,6 @@ def _wrap_plain_display(expr: str, max_width: int) -> str:
     chunks = _chunks_from_breaks(expr)
     lines = _pack(chunks, max_width)
     if len(lines) <= 1:
-        # Last fallback for a product chain: preserve original physical factor
-        # boundaries encoded by source newlines.
         raw_lines = [x.strip() for x in expr.splitlines() if x.strip()]
         if len(raw_lines) > 1:
             lines = _pack(raw_lines, max_width)
@@ -131,9 +123,6 @@ def _wrap_plain_display(expr: str, max_width: int) -> str:
     rendered = [r"\begin{aligned}"]
     for i, line in enumerate(lines):
         suffix = r" \\" if i < len(lines) - 1 else ""
-        # & is used only as a harmless alignment anchor. It does not alter the
-        # expression and, crucially, no continuation line begins with an
-        # arithmetic/relation operator because breaks are placed after it.
         rendered.append(f"& {line}{suffix}")
     rendered.append(r"\end{aligned}")
     return "\n".join(rendered)
