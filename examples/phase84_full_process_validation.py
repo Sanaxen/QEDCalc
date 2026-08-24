@@ -8,6 +8,31 @@ ROOT = Path(__file__).resolve().parents[1]
 
 runpy.run_path(str(ROOT / "examples" / "phase84_two_loop_full_process_report.py"), run_name="__main__")
 
+
+def validate_math_layout(name: str, text: str) -> None:
+    parts = text.split("$$")
+    for i in range(1, len(parts), 2):
+        block = parts[i]
+        lines = [line.rstrip() for line in block.splitlines() if line.strip()]
+        if not lines:
+            continue
+        structured = any("\\begin{" in line for line in lines)
+        if not structured:
+            # A remaining unstructured display block should be short enough to
+            # fit comfortably in GitHub/Markdown rendering.
+            longest = max(len(line) for line in lines)
+            if longest > 120:
+                raise AssertionError(f"{name}: long unwrapped display line ({longest} chars)")
+        for line in lines:
+            stripped = line.lstrip()
+            # Ignore alignment anchors/environment lines, then enforce the
+            # project's continuation-line convention.
+            if stripped.startswith("&"):
+                stripped = stripped[1:].lstrip()
+            if stripped.startswith(("=", "+", "-", r"\times", r"\cdot")):
+                raise AssertionError(f"{name}: display continuation begins with operator: {line!r}")
+
+
 expected = {
     "2loop_crossed_ladder_full.md": ("Crossed ladder", "crossed_ladder_2loop_bare.tex"),
     "2loop_ordinary_ladder_full.md": ("Ordinary ladder", "ordinary_ladder_2loop_bare.tex"),
@@ -21,10 +46,17 @@ for name, tokens in expected.items():
     if not path.exists():
         raise AssertionError(f"missing generated report: {name}")
     text = path.read_text(encoding="utf-8")
-    required = ("## 1. Raw input expressions", "## 2. Complete calculation-process guide", "## 3. Recorded runtime artifacts", *tokens)
+    required = (
+        "## 1. Raw input expressions",
+        "## 2. Complete calculation-process guide",
+        "## 3. Recorded runtime artifacts",
+        "Long display equations are wrapped automatically",
+        *tokens,
+    )
     for token in required:
         if token not in text:
             raise AssertionError(f"{name}: missing token {token!r}")
+    validate_math_layout(name, text)
 
 master = ROOT / "output" / "2loop_all_7diagrams_full.md"
 if not master.exists():
@@ -42,7 +74,9 @@ for token in (
 ):
     if token not in master_text:
         raise AssertionError(f"master report missing token {token!r}")
+validate_math_layout(master.name, master_text)
 
 print("Phase-84 full two-loop process report validation PASS")
 print("generated reports = 6")
+print("math layout validation = PASS")
 print("master =", master)
