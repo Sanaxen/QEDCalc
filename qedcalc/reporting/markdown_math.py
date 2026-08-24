@@ -6,9 +6,10 @@ presentation only, by recursively defined local proxy symbols.
 
 Recursive decomposition order:
 1. whole fractions -> numerator / denominator proxies;
-2. top-level sums and differences;
-3. explicit top-level products (``\\times`` / ``\\cdot``);
-4. implicit products, preferring original source-line boundaries and then safe
+2. whole outer grouping such as ``\\left(...\\right)`` -> inner proxy;
+3. top-level sums and differences;
+4. explicit top-level products (``\\times`` / ``\\cdot``);
+5. implicit products, preferring original source-line boundaries and then safe
    top-level whitespace boundaries.
 
 If a proxy definition is still too long, the same process is applied again.
@@ -61,7 +62,6 @@ def _read_braced(text: str, start: int) -> tuple[str, int] | None:
 
 
 def _whole_fraction(expr: str) -> tuple[str, str, str] | None:
-    """Parse an expression that is exactly optional-sign ``\\frac{N}{D}``."""
     s = _compact(expr)
     sign = ""
     if s.startswith("-"):
@@ -85,6 +85,48 @@ def _whole_fraction(expr: str) -> tuple[str, str, str] | None:
     if s[pos:].strip():
         return None
     return sign, numerator.strip(), denominator.strip()
+
+
+def _whole_outer_group(expr: str) -> tuple[str, str, str] | None:
+    """Return (open, inner, close) when one pair encloses the whole expression."""
+    s = _compact(expr)
+    pairs = (
+        (r"\left(", r"\right)"),
+        (r"\left[", r"\right]"),
+        (r"\left\{", r"\right\}"),
+        ("(", ")"),
+        ("[", "]"),
+    )
+    for opening, closing in pairs:
+        if not (s.startswith(opening) and s.endswith(closing)):
+            continue
+        inner_start = len(opening)
+        inner_end = len(s) - len(closing)
+        inner = s[inner_start:inner_end].strip()
+        if not inner:
+            continue
+
+        # Verify that the outer delimiter really remains open until the end.
+        if opening in ("(", "["):
+            left_char = opening
+            right_char = closing
+            depth = 0
+            valid = True
+            for i, ch in enumerate(s):
+                if ch == left_char:
+                    depth += 1
+                elif ch == right_char:
+                    depth -= 1
+                    if depth == 0 and i != len(s) - 1:
+                        valid = False
+                        break
+            if not valid or depth != 0:
+                continue
+        # For \left...\right forms, SymPy-produced expressions use balanced
+        # delimiter pairs. A matching terminal \right token is sufficient for
+        # this presentation-only decomposition.
+        return opening, inner, closing
+    return None
 
 
 def _top_level_ops(expr: str, operators: tuple[str, ...]) -> list[tuple[int, str]]:
@@ -118,11 +160,9 @@ def _top_level_ops(expr: str, operators: tuple[str, ...]) -> list[tuple[int, str
 
 
 def _source_line_product_split(expr: str) -> tuple[str, str, str] | None:
-    """Split an implicit product at an original source newline near its middle."""
     lines = [line.strip() for line in expr.splitlines() if line.strip()]
     if len(lines) < 2:
         return None
-    # Pick a balanced cut by visible width, not simply by line count.
     total = sum(_visible_len(line) for line in lines)
     running = 0
     best_index = 1
@@ -141,7 +181,6 @@ def _source_line_product_split(expr: str) -> tuple[str, str, str] | None:
 
 
 def _top_level_space_positions(expr: str) -> list[int]:
-    """Find safe top-level whitespace boundaries for implicit multiplication."""
     positions: list[int] = []
     brace = paren = bracket = 0
     i = 0
@@ -165,7 +204,6 @@ def _top_level_space_positions(expr: str) -> list[int]:
             left = expr[:start].rstrip()
             right = expr[i:].lstrip()
             if left and right:
-                # Avoid separating a binding operator from its immediate measure.
                 if not any(left.endswith(cmd) for cmd in _BINDING_COMMANDS):
                     if not right.startswith(("d^", r"\limits", "_", "^")):
                         positions.append(start)
@@ -189,7 +227,6 @@ def _implicit_product_split(expr: str) -> tuple[str, str, str] | None:
 
 
 def _best_binary_split(expr: str, original_expr: str | None = None) -> tuple[str, str, str] | None:
-    """Split near the middle, preferring algebraic then implicit-product boundaries."""
     s = _compact(expr)
     if not s:
         return None
@@ -227,7 +264,7 @@ def _proxy_name(base: str, path: tuple[int, ...]) -> str:
 @dataclass
 class _ProxyFormatter:
     max_width: int
-    max_depth: int = 20
+    max_depth: int = 24
 
     def definition_blocks(self, base: str, path: tuple[int, ...], expr: str,
                           depth: int = 0) -> list[str]:
@@ -246,6 +283,15 @@ class _ProxyFormatter:
             blocks = [self._display(root)]
             blocks += self.definition_blocks(base, path + (1,), numerator, depth + 1)
             blocks += self.definition_blocks(base, path + (2,), denominator, depth + 1)
+            return blocks
+
+        group = _whole_outer_group(rhs)
+        if group is not None:
+            opening, inner, closing = group
+            child = _proxy_name(base, path + (1,))
+            root = rf"{name}={opening}{child}{closing}"
+            blocks = [self._display(root)]
+            blocks += self.definition_blocks(base, path + (1,), inner, depth + 1)
             return blocks
 
         split = _best_binary_split(rhs, expr)
@@ -285,8 +331,9 @@ def _safe_plain_wrap(expr: str, max_width: int) -> str:
         return f"$$\n{expr.strip()}\n$$"
 
     formatter = _ProxyFormatter(max_width=max_width)
+    group = _whole_outer_group(s)
     split = _best_binary_split(s, expr)
-    if split is None:
+    if group is None and split is None:
         return f"$$\n{s}\n$$"
     blocks = formatter.definition_blocks("E", (1,), expr)
     blocks.append(formatter._display(_proxy_name("E", (1,))))
@@ -294,7 +341,6 @@ def _safe_plain_wrap(expr: str, max_width: int) -> str:
 
 
 def format_markdown_math(text: str, max_width: int = 92) -> str:
-    """Format display equations with recursive proxy decomposition."""
     parts = text.split("$$")
     if len(parts) < 3:
         return text
