@@ -10,7 +10,8 @@ Recursive decomposition order:
 3. whole outer grouping such as ``\\left(...\\right)`` -> inner proxy;
 4. top-level sums and differences;
 5. explicit top-level products (``\\times`` / ``\\cdot``);
-6. implicit products, preferring original source-line boundaries and then safe
+6. implicit products, preferring original source-line boundaries, LaTeX spacing
+   commands such as ``\\,`` / ``\\;`` / ``\\:`` / ``\\quad``, and then safe
    top-level whitespace boundaries.
 
 If a proxy definition is still too long, the same process is applied again.
@@ -28,6 +29,7 @@ _STRUCTURED = (
 )
 
 _BINDING_COMMANDS = (r"\int", r"\iint", r"\iiint", r"\oint", r"\sum", r"\prod", r"\lim")
+_SPACING_COMMANDS = (r"\qquad", r"\quad", r"\,", r"\;", r"\:")
 _LEFT_RIGHT_PAIRS = {
     "(": ")",
     "[": "]",
@@ -260,6 +262,71 @@ def _source_line_product_split(expr: str) -> tuple[str, str, str] | None:
     return None
 
 
+def _top_level_spacing_positions(expr: str) -> list[tuple[int, str]]:
+    """Find presentation-spacing tokens that separate top-level implicit factors."""
+    positions: list[tuple[int, str]] = []
+    brace = paren = bracket = 0
+    lr_depth = 0
+    i = 0
+    while i < len(expr):
+        left = _left_delimiter_at(expr, i)
+        if left is not None:
+            lr_depth += 1
+            i = left[1]
+            continue
+        right = _right_delimiter_at(expr, i)
+        if right is not None:
+            lr_depth = max(0, lr_depth - 1)
+            i = right[1]
+            continue
+
+        matched_spacing = None
+        if brace == paren == bracket == lr_depth == 0:
+            for token in _SPACING_COMMANDS:
+                if expr.startswith(token, i):
+                    matched_spacing = token
+                    break
+        if matched_spacing is not None:
+            left_text = expr[:i].rstrip()
+            right_text = expr[i + len(matched_spacing):].lstrip()
+            if left_text and right_text:
+                positions.append((i, matched_spacing))
+            i += len(matched_spacing)
+            continue
+
+        ch = expr[i]
+        if ch == "\\":
+            m = re.match(r"\\[A-Za-z]+", expr[i:])
+            if m:
+                i += len(m.group(0))
+                continue
+        if ch == "{": brace += 1
+        elif ch == "}": brace = max(0, brace - 1)
+        elif ch == "(": paren += 1
+        elif ch == ")": paren = max(0, paren - 1)
+        elif ch == "[": bracket += 1
+        elif ch == "]": bracket = max(0, bracket - 1)
+        i += 1
+    return positions
+
+
+def _spacing_product_split(expr: str) -> tuple[str, str, str] | None:
+    s = _compact(expr)
+    positions = _top_level_spacing_positions(s)
+    if not positions:
+        return None
+    midpoint = len(s) / 2
+    pos, token = min(positions, key=lambda item: abs(item[0] - midpoint))
+    left = s[:pos].strip()
+    right = s[pos + len(token):].strip()
+    if left and right:
+        # The original spacing token is presentation-only.  The proxy relation
+        # preserves the juxtaposition as an implicit product with standard thin
+        # spacing, independent of which spacing command SymPy emitted.
+        return left, "", right
+    return None
+
+
 def _top_level_space_positions(expr: str) -> list[int]:
     positions: list[int] = []
     brace = paren = bracket = 0
@@ -306,6 +373,11 @@ def _top_level_space_positions(expr: str) -> list[int]:
 
 def _implicit_product_split(expr: str) -> tuple[str, str, str] | None:
     s = _compact(expr)
+
+    spacing_split = _spacing_product_split(s)
+    if spacing_split is not None:
+        return spacing_split
+
     positions = _top_level_space_positions(s)
     if not positions:
         end = _matching_left_right_end(s, 0)
