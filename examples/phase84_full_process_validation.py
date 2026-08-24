@@ -1,12 +1,26 @@
 """Validate Phase 84 full two-loop process-report generation using stdlib only."""
 from __future__ import annotations
 
+import re
 import runpy
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
 runpy.run_path(str(ROOT / "examples" / "phase84_two_loop_full_process_report.py"), run_name="__main__")
+
+
+def display_width(source: str) -> int:
+    """Use the same lightweight rendered-width proxy as the report formatter.
+
+    Raw LaTeX source length is a poor proxy for visual width: for example,
+    ``\\frac``, ``\\gamma`` and ``\\rlap`` contain many source characters but
+    render as compact mathematical objects.  Phase 84 therefore validates the
+    estimated rendered width rather than ``len(source)``.
+    """
+    text = re.sub(r"\\[A-Za-z]+", "X", source)
+    text = text.replace("{", "").replace("}", "")
+    return len(text)
 
 
 def validate_math_layout(name: str, text: str) -> None:
@@ -28,9 +42,12 @@ def validate_math_layout(name: str, text: str) -> None:
         )
 
         if not aligned and not other_structured:
-            longest = max(len(line) for line in lines)
-            if longest > 120:
-                raise AssertionError(f"{name}: long unwrapped display line ({longest} chars)")
+            longest = max(display_width(line) for line in lines)
+            if longest > 110:
+                raise AssertionError(
+                    f"{name}: long unwrapped display line "
+                    f"(estimated width {longest})"
+                )
             continue
 
         if other_structured and not aligned:
@@ -51,15 +68,20 @@ def validate_math_layout(name: str, text: str) -> None:
             if in_aligned:
                 if stripped.startswith("&"):
                     stripped = stripped[1:].lstrip()
-                # Remove a presentation row break before length/operator checks.
+                # Remove a presentation row break before width/operator checks.
                 if stripped.endswith(r"\\"):
                     stripped = stripped[:-2].rstrip()
                 math_rows.append(stripped)
 
         for row_no, row in enumerate(math_rows, 1):
-            if len(row) > 140:
+            width = display_width(row)
+            # The formatter targets 92 estimated display characters. A small
+            # allowance is kept for source constructs whose true MathJax width is
+            # difficult to estimate without a renderer.
+            if width > 110:
                 raise AssertionError(
-                    f"{name}: overlong aligned row {row_no} ({len(row)} chars)"
+                    f"{name}: overlong aligned row {row_no} "
+                    f"(estimated width {width}, raw chars {len(row)})"
                 )
             if row_no > 1 and row.startswith(("=", "+", "-", r"\times", r"\cdot")):
                 raise AssertionError(
