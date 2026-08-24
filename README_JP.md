@@ -1,4 +1,6 @@
-# QEDCalc v0.70.0
+# QEDCalc v0.90.0
+
+<img src=https://github.com/Sanaxen/QEDCalc/blob/main/qed_diagrams_2loop.png>  
 
 QEDCalc は、QED の長い計算を小さな処理関数へ分解し、人間が物理的な手順を決めながら計算を進めるための試作ツールです。
 
@@ -14,10 +16,10 @@ v0.10.0 以降は、2ループ以上へ拡張するための多ループ基盤�
 
 ## ドキュメント
 
-- `README.md`：日本語クイックスタート
-- `README_EN.md`：English Quick Start
-- `REFERENCE.md`：日本語リファレンスマニュアル
-- `REFERENCE_EN.md`：English Reference Manual
+- `README_JP.md`：日本語クイックスタート
+- `README.md`：English Quick Start
+- `REFERENCE_JP.md`：日本語リファレンスマニュアル
+- `REFERENCE.md`：English Reference Manual
 - `CHANGELOG.md`：変更履歴
 - `ROADMAP.md`：開発ロードマップ
 
