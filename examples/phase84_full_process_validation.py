@@ -16,21 +16,36 @@ def validate_math_layout(name: str, text: str) -> None:
         lines = [line.rstrip() for line in block.splitlines() if line.strip()]
         if not lines:
             continue
+
         structured = any("\\begin{" in line for line in lines)
         if not structured:
-            # A remaining unstructured display block should be short enough to
-            # fit comfortably in GitHub/Markdown rendering.
             longest = max(len(line) for line in lines)
             if longest > 120:
                 raise AssertionError(f"{name}: long unwrapped display line ({longest} chars)")
+            # A short standalone expression is allowed to begin with a unary
+            # minus. The no-operator-at-line-start rule concerns continuation
+            # lines created by wrapping.
+            continue
+
+        # For aligned displays, verify continuation rows after the first
+        # mathematical row. Environment declarations are skipped.
+        math_rows = []
+        in_aligned = False
         for line in lines:
-            stripped = line.lstrip()
-            # Ignore alignment anchors/environment lines, then enforce the
-            # project's continuation-line convention.
-            if stripped.startswith("&"):
-                stripped = stripped[1:].lstrip()
-            if stripped.startswith(("=", "+", "-", r"\times", r"\cdot")):
-                raise AssertionError(f"{name}: display continuation begins with operator: {line!r}")
+            stripped = line.strip()
+            if stripped.startswith(r"\begin{aligned"):
+                in_aligned = True
+                continue
+            if stripped.startswith(r"\end{aligned"):
+                in_aligned = False
+                continue
+            if in_aligned:
+                if stripped.startswith("&"):
+                    stripped = stripped[1:].lstrip()
+                math_rows.append(stripped)
+        for row in math_rows[1:]:
+            if row.startswith(("=", "+", "-", r"\times", r"\cdot")):
+                raise AssertionError(f"{name}: wrapped continuation begins with operator: {row!r}")
 
 
 expected = {
