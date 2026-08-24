@@ -5,11 +5,12 @@ an arbitrary TeX brace group. Long expressions are instead replaced, for
 presentation only, by recursively defined local proxy symbols.
 
 Recursive decomposition order:
-1. whole fractions -> numerator / denominator proxies;
-2. whole outer grouping such as ``\\left(...\\right)`` -> inner proxy;
-3. top-level sums and differences;
-4. explicit top-level products (``\\times`` / ``\\cdot``);
-5. implicit products, preferring original source-line boundaries and then safe
+1. top-level assignment -> keep the physical left-hand side, proxy the RHS;
+2. whole fractions -> numerator / denominator proxies;
+3. whole outer grouping such as ``\\left(...\\right)`` -> inner proxy;
+4. top-level sums and differences;
+5. explicit top-level products (``\\times`` / ``\\cdot``);
+6. implicit products, preferring original source-line boundaries and then safe
    top-level whitespace boundaries.
 
 If a proxy definition is still too long, the same process is applied again.
@@ -119,12 +120,6 @@ def _right_delimiter_at(s: str, pos: int) -> tuple[str, int] | None:
 
 
 def _matching_left_right_end(s: str, start: int = 0) -> int | None:
-    """Return the end index of the matching outer ``\\right...`` delimiter.
-
-    Nested ``\\left...\\right`` pairs are tracked explicitly.  This avoids the
-    earlier false assumption that a terminal ``\\right)`` necessarily matched
-    the first ``\\left(``.
-    """
     first = _left_delimiter_at(s, start)
     if first is None:
         return None
@@ -152,9 +147,7 @@ def _matching_left_right_end(s: str, start: int = 0) -> int | None:
 
 
 def _whole_outer_group(expr: str) -> tuple[str, str, str] | None:
-    """Return (opening, inner, closing) when one group encloses the whole RHS."""
     s = _compact(expr)
-
     lr = _left_delimiter_at(s, 0)
     if lr is not None:
         opening_token, content_start = lr
@@ -167,7 +160,6 @@ def _whole_outer_group(expr: str) -> tuple[str, str, str] | None:
             if inner:
                 return r"\left" + opening_token, inner, closing_source
 
-    # Plain (...) / [...] outer groups.
     for opening, closing in (("(", ")"), ("[", "]")):
         if not (s.startswith(opening) and s.endswith(closing)):
             continue
@@ -231,6 +223,20 @@ def _top_level_ops(expr: str, operators: tuple[str, ...]) -> list[tuple[int, str
             found.append((i, ch))
         i += 1
     return found
+
+
+def _top_level_assignment(expr: str) -> tuple[str, str] | None:
+    """Split one semantic top-level assignment into LHS and RHS."""
+    s = _compact(expr)
+    matches = _top_level_ops(s, ("=",))
+    if len(matches) != 1:
+        return None
+    pos, _ = matches[0]
+    lhs = s[:pos].strip()
+    rhs = s[pos + 1:].strip()
+    if not lhs or not rhs:
+        return None
+    return lhs, rhs
 
 
 def _source_line_product_split(expr: str) -> tuple[str, str, str] | None:
@@ -302,9 +308,6 @@ def _implicit_product_split(expr: str) -> tuple[str, str, str] | None:
     s = _compact(expr)
     positions = _top_level_space_positions(s)
     if not positions:
-        # If the expression begins with a complete \left...\right group followed
-        # by another factor without a safe whitespace candidate, split directly
-        # after that matched group.
         end = _matching_left_right_end(s, 0)
         if end is not None and end < len(s):
             left = s[:end].strip()
@@ -417,6 +420,13 @@ class _ProxyFormatter:
         blocks.append(self._display(rf"{sign}\frac{{{n_name}}}{{{d_name}}}"))
         return "\n\n".join(blocks)
 
+    def assignment_blocks(self, lhs: str, rhs: str, index: int) -> str:
+        """Keep a semantic LHS visible and recursively proxy only its long RHS."""
+        root = _proxy_name("E", (index,))
+        blocks = [self._display(rf"{lhs}={root}")]
+        blocks += self.definition_blocks("E", (index,), rhs)
+        return "\n\n".join(blocks)
+
 
 def _safe_plain_wrap(expr: str, max_width: int) -> str:
     s = _compact(expr)
@@ -426,6 +436,11 @@ def _safe_plain_wrap(expr: str, max_width: int) -> str:
         return f"$$\n{expr.strip()}\n$$"
 
     formatter = _ProxyFormatter(max_width=max_width)
+    assignment = _top_level_assignment(s)
+    if assignment is not None:
+        lhs, rhs = assignment
+        return formatter.assignment_blocks(lhs, rhs, 1)
+
     group = _whole_outer_group(s)
     split = _best_binary_split(s, expr)
     if group is None and split is None:
