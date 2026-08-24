@@ -14,10 +14,10 @@ v0.10.0 以降は、2ループ以上へ拡張するための多ループ基盤�
 
 ## ドキュメント
 
-- `README.md`：日本語クイックスタート
-- `README_EN.md`：English Quick Start
-- `REFERENCE.md`：日本語リファレンスマニュアル
-- `REFERENCE_EN.md`：English Reference Manual
+- `README_JP.md`：日本語クイックスタート
+- `README.md`：English Quick Start
+- `REFERENCE_JP.md`：日本語リファレンスマニュアル
+- `REFERENCE.md`：English Reference Manual
 - `CHANGELOG.md`：変更履歴
 - `ROADMAP.md`：開発ロードマップ
 
