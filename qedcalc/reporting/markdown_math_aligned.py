@@ -13,9 +13,9 @@ pair, for example::
     C
     \\end{aligned}\\right)
 
-The same rule is applied when the long group is embedded in a product such as
-``\\bar u(p')\\,\\left[ ... \\right]\\,u(p)``: the spinors stay outside and
-only the structurally complete bracket contents are reformatted.
+The same rule is applied recursively when a long group is embedded in a product
+such as ``\\bar u(p')\\,\\left[ ... \\right]\\,u(p)`` or when one aligned row
+still contains a long factor such as ``2\\left(A+B+C+...\\right)``.
 
 This preserves TeX delimiter balance and keeps continuation rows from starting
 with ``=``, ``+`` or ``-``.
@@ -23,6 +23,8 @@ with ``=``, ``+`` or ``-``.
 from __future__ import annotations
 
 from . import markdown_math as _base
+
+_MAX_RECURSION = 12
 
 
 def _additive_parts(expr: str) -> list[tuple[str, str | None]] | None:
@@ -95,8 +97,37 @@ def _signed_outer_group(expr: str):
     return sign, opening, inner, closing
 
 
-def _wrap_outer_group(expr: str, max_width: int) -> str | None:
+def _refine_rows(rows: list[str], max_width: int, depth: int) -> list[str]:
+    """Recursively reformat any aligned row that still exceeds ``max_width``.
+
+    The refinement never inserts a row break through a delimiter pair.  It only
+    descends into a *complete* embedded ``\\left...\\right`` group and places a
+    nested aligned environment inside that group when the group's own contents
+    have safe additive boundaries.
+    """
+    if depth >= _MAX_RECURSION:
+        return rows
+
+    refined: list[str] = []
+    for row in rows:
+        if _base._visible_len(row) <= max_width:
+            refined.append(row)
+            continue
+
+        wrapped = _wrap_embedded_group(row, max_width, depth + 1)
+        if wrapped is None:
+            wrapped = _wrap_outer_group(row, max_width, depth + 1)
+
+        refined.append(wrapped if wrapped is not None else row)
+
+    return refined
+
+
+def _wrap_outer_group(expr: str, max_width: int, depth: int = 0) -> str | None:
     """Put aligned inside a complete outer delimiter pair."""
+    if depth >= _MAX_RECURSION:
+        return None
+
     parsed = _signed_outer_group(expr)
     if parsed is None:
         return None
@@ -106,10 +137,11 @@ def _wrap_outer_group(expr: str, max_width: int) -> str | None:
     if rows is None or len(rows) < 2:
         return None
 
+    rows = _refine_rows(rows, max_width, depth + 1)
     return f"{sign}{opening}{_rows_to_aligned(rows)}{closing}"
 
 
-def _wrap_embedded_group(expr: str, max_width: int) -> str | None:
+def _wrap_embedded_group(expr: str, max_width: int, depth: int = 0) -> str | None:
     """Wrap a long complete ``\\left...\\right`` group embedded in a product.
 
     Example input::
@@ -118,8 +150,12 @@ def _wrap_embedded_group(expr: str, max_width: int) -> str | None:
 
     The outer spinor factors remain untouched.  The complete square-bracket
     pair remains untouched.  Only the long expression *inside* that pair is
-    reformatted, and any nested complete round-bracket pair is also preserved.
+    reformatted.  If an aligned row still contains a long complete group, the
+    same operation is applied recursively inside that group.
     """
+    if depth >= _MAX_RECURSION:
+        return None
+
     s = _base._compact(expr)
     i = 0
     while i < len(s):
@@ -140,19 +176,23 @@ def _wrap_embedded_group(expr: str, max_width: int) -> str | None:
         inner = s[content_start:inner_end].strip()
 
         if inner and _base._visible_len(inner) > max_width:
-            # First handle the common nested form -\left(long sum\right).
-            wrapped_inner = _wrap_outer_group(inner, max_width)
+            # First handle a nested whole form such as -\left(long sum\right).
+            wrapped_inner = _wrap_outer_group(inner, max_width, depth + 1)
 
-            # Otherwise the bracket itself may directly contain a long sum.
+            # Otherwise the group itself may directly contain a long sum.
             if wrapped_inner is None:
                 rows = _additive_rows(inner, max_width)
                 if rows is not None and len(rows) >= 2:
+                    rows = _refine_rows(rows, max_width, depth + 1)
                     wrapped_inner = _rows_to_aligned(rows)
 
+            # A direct additive split may have produced one or more rows that
+            # still contain oversized nested groups.  The recursion above will
+            # descend into those groups without ever separating left/right.
             if wrapped_inner is not None:
                 prefix = s[:i]
                 suffix = s[end:]
-                return (
+                candidate = (
                     prefix
                     + opening_source
                     + wrapped_inner
@@ -160,8 +200,13 @@ def _wrap_embedded_group(expr: str, max_width: int) -> str | None:
                     + suffix
                 )
 
+                # If the surrounding product is still long, try the next nested
+                # group on a later recursive pass; do not split the product at an
+                # unsafe arbitrary character boundary.
+                return candidate
+
         # This complete pair could not be usefully wrapped.  Continue after it;
-        # never inspect a split point inside the pair itself.
+        # never inspect a split point inside the pair itself at this level.
         i = end
 
     return None
@@ -185,6 +230,7 @@ def _wrap_assignment(expr: str, max_width: int) -> str | None:
     if rhs_rows is None or len(rhs_rows) < 2:
         return None
 
+    rhs_rows = _refine_rows(rhs_rows, max_width, 0)
     lines = [f"{lhs} &= {rhs_rows[0]}"]
     lines.extend(f"&\quad {row}" for row in rhs_rows[1:])
     return _rows_to_aligned(lines)
@@ -211,6 +257,7 @@ def _format_display(block: str, max_width: int) -> str:
 
     rows = _additive_rows(raw, max_width)
     if rows is not None and len(rows) >= 2:
+        rows = _refine_rows(rows, max_width, 0)
         return _rows_to_aligned(rows)
 
     # Deliberately leave an indivisible expression unchanged rather than
@@ -222,7 +269,8 @@ def format_markdown_math_aligned(markdown: str, max_width: int = 92) -> str:
     """Wrap long ``$$ ... $$`` blocks with structurally safe aligned rows.
 
     This is presentation-only.  It never introduces proxy variables and never
-    splits a ``\\left ... \\right`` pair across rows.  Expressions that cannot
+    splits a ``\\left ... \\right`` pair across rows.  Oversized rows are
+    recursively refined inside complete nested groups.  Expressions that cannot
     be split safely are left unchanged.
     """
     parts = markdown.split("$$")
