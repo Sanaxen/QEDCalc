@@ -1,4 +1,0 @@
-nK,nL,nH,n1,n2,n3,n4,impact,first_neighbors,first_pivots,depth2_directional_seeds,probe1_pivots,probe2_pivots,probe3_pivots,stable_across_probes
-0,1,0,0,1,0,2,18,7,0,7,0,0,0,True
-0,1,1,1,0,1,1,6,7,0,5,0,0,0,True
-0,1,1,1,1,0,2,6,7,0,7,0,0,0,True
