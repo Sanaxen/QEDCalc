@@ -96,6 +96,49 @@ def read_braced_content(source: str, start: int) -> tuple[str, int] | None:
     return None
 
 
+def whole_fraction_parts(source: str) -> tuple[str, str] | None:
+    """Return numerator/denominator when the complete display is one fraction."""
+    s = " ".join(line.strip() for line in source.splitlines() if line.strip())
+    if s.startswith("-"):
+        s = s[1:].lstrip()
+    if not s.startswith(r"\frac"):
+        return None
+
+    i = len(r"\frac")
+    while i < len(s) and s[i].isspace():
+        i += 1
+    numerator = read_braced_content(s, i)
+    if numerator is None:
+        return None
+    num_text, i = numerator
+
+    while i < len(s) and s[i].isspace():
+        i += 1
+    denominator = read_braced_content(s, i)
+    if denominator is None:
+        return None
+    den_text, i = denominator
+
+    if s[i:].strip():
+        return None
+    return num_text.strip(), den_text.strip()
+
+
+def effective_display_width(source: str) -> int:
+    """Estimate rendered horizontal width rather than raw TeX source width.
+
+    A fraction places numerator and denominator vertically, so its horizontal
+    width is controlled by the wider argument, not by the sum of both source
+    lengths.  This prevents valid compact fractions from being flagged merely
+    because their TeX source is long.
+    """
+    fraction = whole_fraction_parts(source)
+    if fraction is None:
+        return display_width(source)
+    numerator, denominator = fraction
+    return max(display_width(numerator), display_width(denominator)) + 4
+
+
 def aligned_inside_fraction(source: str) -> bool:
     """Detect an aligned environment actually nested in a fraction argument.
 
@@ -198,7 +241,7 @@ def validate_math_layout(name: str, text: str) -> None:
                         )
             continue
 
-        width = display_width(block)
+        width = effective_display_width(block)
         if width > 110:
             raise AssertionError(
                 f"{name}: long unsplit display remains "
