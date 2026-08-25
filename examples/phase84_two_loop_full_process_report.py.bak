@@ -17,7 +17,6 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from qedcalc.reporting import format_markdown_math
-from qedcalc.reporting import format_markdown_math_aligned
 
 INPUT = ROOT / "input"
 OUTPUT = ROOT / "output"
@@ -104,8 +103,7 @@ def demote(md: str) -> str:
 
 def readable(md: str) -> str:
     """Apply presentation-only display-math wrapping after heading adjustment."""
-    #return format_markdown_math(md, max_width=92)
-    return format_markdown_math_aligned(md, max_width=92)
+    return format_markdown_math(md, max_width=92)
 
 
 def nlines(path: Path) -> int:

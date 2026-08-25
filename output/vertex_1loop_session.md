@@ -1,10 +1,10 @@
 # QED 1-loop vertex correction - calculation session
 
-Generated: 2026-08-22T12:27:37
+Generated: 2026-08-25T20:08:08
 
 ## Version
 
-QEDCalc v0.28.0
+QEDCalc v0.90.0
 
 ## Symbol definitions
 
@@ -17,7 +17,7 @@ QEDCalc v0.28.0
 
 ## Input file
 
-`input/vertex_1loop_integrand.tex`
+`input\vertex_1loop_integrand.tex`
 
 ## Original input
 
@@ -35,7 +35,15 @@ $$
 ## Numerator after symmetric loop reduction
 
 $$
--\left(-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 4\left(m\,p'_{\mu}\right) - 2\left(\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p'\right) + 2\left(x\,\rlap{/}p'\,\gamma_{\mu}\,\rlap{/}p' + y\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p'\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 2\left(\rlap{/}p\,\gamma_{\mu}\,x\,\rlap{/}p' + \rlap{/}p\,\gamma_{\mu}\,y\,\rlap{/}p\right) - 2\left(- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + x\,\rlap{/}p'\,\gamma_{\mu}\,x\,\rlap{/}p' + x\,\rlap{/}p'\,\gamma_{\mu}\,y\,\rlap{/}p + y\,\rlap{/}p\,\gamma_{\mu}\,x\,\rlap{/}p' + y\,\rlap{/}p\,\gamma_{\mu}\,y\,\rlap{/}p\right)\right)
+-\left(\begin{aligned}
+-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 4\left(m\,p'_{\mu}\right) {}- \\
+2\left(\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p'\right) + 2\left(x\,\rlap{/}p'\,\gamma_{\mu}\,\rlap{/}p' + y\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p'\right) {}- \\
+4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 2\left(\rlap{/}p\,\gamma_{\mu}\,x\,\rlap{/}p' + \rlap{/}p\,\gamma_{\mu}\,y\,\rlap{/}p\right) {}- \\
+2\left(\begin{aligned}
+- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + x\,\rlap{/}p'\,\gamma_{\mu}\,x\,\rlap{/}p' + x\,\rlap{/}p'\,\gamma_{\mu}\,y\,\rlap{/}p + y\,\rlap{/}p\,\gamma_{\mu}\,x\,\rlap{/}p' {}+ \\
+y\,\rlap{/}p\,\gamma_{\mu}\,y\,\rlap{/}p
+\end{aligned}\right)
+\end{aligned}\right)
 $$
 
 ## Step 15: Non-commutative normalization
@@ -43,7 +51,15 @@ $$
 ### Input
 
 $$
--\left(-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 4\left(m\,p'_{\mu}\right) - 2\left(\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p'\right) + 2\left(x\,\rlap{/}p'\,\gamma_{\mu}\,\rlap{/}p' + y\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p'\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 2\left(\rlap{/}p\,\gamma_{\mu}\,x\,\rlap{/}p' + \rlap{/}p\,\gamma_{\mu}\,y\,\rlap{/}p\right) - 2\left(- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + x\,\rlap{/}p'\,\gamma_{\mu}\,x\,\rlap{/}p' + x\,\rlap{/}p'\,\gamma_{\mu}\,y\,\rlap{/}p + y\,\rlap{/}p\,\gamma_{\mu}\,x\,\rlap{/}p' + y\,\rlap{/}p\,\gamma_{\mu}\,y\,\rlap{/}p\right)\right)
+-\left(\begin{aligned}
+-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 4\left(m\,p'_{\mu}\right) {}- \\
+2\left(\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p'\right) + 2\left(x\,\rlap{/}p'\,\gamma_{\mu}\,\rlap{/}p' + y\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p'\right) {}- \\
+4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 2\left(\rlap{/}p\,\gamma_{\mu}\,x\,\rlap{/}p' + \rlap{/}p\,\gamma_{\mu}\,y\,\rlap{/}p\right) {}- \\
+2\left(\begin{aligned}
+- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + x\,\rlap{/}p'\,\gamma_{\mu}\,x\,\rlap{/}p' + x\,\rlap{/}p'\,\gamma_{\mu}\,y\,\rlap{/}p + y\,\rlap{/}p\,\gamma_{\mu}\,x\,\rlap{/}p' {}+ \\
+y\,\rlap{/}p\,\gamma_{\mu}\,y\,\rlap{/}p
+\end{aligned}\right)
+\end{aligned}\right)
 $$
 
 ### Applied rule
@@ -53,7 +69,15 @@ Move commutative scalar coefficients outside slash/gamma chains so the Dirac ord
 ### Output
 
 $$
--\left(-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 4\left(m\,p'_{\mu}\right) - 2\left(\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p'\right) + 2\left(x\,\rlap{/}p'\,\gamma_{\mu}\,\rlap{/}p' + y\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p'\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 2\left(x\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p' + y\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p\right) - 2\left(- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + x\,x\,\rlap{/}p'\,\gamma_{\mu}\,\rlap{/}p' + x\,y\,\rlap{/}p'\,\gamma_{\mu}\,\rlap{/}p + y\,x\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p' + y\,y\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p\right)\right)
+-\left(\begin{aligned}
+-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 4\left(m\,p'_{\mu}\right) {}- \\
+2\left(\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p'\right) + 2\left(x\,\rlap{/}p'\,\gamma_{\mu}\,\rlap{/}p' + y\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p'\right) {}- \\
+4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 2\left(x\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p' + y\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p\right) {}- \\
+2\left(\begin{aligned}
+- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + x\,x\,\rlap{/}p'\,\gamma_{\mu}\,\rlap{/}p' + x\,y\,\rlap{/}p'\,\gamma_{\mu}\,\rlap{/}p + y\,x\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p' {}+ \\
+y\,y\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p
+\end{aligned}\right)
+\end{aligned}\right)
 $$
 
 ## Step 16: Exact external Dirac reduction
@@ -61,7 +85,15 @@ $$
 ### Input
 
 $$
--\left(-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 4\left(m\,p'_{\mu}\right) - 2\left(\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p'\right) + 2\left(x\,\rlap{/}p'\,\gamma_{\mu}\,\rlap{/}p' + y\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p'\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 2\left(x\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p' + y\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p\right) - 2\left(- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + x\,x\,\rlap{/}p'\,\gamma_{\mu}\,\rlap{/}p' + x\,y\,\rlap{/}p'\,\gamma_{\mu}\,\rlap{/}p + y\,x\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p' + y\,y\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p\right)\right)
+-\left(\begin{aligned}
+-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 4\left(m\,p'_{\mu}\right) {}- \\
+2\left(\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p'\right) + 2\left(x\,\rlap{/}p'\,\gamma_{\mu}\,\rlap{/}p' + y\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p'\right) {}- \\
+4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 2\left(x\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p' + y\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p\right) {}- \\
+2\left(\begin{aligned}
+- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + x\,x\,\rlap{/}p'\,\gamma_{\mu}\,\rlap{/}p' + x\,y\,\rlap{/}p'\,\gamma_{\mu}\,\rlap{/}p + y\,x\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p' {}+ \\
+y\,y\,\rlap{/}p\,\gamma_{\mu}\,\rlap{/}p
+\end{aligned}\right)
+\end{aligned}\right)
 $$
 
 ### Applied rule
@@ -71,7 +103,24 @@ Recursively commute /p' left and /p right. Each recursion lowers the distance to
 ### Output
 
 $$
-\bar u(p')\,\left[-\left(-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 4\left(m\,p'_{\mu}\right) - 2\left(2\left(p'_{\mu}\,m\right) - \left(2\left(p\cdot p'\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right) + 2\left(2\left(x\,m\,p'_{\mu}\right) - \left(x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,p'_{\mu}\,m\right) - \left(y\,\left(2\left(p\cdot p'\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right)\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 2\left(2\left(x\,p'_{\mu}\,m\right) - \left(x\,\left(2\left(p\cdot p'\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right) + 2\left(y\,m\,p_{\mu}\right) - \left(y\,m\,m\,\gamma_{\mu}\right)\right) - 2\left(- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + 2\left(x\,x\,m\,p'_{\mu}\right) - \left(x\,x\,m\,m\,\gamma_{\mu}\right) + x\,y\,m\,m\,\gamma_{\mu} + 2\left(y\,x\,p'_{\mu}\,m\right) - \left(y\,x\,\left(2\left(p\cdot p'\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right) + 2\left(y\,y\,m\,p_{\mu}\right) - \left(y\,y\,m\,m\,\gamma_{\mu}\right)\right)\right)\right]\,u(p)
+\bar u(p')\,\left[-\left(\begin{aligned}
+-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 4\left(m\,p'_{\mu}\right) {}- \\
+2\left(2\left(p'_{\mu}\,m\right) - \left(2\left(p\cdot p'\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right) {}+ \\
+2\left(\begin{aligned}
+2\left(x\,m\,p'_{\mu}\right) - \left(x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,p'_{\mu}\,m\right) {}- \\
+\left(y\,\left(2\left(p\cdot p'\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right)
+\end{aligned}\right) {}- \\
+4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) {}+ \\
+2\left(\begin{aligned}
+2\left(x\,p'_{\mu}\,m\right) - \left(x\,\left(2\left(p\cdot p'\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right) {}+ \\
+2\left(y\,m\,p_{\mu}\right) - \left(y\,m\,m\,\gamma_{\mu}\right)
+\end{aligned}\right) {}- \\
+2\left(\begin{aligned}
+- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + 2\left(x\,x\,m\,p'_{\mu}\right) - \left(x\,x\,m\,m\,\gamma_{\mu}\right) + x\,y\,m\,m\,\gamma_{\mu} {}+ \\
+2\left(y\,x\,p'_{\mu}\,m\right) - \left(y\,x\,\left(2\left(p\cdot p'\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right) {}+ \\
+2\left(y\,y\,m\,p_{\mu}\right) - \left(y\,y\,m\,m\,\gamma_{\mu}\right)
+\end{aligned}\right)
+\end{aligned}\right)\right]\,u(p)
 $$
 
 ## Step 17: Momentum-transfer introduction
@@ -79,7 +128,24 @@ $$
 ### Input
 
 $$
-\bar u(p')\,\left[-\left(-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 4\left(m\,p'_{\mu}\right) - 2\left(2\left(p'_{\mu}\,m\right) - \left(2\left(p\cdot p'\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right) + 2\left(2\left(x\,m\,p'_{\mu}\right) - \left(x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,p'_{\mu}\,m\right) - \left(y\,\left(2\left(p\cdot p'\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right)\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 2\left(2\left(x\,p'_{\mu}\,m\right) - \left(x\,\left(2\left(p\cdot p'\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right) + 2\left(y\,m\,p_{\mu}\right) - \left(y\,m\,m\,\gamma_{\mu}\right)\right) - 2\left(- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + 2\left(x\,x\,m\,p'_{\mu}\right) - \left(x\,x\,m\,m\,\gamma_{\mu}\right) + x\,y\,m\,m\,\gamma_{\mu} + 2\left(y\,x\,p'_{\mu}\,m\right) - \left(y\,x\,\left(2\left(p\cdot p'\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right) + 2\left(y\,y\,m\,p_{\mu}\right) - \left(y\,y\,m\,m\,\gamma_{\mu}\right)\right)\right)\right]\,u(p)
+\bar u(p')\,\left[-\left(\begin{aligned}
+-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) + 4\left(m\,p'_{\mu}\right) {}- \\
+2\left(2\left(p'_{\mu}\,m\right) - \left(2\left(p\cdot p'\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right) {}+ \\
+2\left(\begin{aligned}
+2\left(x\,m\,p'_{\mu}\right) - \left(x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,p'_{\mu}\,m\right) {}- \\
+\left(y\,\left(2\left(p\cdot p'\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right)
+\end{aligned}\right) {}- \\
+4\left(m\,x\,p'_{\mu} + m\,y\,p_{\mu}\right) {}+ \\
+2\left(\begin{aligned}
+2\left(x\,p'_{\mu}\,m\right) - \left(x\,\left(2\left(p\cdot p'\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right) {}+ \\
+2\left(y\,m\,p_{\mu}\right) - \left(y\,m\,m\,\gamma_{\mu}\right)
+\end{aligned}\right) {}- \\
+2\left(\begin{aligned}
+- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + 2\left(x\,x\,m\,p'_{\mu}\right) - \left(x\,x\,m\,m\,\gamma_{\mu}\right) + x\,y\,m\,m\,\gamma_{\mu} {}+ \\
+2\left(y\,x\,p'_{\mu}\,m\right) - \left(y\,x\,\left(2\left(p\cdot p'\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right) {}+ \\
+2\left(y\,y\,m\,p_{\mu}\right) - \left(y\,y\,m\,m\,\gamma_{\mu}\right)
+\end{aligned}\right)
+\end{aligned}\right)\right]\,u(p)
 $$
 
 ### Applied rule
@@ -89,7 +155,30 @@ Introduce q = p' - p, apply p^2 = p'^2 = m^2, and use p.q = -q^2/2.
 ### Output
 
 $$
-\bar u(p')\,\left[-\left(-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p_{\mu} + m\,x\,q_{\mu} + m\,y\,p_{\mu}\right) + 4\left(m\,p_{\mu} + m\,q_{\mu}\right) - 2\left(2\left(p_{\mu}\,m + q_{\mu}\,m\right) - \left(2\left(m^{2}\,\gamma_{\mu} - 0.5\left(q\cdot q\,\gamma_{\mu}\right)\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right) + 2\left(2\left(x\,m\,p_{\mu} + x\,m\,q_{\mu}\right) - \left(x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,p_{\mu}\,m + y\,q_{\mu}\,m\right) - \left(2\left(y\,m^{2}\,\gamma_{\mu}\right) - \left(y\,q\cdot q\,\gamma_{\mu}\right) - 2\left(y\,m\,p_{\mu}\right) + y\,m\,m\,\gamma_{\mu}\right)\right) - 4\left(m\,x\,p_{\mu} + m\,x\,q_{\mu} + m\,y\,p_{\mu}\right) + 2\left(2\left(x\,p_{\mu}\,m + x\,q_{\mu}\,m\right) - \left(2\left(x\,m^{2}\,\gamma_{\mu}\right) - \left(x\,q\cdot q\,\gamma_{\mu}\right) - 2\left(x\,m\,p_{\mu}\right) + x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,m\,p_{\mu}\right) - \left(y\,m\,m\,\gamma_{\mu}\right)\right) - 2\left(- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + 2\left(x\,x\,m\,p_{\mu} + x\,x\,m\,q_{\mu}\right) - \left(x\,x\,m\,m\,\gamma_{\mu}\right) + x\,y\,m\,m\,\gamma_{\mu} + 2\left(y\,x\,p_{\mu}\,m + y\,x\,q_{\mu}\,m\right) - \left(2\left(y\,x\,m^{2}\,\gamma_{\mu}\right) - \left(y\,x\,q\cdot q\,\gamma_{\mu}\right) - 2\left(y\,x\,m\,p_{\mu}\right) + y\,x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,y\,m\,p_{\mu}\right) - \left(y\,y\,m\,m\,\gamma_{\mu}\right)\right)\right)\right]\,u(p)
+\bar u(p')\,\left[-\left(\begin{aligned}
+-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p_{\mu} + m\,x\,q_{\mu} + m\,y\,p_{\mu}\right) {}+ \\
+4\left(m\,p_{\mu} + m\,q_{\mu}\right) {}- \\
+2\left(\begin{aligned}
+2\left(p_{\mu}\,m + q_{\mu}\,m\right) {}- \\
+\left(2\left(m^{2}\,\gamma_{\mu} - 0.5\left(q\cdot q\,\gamma_{\mu}\right)\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)
+\end{aligned}\right) {}+ \\
+2\left(\begin{aligned}
+2\left(x\,m\,p_{\mu} + x\,m\,q_{\mu}\right) - \left(x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,p_{\mu}\,m + y\,q_{\mu}\,m\right) {}- \\
+\left(2\left(y\,m^{2}\,\gamma_{\mu}\right) - \left(y\,q\cdot q\,\gamma_{\mu}\right) - 2\left(y\,m\,p_{\mu}\right) + y\,m\,m\,\gamma_{\mu}\right)
+\end{aligned}\right) {}- \\
+4\left(m\,x\,p_{\mu} + m\,x\,q_{\mu} + m\,y\,p_{\mu}\right) {}+ \\
+2\left(\begin{aligned}
+2\left(x\,p_{\mu}\,m + x\,q_{\mu}\,m\right) {}- \\
+\left(2\left(x\,m^{2}\,\gamma_{\mu}\right) - \left(x\,q\cdot q\,\gamma_{\mu}\right) - 2\left(x\,m\,p_{\mu}\right) + x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,m\,p_{\mu}\right) {}- \\
+\left(y\,m\,m\,\gamma_{\mu}\right)
+\end{aligned}\right) {}- \\
+2\left(\begin{aligned}
+- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + 2\left(x\,x\,m\,p_{\mu} + x\,x\,m\,q_{\mu}\right) - \left(x\,x\,m\,m\,\gamma_{\mu}\right) {}+ \\
+x\,y\,m\,m\,\gamma_{\mu} + 2\left(y\,x\,p_{\mu}\,m + y\,x\,q_{\mu}\,m\right) {}- \\
+\left(2\left(y\,x\,m^{2}\,\gamma_{\mu}\right) - \left(y\,x\,q\cdot q\,\gamma_{\mu}\right) - 2\left(y\,x\,m\,p_{\mu}\right) + y\,x\,m\,m\,\gamma_{\mu}\right) {}+ \\
+2\left(y\,y\,m\,p_{\mu}\right) - \left(y\,y\,m\,m\,\gamma_{\mu}\right)
+\end{aligned}\right)
+\end{aligned}\right)\right]\,u(p)
 $$
 
 ## Step 18: First-order q truncation
@@ -97,7 +186,30 @@ $$
 ### Input
 
 $$
-\bar u(p')\,\left[-\left(-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p_{\mu} + m\,x\,q_{\mu} + m\,y\,p_{\mu}\right) + 4\left(m\,p_{\mu} + m\,q_{\mu}\right) - 2\left(2\left(p_{\mu}\,m + q_{\mu}\,m\right) - \left(2\left(m^{2}\,\gamma_{\mu} - 0.5\left(q\cdot q\,\gamma_{\mu}\right)\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right) + 2\left(2\left(x\,m\,p_{\mu} + x\,m\,q_{\mu}\right) - \left(x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,p_{\mu}\,m + y\,q_{\mu}\,m\right) - \left(2\left(y\,m^{2}\,\gamma_{\mu}\right) - \left(y\,q\cdot q\,\gamma_{\mu}\right) - 2\left(y\,m\,p_{\mu}\right) + y\,m\,m\,\gamma_{\mu}\right)\right) - 4\left(m\,x\,p_{\mu} + m\,x\,q_{\mu} + m\,y\,p_{\mu}\right) + 2\left(2\left(x\,p_{\mu}\,m + x\,q_{\mu}\,m\right) - \left(2\left(x\,m^{2}\,\gamma_{\mu}\right) - \left(x\,q\cdot q\,\gamma_{\mu}\right) - 2\left(x\,m\,p_{\mu}\right) + x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,m\,p_{\mu}\right) - \left(y\,m\,m\,\gamma_{\mu}\right)\right) - 2\left(- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + 2\left(x\,x\,m\,p_{\mu} + x\,x\,m\,q_{\mu}\right) - \left(x\,x\,m\,m\,\gamma_{\mu}\right) + x\,y\,m\,m\,\gamma_{\mu} + 2\left(y\,x\,p_{\mu}\,m + y\,x\,q_{\mu}\,m\right) - \left(2\left(y\,x\,m^{2}\,\gamma_{\mu}\right) - \left(y\,x\,q\cdot q\,\gamma_{\mu}\right) - 2\left(y\,x\,m\,p_{\mu}\right) + y\,x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,y\,m\,p_{\mu}\right) - \left(y\,y\,m\,m\,\gamma_{\mu}\right)\right)\right)\right]\,u(p)
+\bar u(p')\,\left[-\left(\begin{aligned}
+-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p_{\mu} + m\,x\,q_{\mu} + m\,y\,p_{\mu}\right) {}+ \\
+4\left(m\,p_{\mu} + m\,q_{\mu}\right) {}- \\
+2\left(\begin{aligned}
+2\left(p_{\mu}\,m + q_{\mu}\,m\right) {}- \\
+\left(2\left(m^{2}\,\gamma_{\mu} - 0.5\left(q\cdot q\,\gamma_{\mu}\right)\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)
+\end{aligned}\right) {}+ \\
+2\left(\begin{aligned}
+2\left(x\,m\,p_{\mu} + x\,m\,q_{\mu}\right) - \left(x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,p_{\mu}\,m + y\,q_{\mu}\,m\right) {}- \\
+\left(2\left(y\,m^{2}\,\gamma_{\mu}\right) - \left(y\,q\cdot q\,\gamma_{\mu}\right) - 2\left(y\,m\,p_{\mu}\right) + y\,m\,m\,\gamma_{\mu}\right)
+\end{aligned}\right) {}- \\
+4\left(m\,x\,p_{\mu} + m\,x\,q_{\mu} + m\,y\,p_{\mu}\right) {}+ \\
+2\left(\begin{aligned}
+2\left(x\,p_{\mu}\,m + x\,q_{\mu}\,m\right) {}- \\
+\left(2\left(x\,m^{2}\,\gamma_{\mu}\right) - \left(x\,q\cdot q\,\gamma_{\mu}\right) - 2\left(x\,m\,p_{\mu}\right) + x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,m\,p_{\mu}\right) {}- \\
+\left(y\,m\,m\,\gamma_{\mu}\right)
+\end{aligned}\right) {}- \\
+2\left(\begin{aligned}
+- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + 2\left(x\,x\,m\,p_{\mu} + x\,x\,m\,q_{\mu}\right) - \left(x\,x\,m\,m\,\gamma_{\mu}\right) {}+ \\
+x\,y\,m\,m\,\gamma_{\mu} + 2\left(y\,x\,p_{\mu}\,m + y\,x\,q_{\mu}\,m\right) {}- \\
+\left(2\left(y\,x\,m^{2}\,\gamma_{\mu}\right) - \left(y\,x\,q\cdot q\,\gamma_{\mu}\right) - 2\left(y\,x\,m\,p_{\mu}\right) + y\,x\,m\,m\,\gamma_{\mu}\right) {}+ \\
+2\left(y\,y\,m\,p_{\mu}\right) - \left(y\,y\,m\,m\,\gamma_{\mu}\right)
+\end{aligned}\right)
+\end{aligned}\right)\right]\,u(p)
 $$
 
 ### Applied rule
@@ -107,13 +219,35 @@ Discard terms of explicit order q^2 and higher. The magnetic form factor require
 ### Output
 
 $$
-\bar u(p')\,\left[-\left(-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p_{\mu} + m\,x\,q_{\mu} + m\,y\,p_{\mu}\right) + 4\left(m\,p_{\mu} + m\,q_{\mu}\right) - 2\left(2\left(p_{\mu}\,m + q_{\mu}\,m\right) - \left(2\left(m^{2}\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right) + 2\left(2\left(x\,m\,p_{\mu} + x\,m\,q_{\mu}\right) - \left(x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,p_{\mu}\,m + y\,q_{\mu}\,m\right) - \left(2\left(y\,m^{2}\,\gamma_{\mu}\right) - 2\left(y\,m\,p_{\mu}\right) + y\,m\,m\,\gamma_{\mu}\right)\right) - 4\left(m\,x\,p_{\mu} + m\,x\,q_{\mu} + m\,y\,p_{\mu}\right) + 2\left(2\left(x\,p_{\mu}\,m + x\,q_{\mu}\,m\right) - \left(2\left(x\,m^{2}\,\gamma_{\mu}\right) - 2\left(x\,m\,p_{\mu}\right) + x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,m\,p_{\mu}\right) - \left(y\,m\,m\,\gamma_{\mu}\right)\right) - 2\left(- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + 2\left(x\,x\,m\,p_{\mu} + x\,x\,m\,q_{\mu}\right) - \left(x\,x\,m\,m\,\gamma_{\mu}\right) + x\,y\,m\,m\,\gamma_{\mu} + 2\left(y\,x\,p_{\mu}\,m + y\,x\,q_{\mu}\,m\right) - \left(2\left(y\,x\,m^{2}\,\gamma_{\mu}\right) - 2\left(y\,x\,m\,p_{\mu}\right) + y\,x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,y\,m\,p_{\mu}\right) - \left(y\,y\,m\,m\,\gamma_{\mu}\right)\right)\right)\right]\,u(p)
+\bar u(p')\,\left[-\left(\begin{aligned}
+-2\left(m\,m\,\gamma_{\mu}\right) + 4\left(m\,p_{\mu}\right) - 4\left(m\,x\,p_{\mu} + m\,x\,q_{\mu} + m\,y\,p_{\mu}\right) {}+ \\
+4\left(m\,p_{\mu} + m\,q_{\mu}\right) {}- \\
+2\left(2\left(p_{\mu}\,m + q_{\mu}\,m\right) - \left(2\left(m^{2}\,\gamma_{\mu}\right) - \left(2\left(m\,p_{\mu}\right) - \left(m\,m\,\gamma_{\mu}\right)\right)\right)\right) {}+ \\
+2\left(\begin{aligned}
+2\left(x\,m\,p_{\mu} + x\,m\,q_{\mu}\right) - \left(x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,p_{\mu}\,m + y\,q_{\mu}\,m\right) {}- \\
+\left(2\left(y\,m^{2}\,\gamma_{\mu}\right) - 2\left(y\,m\,p_{\mu}\right) + y\,m\,m\,\gamma_{\mu}\right)
+\end{aligned}\right) {}- \\
+4\left(m\,x\,p_{\mu} + m\,x\,q_{\mu} + m\,y\,p_{\mu}\right) {}+ \\
+2\left(\begin{aligned}
+2\left(x\,p_{\mu}\,m + x\,q_{\mu}\,m\right) - \left(2\left(x\,m^{2}\,\gamma_{\mu}\right) - 2\left(x\,m\,p_{\mu}\right) + x\,m\,m\,\gamma_{\mu}\right) {}+ \\
+2\left(y\,m\,p_{\mu}\right) - \left(y\,m\,m\,\gamma_{\mu}\right)
+\end{aligned}\right) {}- \\
+2\left(\begin{aligned}
+- \frac{1}{2}\left(l\cdot l\,\gamma_{\mu}\right) + 2\left(x\,x\,m\,p_{\mu} + x\,x\,m\,q_{\mu}\right) - \left(x\,x\,m\,m\,\gamma_{\mu}\right) {}+ \\
+x\,y\,m\,m\,\gamma_{\mu} + 2\left(y\,x\,p_{\mu}\,m + y\,x\,q_{\mu}\,m\right) {}- \\
+\left(2\left(y\,x\,m^{2}\,\gamma_{\mu}\right) - 2\left(y\,x\,m\,p_{\mu}\right) + y\,x\,m\,m\,\gamma_{\mu}\right) + 2\left(y\,y\,m\,p_{\mu}\right) {}- \\
+\left(y\,y\,m\,m\,\gamma_{\mu}\right)
+\end{aligned}\right)
+\end{aligned}\right)\right]\,u(p)
 $$
 
 ## Gamma_mu coefficient
 
 $$
--\left(l\cdot l\right) - 4\left(m^{2}\right) - 2\left(m^{2}\,x^{2}\right) - 2\left(m^{2}\,y^{2}\right) + 8\left(x\,m^{2}\right) + 8\left(y\,m^{2}\right) - 4\left(x\,y\,m^{2}\right)
+\begin{aligned}
+-\left(l\cdot l\right) - 4\left(m^{2}\right) - 2\left(m^{2}\,x^{2}\right) - 2\left(m^{2}\,y^{2}\right) + 8\left(x\,m^{2}\right) + 8\left(y\,m^{2}\right) {}- \\
+4\left(x\,y\,m^{2}\right)
+\end{aligned}
 $$
 
 ## p_mu coefficient
