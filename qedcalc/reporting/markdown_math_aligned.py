@@ -2,12 +2,14 @@ r"""Safe aligned-style wrapping for long Markdown display equations.
 
 This formatter keeps the original mathematical symbols.  It wraps long sums
 and products only at structurally safe boundaries and never separates a
-``\\left ... \\right`` pair or a TeX brace group across rows.
+``\\left ... \\right`` pair, a TeX brace group, or a ``\\frac{...}{...}``
+argument across rows.
 
 For sums, the continuation operator is kept at the end of the preceding row.
 For products, original top-level source-line boundaries are preferred; if the
 source is one physical line, safe top-level product boundaries are used.
-Nested complete groups are refined recursively when a row is still too long.
+Nested complete groups are refined recursively when a row is still too long,
+but fraction numerator/denominator contents are treated as atomic.
 """
 from __future__ import annotations
 
@@ -83,6 +85,35 @@ def _signed_outer_group(expr: str):
     return sign, opening, inner, closing
 
 
+def _skip_fraction(source: str, start: int) -> int | None:
+    """Return the end of one complete ``\\frac{...}{...}``, or ``None``.
+
+    The formatter must never descend into numerator/denominator contents with an
+    aligned environment.  A complete fraction is therefore an atomic factor for
+    recursive group discovery.
+    """
+    if not source.startswith(r"\frac", start):
+        return None
+
+    i = start + len(r"\frac")
+    while i < len(source) and source[i].isspace():
+        i += 1
+
+    numerator = _base._read_braced(source, i)
+    if numerator is None:
+        return None
+    _, i = numerator
+
+    while i < len(source) and source[i].isspace():
+        i += 1
+
+    denominator = _base._read_braced(source, i)
+    if denominator is None:
+        return None
+    _, i = denominator
+    return i
+
+
 def _safe_source_chunks(expr: str) -> list[str] | None:
     """Split only at source newlines where every TeX grouping depth is zero."""
     if "\n" not in expr:
@@ -156,7 +187,6 @@ def _safe_source_chunks(expr: str) -> list[str] | None:
 
 
 def _pack_product_chunks(chunks: list[str], max_width: int) -> list[str]:
-    """Pack complete factors/chunks into rows without changing their order."""
     rows: list[str] = []
     current = ""
 
@@ -178,13 +208,17 @@ def _pack_product_chunks(chunks: list[str], max_width: int) -> list[str]:
 
 
 def _binary_product_rows(expr: str, max_width: int, depth: int) -> list[str] | None:
-    """Recursively split a one-line product at safe top-level product boundaries."""
     if depth >= _MAX_RECURSION:
         return None
 
     s = _base._compact(expr)
     if _base._visible_len(s) <= max_width:
         return [s]
+
+    # A whole fraction is atomic.  Do not try to split its numerator or
+    # denominator and do not introduce aligned inside either argument.
+    if _base._whole_fraction(s) is not None:
+        return None
 
     split = _base._best_binary_split(s, original_expr=None)
     if split is None:
@@ -201,7 +235,6 @@ def _binary_product_rows(expr: str, max_width: int, depth: int) -> list[str] | N
 
 
 def _product_rows(expr: str, max_width: int, depth: int = 0) -> list[str] | None:
-    """Return safe rows for a long product, preferring original source lines."""
     if depth >= _MAX_RECURSION:
         return None
 
@@ -228,6 +261,11 @@ def _refine_rows(rows: list[str], max_width: int, depth: int) -> list[str]:
     refined: list[str] = []
     for row in rows:
         if _base._visible_len(row) <= max_width:
+            refined.append(row)
+            continue
+
+        # Never descend into a whole fraction.  It remains one atomic row/factor.
+        if _base._whole_fraction(_base._compact(row)) is not None:
             refined.append(row)
             continue
 
@@ -273,6 +311,14 @@ def _wrap_embedded_group(expr: str, max_width: int, depth: int = 0) -> str | Non
     s = _base._compact(expr)
     i = 0
     while i < len(s):
+        # Fractions are atomic for recursive group discovery.  Skip the complete
+        # numerator and denominator so a nested \left...\right inside either
+        # argument can never receive an aligned environment.
+        frac_end = _skip_fraction(s, i)
+        if frac_end is not None:
+            i = frac_end
+            continue
+
         left = _base._left_delimiter_at(s, i)
         if left is None:
             i += 1
@@ -346,6 +392,12 @@ def _format_display(block: str, max_width: int) -> str:
     if _base._visible_len(raw) <= max_width:
         return raw
 
+    # Whole fractions are left intact.  They can still participate as complete
+    # factors when a surrounding product is split, but aligned is never placed
+    # in the numerator or denominator.
+    if _base._whole_fraction(_base._compact(raw)) is not None:
+        return raw
+
     assignment = _wrap_assignment(raw, max_width)
     if assignment is not None:
         return assignment
@@ -372,8 +424,8 @@ def format_markdown_math_aligned(markdown: str, max_width: int = 92) -> str:
     """Wrap long ``$$ ... $$`` blocks without proxy variables.
 
     Long sums and products are split only at safe structural boundaries.
-    ``\\left ... \\right`` pairs and TeX brace groups are never separated.
-    Expressions with no safe split remain unchanged.
+    ``\\left ... \\right`` pairs, TeX brace groups, and fraction arguments are
+    never separated.  Expressions with no safe split remain unchanged.
     """
     parts = markdown.split("$$")
     if len(parts) % 2 == 0:
