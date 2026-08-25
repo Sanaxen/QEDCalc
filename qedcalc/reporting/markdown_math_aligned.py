@@ -13,6 +13,10 @@ pair, for example::
     C
     \\end{aligned}\\right)
 
+The same rule is applied when the long group is embedded in a product such as
+``\\bar u(p')\\,\\left[ ... \\right]\\,u(p)``: the spinors stay outside and
+only the structurally complete bracket contents are reformatted.
+
 This preserves TeX delimiter balance and keeps continuation rows from starting
 with ``=``, ``+`` or ``-``.
 """
@@ -72,6 +76,10 @@ def _additive_rows(expr: str, max_width: int) -> list[str] | None:
     return rows
 
 
+def _rows_to_aligned(rows: list[str]) -> str:
+    return "\\begin{aligned}\n" + " \\\\\n".join(rows) + "\n\\end{aligned}"
+
+
 def _signed_outer_group(expr: str):
     """Recognize an optional unary sign followed by one whole outer group."""
     s = _base._compact(expr)
@@ -98,14 +106,65 @@ def _wrap_outer_group(expr: str, max_width: int) -> str | None:
     if rows is None or len(rows) < 2:
         return None
 
-    body = " \\\\\n".join(rows)
-    return (
-        f"{sign}{opening}"
-        "\\begin{aligned}\n"
-        f"{body}\n"
-        "\\end{aligned}"
-        f"{closing}"
-    )
+    return f"{sign}{opening}{_rows_to_aligned(rows)}{closing}"
+
+
+def _wrap_embedded_group(expr: str, max_width: int) -> str | None:
+    """Wrap a long complete ``\\left...\\right`` group embedded in a product.
+
+    Example input::
+
+        \\bar u(p')\\,\\left[-\\left(A+B+C\\right)\\right]\\,u(p)
+
+    The outer spinor factors remain untouched.  The complete square-bracket
+    pair remains untouched.  Only the long expression *inside* that pair is
+    reformatted, and any nested complete round-bracket pair is also preserved.
+    """
+    s = _base._compact(expr)
+    i = 0
+    while i < len(s):
+        left = _base._left_delimiter_at(s, i)
+        if left is None:
+            i += 1
+            continue
+
+        opening_token, content_start = left
+        end = _base._matching_left_right_end(s, i)
+        if end is None:
+            return None
+
+        closing_token = _base._LEFT_RIGHT_PAIRS[opening_token]
+        opening_source = r"\left" + opening_token
+        closing_source = r"\right" + closing_token
+        inner_end = end - len(closing_source)
+        inner = s[content_start:inner_end].strip()
+
+        if inner and _base._visible_len(inner) > max_width:
+            # First handle the common nested form -\left(long sum\right).
+            wrapped_inner = _wrap_outer_group(inner, max_width)
+
+            # Otherwise the bracket itself may directly contain a long sum.
+            if wrapped_inner is None:
+                rows = _additive_rows(inner, max_width)
+                if rows is not None and len(rows) >= 2:
+                    wrapped_inner = _rows_to_aligned(rows)
+
+            if wrapped_inner is not None:
+                prefix = s[:i]
+                suffix = s[end:]
+                return (
+                    prefix
+                    + opening_source
+                    + wrapped_inner
+                    + closing_source
+                    + suffix
+                )
+
+        # This complete pair could not be usefully wrapped.  Continue after it;
+        # never inspect a split point inside the pair itself.
+        i = end
+
+    return None
 
 
 def _wrap_assignment(expr: str, max_width: int) -> str | None:
@@ -117,6 +176,8 @@ def _wrap_assignment(expr: str, max_width: int) -> str | None:
     # Prefer a complete outer group on the RHS.  This avoids nesting one
     # aligned environment inside another aligned environment just to show '='.
     wrapped_rhs = _wrap_outer_group(rhs, max_width)
+    if wrapped_rhs is None:
+        wrapped_rhs = _wrap_embedded_group(rhs, max_width)
     if wrapped_rhs is not None:
         return f"{lhs} = {wrapped_rhs}"
 
@@ -126,7 +187,7 @@ def _wrap_assignment(expr: str, max_width: int) -> str | None:
 
     lines = [f"{lhs} &= {rhs_rows[0]}"]
     lines.extend(f"&\quad {row}" for row in rhs_rows[1:])
-    return "\\begin{aligned}\n" + " \\\\\n".join(lines) + "\n\\end{aligned}"
+    return _rows_to_aligned(lines)
 
 
 def _format_display(block: str, max_width: int) -> str:
@@ -144,9 +205,13 @@ def _format_display(block: str, max_width: int) -> str:
     if outer is not None:
         return outer
 
+    embedded = _wrap_embedded_group(raw, max_width)
+    if embedded is not None:
+        return embedded
+
     rows = _additive_rows(raw, max_width)
     if rows is not None and len(rows) >= 2:
-        return "\\begin{aligned}\n" + " \\\\\n".join(rows) + "\n\\end{aligned}"
+        return _rows_to_aligned(rows)
 
     # Deliberately leave an indivisible expression unchanged rather than
     # invent proxy symbols or split through a TeX group.
