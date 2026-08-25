@@ -72,6 +72,113 @@ def balanced_left_right(source: str) -> bool:
     return not stack
 
 
+def read_braced_content(source: str, start: int) -> tuple[str, int] | None:
+    """Read one balanced TeX ``{...}`` group starting at ``start``."""
+    if start >= len(source) or source[start] != "{":
+        return None
+
+    depth = 0
+    begin = start + 1
+    i = start
+    while i < len(source):
+        if source[i] == "\\" and i + 1 < len(source) and source[i + 1] in "{}":
+            i += 2
+            continue
+        if source[i] == "{":
+            depth += 1
+        elif source[i] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[begin:i], i + 1
+            if depth < 0:
+                return None
+        i += 1
+    return None
+
+
+def whole_fraction_parts(source: str) -> tuple[str, str] | None:
+    """Return numerator/denominator when the complete display is one fraction."""
+    s = " ".join(line.strip() for line in source.splitlines() if line.strip())
+    if s.startswith("-"):
+        s = s[1:].lstrip()
+    if not s.startswith(r"\frac"):
+        return None
+
+    i = len(r"\frac")
+    while i < len(s) and s[i].isspace():
+        i += 1
+    numerator = read_braced_content(s, i)
+    if numerator is None:
+        return None
+    num_text, i = numerator
+
+    while i < len(s) and s[i].isspace():
+        i += 1
+    denominator = read_braced_content(s, i)
+    if denominator is None:
+        return None
+    den_text, i = denominator
+
+    if s[i:].strip():
+        return None
+    return num_text.strip(), den_text.strip()
+
+
+def effective_display_width(source: str) -> int:
+    """Estimate rendered horizontal width rather than raw TeX source width.
+
+    A fraction places numerator and denominator vertically, so its horizontal
+    width is controlled by the wider argument, not by the sum of both source
+    lengths.  This prevents valid compact fractions from being flagged merely
+    because their TeX source is long.
+    """
+    fraction = whole_fraction_parts(source)
+    if fraction is None:
+        return display_width(source)
+    numerator, denominator = fraction
+    return max(display_width(numerator), display_width(denominator)) + 4
+
+
+def aligned_inside_fraction(source: str) -> bool:
+    """Detect an aligned environment actually nested in a fraction argument.
+
+    Merely having ``\\frac`` and ``\\begin{aligned}`` in the same display is
+    valid.  The unsafe case is an aligned environment inside the numerator or
+    denominator brace group of a ``\\frac{...}{...}``.
+    """
+    marker = r"\begin{aligned}"
+    pos = 0
+
+    while True:
+        frac = source.find(r"\frac", pos)
+        if frac < 0:
+            return False
+
+        i = frac + len(r"\frac")
+        while i < len(source) and source[i].isspace():
+            i += 1
+
+        numerator = read_braced_content(source, i)
+        if numerator is None:
+            pos = i
+            continue
+        num_text, i = numerator
+
+        while i < len(source) and source[i].isspace():
+            i += 1
+
+        denominator = read_braced_content(source, i)
+        if denominator is None:
+            pos = i
+            continue
+        den_text, end = denominator
+
+        if marker in num_text or marker in den_text:
+            return True
+
+        pos = end
+
+
 def validate_math_layout(name: str, text: str) -> None:
     parts = text.split("$$")
     if len(parts) % 2 == 0:
@@ -90,9 +197,9 @@ def validate_math_layout(name: str, text: str) -> None:
                 f"{name}: unbalanced \\left/\\right delimiters in display block: {block[:120]!r}"
             )
 
-        if r"\frac{" in block and r"\begin{aligned}" in block:
+        if aligned_inside_fraction(block):
             raise AssertionError(
-                f"{name}: aligned environment embedded in a fraction display"
+                f"{name}: aligned environment embedded in a fraction argument"
             )
 
         if re.match(r"^[DNE]_\{[0-9,]+\}\s*=", block):
@@ -134,7 +241,7 @@ def validate_math_layout(name: str, text: str) -> None:
                         )
             continue
 
-        width = display_width(block)
+        width = effective_display_width(block)
         if width > 110:
             raise AssertionError(
                 f"{name}: long unsplit display remains "

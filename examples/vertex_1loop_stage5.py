@@ -33,6 +33,7 @@ from qedcalc.operations.integral import (
 )
 from qedcalc.validation.validator import validate_indices
 from qedcalc.history.markdown_session import MarkdownSession
+from qedcalc.reporting import format_markdown_math_aligned
 
 
 def main():
@@ -159,6 +160,12 @@ def main():
     s.equation('Final one-loop anomalous magnetic moment correction', final_f2)
     s.text('Index validation', '\n'.join(f'- [{m.level}] {m.message}' for m in messages))
     s.save()
+
+    # Presentation-only formatting: preserve complete \left...\right groups and
+    # split only at safe additive boundaries. No proxy variables are introduced.
+    md = out.read_text(encoding='utf-8')
+    md = format_markdown_math_aligned(md, max_width=92)
+    out.write_text(md, encoding='utf-8')
 
     print(f'\nMarkdown session written to: {out}')
     return 0
