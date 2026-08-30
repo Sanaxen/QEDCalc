@@ -35,7 +35,55 @@ def _protect_scalar_product_atoms(text: str):
     return safe_text, local_dict, safe_to_original
 
 
+def _normalize_top_level_signs(text: str) -> str:
+    """Normalize sign chains produced by serialized term joining.
+
+    The previous stage writes terms using ``" + ".join(...)``.  Negative terms
+    therefore appear as ``+ -term``.  Collapse adjacent top-level sign chains
+    before splitting so no standalone ``+`` or ``-`` fragment reaches SymPy.
+    Parenthesized signs are left untouched.
+    """
+    out = []
+    i = 0
+    depth = 0
+    n = len(text)
+    while i < n:
+        ch = text[i]
+        if ch == "(":
+            depth += 1
+            out.append(ch)
+            i += 1
+            continue
+        if ch == ")":
+            depth -= 1
+            out.append(ch)
+            i += 1
+            continue
+        if depth == 0 and ch in "+-":
+            sign = 1
+            j = i
+            saw = False
+            while j < n:
+                while j < n and text[j].isspace():
+                    j += 1
+                if j < n and text[j] in "+-":
+                    saw = True
+                    if text[j] == "-":
+                        sign *= -1
+                    j += 1
+                    continue
+                break
+            if saw:
+                out.append("-" if sign < 0 else "+")
+                i = j
+                continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
 def _split_top_level_add_terms(text: str) -> list[str]:
+    text = _normalize_top_level_signs(text)
     terms = []
     depth = 0
     start = 0
@@ -47,14 +95,16 @@ def _split_top_level_add_terms(text: str) -> list[str]:
             if depth < 0:
                 raise ValueError("unbalanced parentheses")
         elif depth == 0 and ch in "+-" and i > start:
-            terms.append(text[start:i].strip())
+            term = text[start:i].strip()
+            if term not in {"", "+", "-"}:
+                terms.append(term)
             start = i
     tail = text[start:].strip()
-    if tail:
+    if tail not in {"", "+", "-"}:
         terms.append(tail)
     if depth != 0:
         raise ValueError("unbalanced parentheses")
-    return [term for term in terms if term]
+    return terms
 
 
 def _parse_terms(text: str):
