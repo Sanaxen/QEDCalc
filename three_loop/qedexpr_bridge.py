@@ -1,7 +1,7 @@
 """Bridge three-loop structural amplitudes into QEDCalc's expression tree.
 
 The registry and ordered-amplitude layers intentionally remain simple and
-inspectable.  This module is the first integration layer with the restored
+inspectable. This module is the first integration layer with the restored
 QEDCalc symbolic backend.
 
 For now the bridge is exact for the quenched open-electron-line family Q01-Q50.
@@ -67,13 +67,15 @@ def _momentum_expr(text: str):
 
 
 def _gamma_from_label(label: str) -> Gamma:
-    """Map structural gamma labels to shared Lorentz indices."""
+    """Map structural gamma labels to explicit endpoint Lorentz indices."""
     if label == "gamma_mu":
         return Gamma(Index("mu", "down"))
-    match = re.fullmatch(r"gamma_([^_]+)(?:_[LR])?", label)
+    match = re.fullmatch(r"gamma_([^_]+)(?:_([LR]))?", label)
     if not match:
         raise ValueError(f"unsupported gamma label: {label}")
-    return Gamma(Index(match.group(1), "up"))
+    photon, endpoint = match.groups()
+    index_name = photon if endpoint is None else f"{photon}_{endpoint}"
+    return Gamma(Index(index_name, "up"))
 
 
 def _fermion_propagator(momentum_text: str) -> FermionPropagator:
@@ -87,13 +89,8 @@ def _fermion_propagator(momentum_text: str) -> FermionPropagator:
 
 
 def _photon_propagator(label: str) -> PhotonPropagator:
-    """Build the Feynman-gauge metric part of a photon propagator.
-
-    Gauge-dependent longitudinal pieces are intentionally not invented here;
-    the topology-to-QEDExpr bridge records the same metric propagator structure
-    used by the existing raw-diagram symbolic machinery.
-    """
-    numerator = Metric(Index(label, "down"), Index(label, "down"))
+    """Build the Feynman-gauge metric part with two distinct endpoint indices."""
+    numerator = Metric(Index(f"{label}_L", "down"), Index(f"{label}_R", "down"))
     denominator = Add(
         ScalarMul(-1, Power(Vector(label), 2)),
         ScalarMul(-1, Symbol("i_epsilon")),
@@ -110,7 +107,7 @@ def ordered_amplitude_to_qedexpr(
     """Convert an ordered quenched three-loop amplitude to QEDCalc QEDExpr.
 
     ``C_3`` is deliberately kept as a normalization placeholder at this bridge
-    layer.  Coupling, loop-measure, gauge and sign ownership are convention
+    layer. Coupling, loop-measure, gauge and sign ownership are convention
     concerns and must be supplied explicitly before physical assembly.
     """
     if topology.family != "quenched":
@@ -129,9 +126,6 @@ def ordered_amplitude_to_qedexpr(
         else:
             raise ValueError(f"unexpected open-line factor kind: {factor.kind}")
 
-    # Keep the ordered electron chain first.  Photon propagators carry paired
-    # indices with the same labels as the gamma endpoints, so later Lorentz
-    # contraction can operate on the shared names.
     photon_factors = [_photon_propagator(f.value) for f in ordered.photon_factors]
     integrand = NCProduct(*(open_factors + photon_factors))
     if ordered.sign == -1:
@@ -168,12 +162,18 @@ def q01_bridge_checkpoint(topology: ThreeLoopTopology) -> dict[str, object]:
     """Small inspectable checkpoint used before heavy three-loop algebra."""
     ready = build_projector_ready_amplitude(topology)
     nodes = tuple(ready.loop_integral.integrand.walk())
+    metric_pairs = tuple(
+        (n.left.name, n.right.name)
+        for n in nodes
+        if isinstance(n, Metric)
+    )
     return {
         "diagram_id": topology.diagram_id,
         "loop_names": tuple(v.name for v in ready.loop_integral.loops),
         "gamma_count": sum(isinstance(n, Gamma) for n in nodes),
         "fermion_propagator_count": sum(isinstance(n, FermionPropagator) for n in nodes),
         "photon_propagator_count": sum(isinstance(n, PhotonPropagator) for n in nodes),
+        "metric_pairs": metric_pairs,
         "projector_has_finite_q": bool(
             ready.projector.a.has(sp.Symbol("z")) and ready.projector.b.has(sp.Symbol("z"))
         ),
