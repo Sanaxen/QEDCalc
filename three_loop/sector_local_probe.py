@@ -45,13 +45,20 @@ def _progress(callback: ProgressCallback | None, stage: str,
 def default_q01_probe_points(family: IntegralFamily) -> tuple[dict[sp.Symbol, sp.Expr], ...]:
     symbols = {str(symbol): symbol for expr in family.denominator_exprs for symbol in expr.free_symbols}
     symbols[str(family.dimension_symbol)] = family.dimension_symbol
+    # Q01 IBP coefficients also contain m and z through external invariants.  They
+    # are not guaranteed to appear in the raw denominator expressions, so include
+    # canonical same-named symbols explicitly; downstream code also matches by
+    # symbol name to handle differing SymPy assumptions.
+    symbols.setdefault("m", sp.Symbol("m"))
+    symbols.setdefault("z", sp.Symbol("z"))
+
     points = []
     for d_value, z_value in ((sp.Rational(17, 5), sp.Rational(2, 7)), (sp.Rational(19, 6), sp.Rational(3, 11))):
-        point: dict[sp.Symbol, sp.Expr] = {family.dimension_symbol: d_value}
-        if "m" in symbols:
-            point[symbols["m"]] = sp.Integer(1)
-        if "z" in symbols:
-            point[symbols["z"]] = z_value
+        point: dict[sp.Symbol, sp.Expr] = {
+            family.dimension_symbol: d_value,
+            symbols["m"]: sp.Integer(1),
+            symbols["z"]: z_value,
+        }
         points.append(point)
     return tuple(points)
 
