@@ -13,6 +13,13 @@ from .qedexpr_bridge import (
     build_projector_ready_amplitude,
     q01_bridge_checkpoint,
 )
+from .projected_trace import (
+    ProjectedTraceStructure,
+    magnetic_projector_kernel,
+    build_projected_trace,
+    build_topology_projected_trace,
+    projected_trace_checkpoint,
+)
 from .divergence import DivergentSubgraph, discover_candidate_subgraphs
 
 __all__ = [
@@ -22,5 +29,8 @@ __all__ = [
     "project_f2_from_reduced_current", "schwinger_gordon_checkpoint",
     "ProjectorReadyAmplitude", "ordered_amplitude_to_qedexpr",
     "build_projector_ready_amplitude", "q01_bridge_checkpoint",
+    "ProjectedTraceStructure", "magnetic_projector_kernel",
+    "build_projected_trace", "build_topology_projected_trace",
+    "projected_trace_checkpoint",
     "DivergentSubgraph", "discover_candidate_subgraphs",
 ]
