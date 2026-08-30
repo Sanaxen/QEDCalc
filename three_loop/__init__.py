@@ -22,6 +22,11 @@ from .projected_trace import (
     reduce_projected_trace_to_scalar_products,
     projected_trace_checkpoint,
 )
+from .onshell import (
+    OnShellScalarReduction,
+    finite_q_onshell_substitutions,
+    apply_finite_q_onshell,
+)
 from .divergence import DivergentSubgraph, discover_candidate_subgraphs
 
 __all__ = [
@@ -35,5 +40,7 @@ __all__ = [
     "magnetic_projector_kernel", "build_projected_trace",
     "build_topology_projected_trace", "reduce_projected_trace_to_scalar_products",
     "projected_trace_checkpoint",
+    "OnShellScalarReduction", "finite_q_onshell_substitutions",
+    "apply_finite_q_onshell",
     "DivergentSubgraph", "discover_candidate_subgraphs",
 ]
