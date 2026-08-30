@@ -44,6 +44,14 @@ from .integral_mapping import (
     scalar_numerator_to_integrals,
     q01_scalar_numerator_to_integrals,
 )
+from .laporta_plan import (
+    SectorDemandProfile,
+    physical_sector,
+    dot_degree,
+    numerator_degree,
+    total_complexity,
+    build_sector_demand_profiles,
+)
 from .divergence import DivergentSubgraph, discover_candidate_subgraphs
 
 __all__ = [
@@ -65,5 +73,7 @@ __all__ = [
     "q01_integral_family", "q01_family_checkpoint",
     "IntegralLinearCombination", "scalar_numerator_to_integrals",
     "q01_scalar_numerator_to_integrals",
+    "SectorDemandProfile", "physical_sector", "dot_degree",
+    "numerator_degree", "total_complexity", "build_sector_demand_profiles",
     "DivergentSubgraph", "discover_candidate_subgraphs",
 ]
