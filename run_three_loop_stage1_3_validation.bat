@@ -9,7 +9,7 @@ if exist ".venv\Scripts\python.exe" (
 )
 
 echo QEDCalc three-loop stages 1-3 validation
-%PY% -m pytest -q tests\test_three_loop_stage1_3.py tests\test_three_loop_onshell.py
+%PY% -m pytest -q tests\test_three_loop_stage1_3.py tests\test_three_loop_onshell.py tests\test_three_loop_integral_family.py
 if errorlevel 1 (
     echo Three-loop stages 1-3 validation FAIL
     exit /b 1
