@@ -1,10 +1,8 @@
 """Finite-q magnetic-projector trace for three-loop vertex amplitudes.
 
-This module turns a projector-ready quenched amplitude into the standard
-spin-summed Dirac trace used to isolate F2.  It deliberately stops before
-expanding the very large three-loop trace into scalar products; that reduction
-is the next computational step and can reuse QEDCalc's D-dimensional trace and
-Lorentz-contraction engines.
+This module constructs the spin-summed Pauli-projector trace and provides a
+fast reduction path to a SymPy scalar-product numerator.  The reduction reuses
+QEDCalc's optimized arbitrary-length D-dimensional Clifford trace.
 """
 from __future__ import annotations
 
@@ -18,13 +16,14 @@ from qedcalc.core.expression import (
     Gamma,
     Index,
     NCProduct,
-    Product,
     ScalarMul,
     Slash,
     Symbol,
     Vector,
     VectorComponent,
 )
+from qedcalc.operations.dirac import dirac_trace_fully_contracted_sympy
+from qedcalc.operations.lorentz import contract_metric
 from qedcalc.operations.propagator import (
     scalarize_fermion_propagators,
     separate_numerator_denominator,
@@ -44,6 +43,18 @@ class ProjectedTraceStructure:
     trace: DiracTrace
     scalar_denominator: object
     loop_integral: object
+    vertex_numerator: object
+
+
+@dataclass(frozen=True)
+class ScalarProjectedNumerator:
+    """Finite-q projected numerator after D-dimensional trace contraction."""
+
+    diagram_id: str
+    expression: sp.Expr
+    gamma_branch: sp.Expr
+    pair_branch: sp.Expr
+    scalar_product_atoms: tuple[str, ...]
 
 
 def _spin_sum(momentum_name: str):
@@ -52,17 +63,7 @@ def _spin_sum(momentum_name: str):
 
 
 def magnetic_projector_kernel(projector: MagneticProjector):
-    """Return a gamma^mu + b (p'+p)^mu/m in QEDCalc expression form.
-
-    This is the bracketed kernel in
-
-        P^mu = 1/m^2 (/p' + m)
-               [a gamma^mu + b (p'+p)^mu/m]
-               (/p + m).
-
-    The overall 1/m^2 is kept outside the Dirac trace in
-    ``build_projected_trace`` so it remains an explicit scalar normalization.
-    """
+    """Return the finite-q projector kernel in inspectable QEDExpr form."""
     mu = Index("mu", "up")
     pair_mu = Add(
         VectorComponent(Vector("p'"), mu),
@@ -74,32 +75,50 @@ def magnetic_projector_kernel(projector: MagneticProjector):
     )
 
 
+def _replace_vertex_mu_by_pair_slash(expr):
+    """Contract (p'+p)^mu with the unique external vertex gamma_mu.
+
+    For the scalar projector branch,
+
+        (p'+p)^mu Gamma_mu  ->  /p' + /p.
+
+    Performing this replacement before the optimized trace removes the only
+    explicit VectorComponent from the Clifford problem while preserving the
+    exact Lorentz contraction and matrix ordering at the vertex position.
+    """
+    if isinstance(expr, Gamma) and expr.index.name == "mu" and expr.index.position == "down":
+        return Add(Slash(Vector("p'")), Slash(Vector("p")))
+    if isinstance(expr, Add):
+        return Add(*(_replace_vertex_mu_by_pair_slash(t) for t in expr.terms))
+    if isinstance(expr, NCProduct):
+        return NCProduct(*(_replace_vertex_mu_by_pair_slash(f) for f in expr.factors))
+    if isinstance(expr, ScalarMul):
+        return ScalarMul(expr.coeff, _replace_vertex_mu_by_pair_slash(expr.expr))
+    return expr
+
+
 def build_projected_trace(ready: ProjectorReadyAmplitude) -> ProjectedTraceStructure:
     """Construct the spin-summed finite-q projector trace.
 
-    Electron and photon propagators are first scalarized so all denominators
-    are outside the Clifford word.  The resulting numerator is inserted into
-
-        Tr[(/p'+m) K^mu (/p+m) Gamma_mu^(3)],
-
-    with K^mu the finite-q magnetic-projector kernel.
-
-    No q->0 substitution is made here.
+    Propagators are scalarized, denominators are separated, and the three
+    photon metrics are contracted against their gamma endpoints before the
+    Clifford trace is formed.  This gives the long-trace engine paired dummy
+    indices rather than a separate metric tensor network.
     """
     scalarized = scalarize_fermion_propagators(ready.loop_integral.integrand)
     separated = separate_numerator_denominator(scalarized)
     if not isinstance(separated, Fraction):
         raise TypeError("three-loop integrand did not separate into numerator/denominator")
 
+    vertex_numerator = contract_metric(separated.numerator)
     trace_word = NCProduct(
         _spin_sum("p'"),
         magnetic_projector_kernel(ready.projector),
         _spin_sum("p"),
-        separated.numerator,
+        vertex_numerator,
     )
     trace = DiracTrace(trace_word)
 
-    # Keep 1/m^2 explicit rather than hiding it inside a projector coefficient.
     normalized_integrand = Fraction(
         ScalarMul(1 / sp.Symbol("m")**2, trace),
         separated.denominator,
@@ -116,6 +135,7 @@ def build_projected_trace(ready: ProjectorReadyAmplitude) -> ProjectedTraceStruc
         trace=trace,
         scalar_denominator=separated.denominator,
         loop_integral=loop_integral,
+        vertex_numerator=vertex_numerator,
     )
 
 
@@ -134,6 +154,56 @@ def build_topology_projected_trace(
         prefactor_latex=prefactor_latex,
     )
     return build_projected_trace(ready)
+
+
+def reduce_projected_trace_to_scalar_products(
+    projected: ProjectedTraceStructure,
+    *,
+    D_name: str = "D",
+) -> ScalarProjectedNumerator:
+    """Reduce the finite-q projector trace directly to scalar products.
+
+    The two projector structures are evaluated separately:
+
+    1. ``a gamma^mu`` is a pure Clifford trace;
+    2. ``b (p'+p)^mu/m`` is converted by contracting the vertex gamma_mu to
+       ``/p' + /p`` at its original matrix position.
+
+    QEDCalc's optimized trace routine then performs the complete D-dimensional
+    Clifford/Lorentz contraction directly to SymPy atoms named
+    ``SP__<momentum1>__<momentum2>``.  No q->0 or on-shell scalar-product
+    substitution is made here.
+    """
+    p_out = _spin_sum("p'")
+    p_in = _spin_sum("p")
+
+    gamma_word = NCProduct(
+        p_out,
+        Gamma(Index("mu", "up")),
+        p_in,
+        projected.vertex_numerator,
+    )
+    gamma_trace = dirac_trace_fully_contracted_sympy(gamma_word, D_name=D_name)
+
+    pair_vertex = _replace_vertex_mu_by_pair_slash(projected.vertex_numerator)
+    pair_word = NCProduct(p_out, p_in, pair_vertex)
+    pair_trace = dirac_trace_fully_contracted_sympy(pair_word, D_name=D_name)
+
+    m = sp.Symbol("m")
+    gamma_branch = sp.expand(projected.projector.a * gamma_trace / m**2)
+    pair_branch = sp.expand(projected.projector.b * pair_trace / m**3)
+    expression = sp.expand(gamma_branch + pair_branch)
+    atoms = tuple(sorted(
+        str(s) for s in expression.free_symbols
+        if str(s).startswith("SP__")
+    ))
+    return ScalarProjectedNumerator(
+        diagram_id=projected.diagram_id,
+        expression=expression,
+        gamma_branch=gamma_branch,
+        pair_branch=pair_branch,
+        scalar_product_atoms=atoms,
+    )
 
 
 def projected_trace_checkpoint(projected: ProjectedTraceStructure) -> dict[str, object]:
