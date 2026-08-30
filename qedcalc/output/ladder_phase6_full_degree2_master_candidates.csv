@@ -1,0 +1,4 @@
+nK,nL,nH,n1,n2,n3,n4,new_full_degree2_seeds,new_first_seeds,new_directional_depth2_seeds,new_mixed_degree2_seeds,pivoting_mixed_seeds,full_degree2_pivoting_seeds,primary_probe_full_degree2_irreducible
+0,1,0,0,1,0,2,32,7,7,18,0,0,True
+0,1,1,1,0,1,1,19,4,5,10,0,0,True
+0,1,1,1,1,0,2,33,5,7,21,0,0,True
