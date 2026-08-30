@@ -6,7 +6,7 @@ from typing import Callable, Iterable, Mapping, Sequence
 
 import sympy as sp
 
-from qedcalc.operations.ibp import IntegralFamily, IntegralIndex, prune_zero_sectors, sector_rank, specialize_ibp_system
+from qedcalc.operations.ibp import IBPEquation, IntegralFamily, IntegralIndex, prune_zero_sectors, sector_rank, specialize_ibp_system
 from .blocker_reduction import collect_unresolved_blockers
 from .ibp_frontier import IBPDerivativeTemplate, build_ibp_derivative_templates
 from .laporta_plan import dot_degree, physical_sector
@@ -34,6 +34,29 @@ class SectorLocalModPProfile:
 def _progress(cb, stage, current=None, total=None):
     if cb is not None:
         cb(stage, current, total)
+
+
+def _specialize_remaining_symbols_by_name(equations, point):
+    """Finish probe substitution when same-named SymPy symbols differ by assumptions."""
+    values_by_name = {str(symbol): sp.sympify(value) for symbol, value in point.items()}
+    out = []
+    for equation in equations:
+        terms = {}
+        for idx, coeff in equation.terms.items():
+            coeff = sp.sympify(coeff)
+            remaining = {
+                symbol: values_by_name[str(symbol)]
+                for symbol in coeff.free_symbols
+                if str(symbol) in values_by_name
+            }
+            if remaining:
+                coeff = coeff.subs(remaining)
+            coeff = sp.cancel(coeff)
+            if coeff != 0:
+                terms[idx] = coeff
+        if terms:
+            out.append(IBPEquation(terms, equation.label))
+    return tuple(out)
 
 
 def _rational_mod_p(value: sp.Expr, prime: int) -> int:
@@ -124,6 +147,7 @@ def audit_sector_local_modp(
     for point_no, point in enumerate(probe_points, start=1):
         _progress(progress, "specialize probe coefficients", point_no, len(probe_points))
         probed = specialize_ibp_system(equations, point)
+        probed = _specialize_remaining_symbols_by_name(probed, point)
         prime = int(primes[(point_no - 1) % len(primes)])
         rules = _forward_eliminate_mod_p(probed, prime, progress=progress)
         solved = frozenset(b for b in sector_blockers if b in rules)
