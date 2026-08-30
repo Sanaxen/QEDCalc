@@ -78,14 +78,49 @@ def _gamma_from_label(label: str) -> Gamma:
     return Gamma(Index(index_name, "up"))
 
 
+def _signed_momentum_vectors(momentum_text: str) -> tuple[tuple[int, Vector], ...]:
+    """Parse a structural momentum into signed vector terms.
+
+    QEDCalc's existing fermion-propagator scalarizer recognizes denominators
+    written as sums of individually slashed vectors.  Therefore
+
+        m - /(p' - k - l)
+
+    is represented internally as
+
+        m - /p' + /k + /l,
+
+    rather than one Slash(Add(...)) node.
+    """
+    tokens = re.findall(r"[+-]?\s*[^+-]+", momentum_text.strip())
+    out = []
+    for token in tokens:
+        token = token.strip()
+        sign = 1
+        if token.startswith("+"):
+            token = token[1:].strip()
+        elif token.startswith("-"):
+            sign = -1
+            token = token[1:].strip()
+        if token:
+            out.append((sign, Vector(token)))
+    if not out:
+        raise ValueError(f"empty momentum expression: {momentum_text!r}")
+    return tuple(out)
+
+
 def _fermion_propagator(momentum_text: str) -> FermionPropagator:
-    momentum = _momentum_expr(momentum_text)
-    denominator = Add(
-        Symbol("m"),
-        ScalarMul(-1, Slash(momentum)),
-        ScalarMul(-1, Symbol("i_epsilon")),
-    )
-    return FermionPropagator(denominator)
+    # S(P)=1/(m-/P-i epsilon).  Keep every slash term separate so the
+    # restored qedcalc.operations.propagator scalarizer can recover P.
+    denominator_terms = [Symbol("m")]
+    for physical_sign, vec in _signed_momentum_vectors(momentum_text):
+        slash_coeff = -physical_sign
+        slash = Slash(vec)
+        denominator_terms.append(
+            slash if slash_coeff == 1 else ScalarMul(-1, slash)
+        )
+    denominator_terms.append(ScalarMul(-1, Symbol("i_epsilon")))
+    return FermionPropagator(Add(*denominator_terms))
 
 
 def _photon_propagator(label: str) -> PhotonPropagator:
