@@ -1,0 +1,2 @@
+probe,candidate,mixed_seeds,pivoting_mixed_seeds,max_new_pivots
+probe2,"(0, 1, 1, 1, 1, 0, 2)",21,0,8

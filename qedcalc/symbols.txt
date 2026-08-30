@@ -1,0 +1,33 @@
+# QEDCalc symbol definitions
+# Greek letters are written using LaTeX notation.
+# A symbol may appear in [Index] as well as another category when context disambiguates it.
+
+[Scalar]
+m
+e
+\alpha
+\varepsilon
+\lambda
+epsilon_UV
+epsilon_IR
+
+[Constants]
+i
+\pi
+
+[Vector]
+p
+p'
+q
+k
+l
+r
+
+[Index]
+\mu
+\nu
+\rho
+\sigma
+\alpha
+\beta
+\lambda
