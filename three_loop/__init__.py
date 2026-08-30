@@ -30,6 +30,15 @@ from .onshell import (
     apply_finite_q_onshell,
     rewrite_to_pq_external_basis,
 )
+from .integral_family import (
+    Q01_PHYSICAL_DENOMINATOR_COUNT,
+    Q01_FAMILY_SIZE,
+    Q01_SEED,
+    q01_denominator_expressions,
+    q01_scalar_product_rules,
+    q01_integral_family,
+    q01_family_checkpoint,
+)
 from .divergence import DivergentSubgraph, discover_candidate_subgraphs
 
 __all__ = [
@@ -46,5 +55,8 @@ __all__ = [
     "OnShellScalarReduction", "ExternalBasisReduction",
     "finite_q_onshell_substitutions", "finite_q_pq_basis_substitutions",
     "apply_finite_q_onshell", "rewrite_to_pq_external_basis",
+    "Q01_PHYSICAL_DENOMINATOR_COUNT", "Q01_FAMILY_SIZE", "Q01_SEED",
+    "q01_denominator_expressions", "q01_scalar_product_rules",
+    "q01_integral_family", "q01_family_checkpoint",
     "DivergentSubgraph", "discover_candidate_subgraphs",
 ]
