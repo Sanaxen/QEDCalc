@@ -3,6 +3,7 @@ from pathlib import Path
 import sympy as sp
 
 from three_loop import (
+    ProjectedTraceStructure,
     ThreeLoopRegistry,
     build_ordered_amplitude,
     build_projector_ready_amplitude,
@@ -10,16 +11,22 @@ from three_loop import (
     discover_candidate_subgraphs,
     projected_trace_checkpoint,
     q01_bridge_checkpoint,
+    reduce_projected_trace_to_scalar_products,
     three_loop_magnetic_projector,
     schwinger_gordon_checkpoint,
 )
 from qedcalc.core.expression import (
+    Add,
     DiracTrace,
     FermionPropagator,
     Fraction,
     Gamma,
+    Index,
     LoopIntegralExpression,
+    Metric,
     PhotonPropagator,
+    Slash,
+    Vector,
 )
 
 
@@ -145,6 +152,35 @@ def test_q01_projected_trace_checkpoint_preserves_mu_contraction_and_q():
     assert checkpoint["projector_gamma_mu_up"] is True
     assert checkpoint["vertex_gamma_mu_down"] is True
     assert checkpoint["finite_q_not_substituted"] is True
+
+
+def test_q01_scalarized_vertex_has_only_vector_slashes_and_no_photon_metrics():
+    D, z = sp.symbols("D z")
+    projected = build_topology_projected_trace(registry().get("Q01"), D=D, z=z)
+    nodes = tuple(projected.vertex_numerator.walk())
+    assert not any(isinstance(n, Metric) for n in nodes)
+    slash_nodes = [n for n in nodes if isinstance(n, Slash)]
+    assert slash_nodes
+    assert all(isinstance(n.arg, Vector) for n in slash_nodes)
+
+
+def test_scalar_trace_reducer_works_on_minimal_vertex_current():
+    D, z = sp.symbols("D z")
+    projector = three_loop_magnetic_projector(D=D, z=z)
+    toy = ProjectedTraceStructure(
+        diagram_id="toy",
+        projector=projector,
+        trace=DiracTrace(Gamma(Index("mu", "down"))),
+        scalar_denominator=sp.Integer(1),
+        loop_integral=None,
+        vertex_numerator=Gamma(Index("mu", "down")),
+    )
+    reduced = reduce_projected_trace_to_scalar_products(toy)
+    assert reduced.diagram_id == "toy"
+    assert reduced.expression != 0
+    assert reduced.expression.has(D)
+    assert reduced.expression.has(z)
+    assert any(name.startswith("SP__") for name in reduced.scalar_product_atoms)
 
 
 # The following checks belong to the next renormalization/divergent-subgraph stage.
