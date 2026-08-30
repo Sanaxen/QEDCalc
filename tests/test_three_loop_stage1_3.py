@@ -101,6 +101,8 @@ def test_q01_qedexpr_bridge_has_expected_graph_content():
     assert sum(isinstance(n, Gamma) for n in nodes) == 7
     assert sum(isinstance(n, FermionPropagator) for n in nodes) == 6
     assert sum(isinstance(n, PhotonPropagator) for n in nodes) == 3
+    gamma_indices = tuple(n.index.name for n in nodes if isinstance(n, Gamma))
+    assert gamma_indices == ("k_L", "mu", "l_L", "k_R", "r_L", "l_R", "r_R")
 
 
 def test_q01_bridge_checkpoint_is_projector_ready():
@@ -111,6 +113,7 @@ def test_q01_bridge_checkpoint_is_projector_ready():
         "gamma_count": 7,
         "fermion_propagator_count": 6,
         "photon_propagator_count": 3,
+        "metric_pairs": (("k_L", "k_R"), ("l_L", "l_R"), ("r_L", "r_R")),
         "projector_has_finite_q": True,
     }
 
