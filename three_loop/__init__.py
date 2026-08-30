@@ -59,6 +59,13 @@ from .ibp_frontier import (
     one_step_ibp_frontier,
     profile_ibp_frontier,
 )
+from .seed_pruning import (
+    SeedPruningPolicy,
+    SeedPruningProfile,
+    descendant_sector_closure,
+    prune_seed_indices,
+    profile_seed_pruning,
+)
 from .divergence import DivergentSubgraph, discover_candidate_subgraphs
 
 __all__ = [
@@ -85,5 +92,7 @@ __all__ = [
     "IBPDerivativeTemplate", "IBPFrontierProfile",
     "build_ibp_derivative_templates", "one_step_ibp_frontier",
     "profile_ibp_frontier",
+    "SeedPruningPolicy", "SeedPruningProfile", "descendant_sector_closure",
+    "prune_seed_indices", "profile_seed_pruning",
     "DivergentSubgraph", "discover_candidate_subgraphs",
 ]
