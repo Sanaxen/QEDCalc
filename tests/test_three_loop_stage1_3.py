@@ -1,9 +1,13 @@
 from pathlib import Path
 
+import sympy as sp
+
 from three_loop import (
     ThreeLoopRegistry,
     build_ordered_amplitude,
     discover_candidate_subgraphs,
+    three_loop_magnetic_projector,
+    schwinger_gordon_checkpoint,
 )
 
 
@@ -55,12 +59,40 @@ def test_stage2_closed_loop_signs():
     assert build_ordered_amplitude(reg.get("LBL01")).sign == -1
 
 
-def test_stage3_declared_vp_is_discovered():
+def test_stage3_projector_reuses_qedcalc_ddim_coefficients():
+    D, z = sp.symbols("D z")
+    projector = three_loop_magnetic_projector(D=D, z=z)
+    assert sp.simplify(projector.a - 2/(z*(D-2)*(z-4))) == 0
+    assert sp.simplify(
+        projector.b - (D*z - 2*z + 4)/(z*(D-2)*(z-4)**2)
+    ) == 0
+
+
+def test_stage3_qzero_is_laurent_not_direct_substitution():
+    D, z = sp.symbols("D z")
+    projector = three_loop_magnetic_projector(D=D, z=z)
+    residues = projector.q_zero_pole_coefficients()
+    assert sp.simplify(residues["a_residue"] + 1/(2*(D-2))) == 0
+    assert sp.simplify(residues["b_residue"] - 1/(4*(D-2))) == 0
+    expansion = projector.q_zero_laurent(order=2)
+    assert expansion["a"].has(1/z)
+    assert expansion["b"].has(1/z)
+
+
+def test_stage3_schwinger_normalization_checkpoint():
+    alpha = sp.Symbol("alpha")
+    assert sp.simplify(schwinger_gordon_checkpoint(alpha=alpha) - alpha/(2*sp.pi)) == 0
+
+
+# The following checks belong to the next renormalization/divergent-subgraph stage.
+# They remain here as forward regression coverage because this code was implemented
+# before the stage-number correction.
+def test_stage4_preview_declared_vp_is_discovered():
     candidates = discover_candidate_subgraphs(registry().get("VP01"))
     assert any(c.kind == "vacuum_polarization" for c in candidates)
 
 
-def test_stage3_q01_finds_nested_vertex_candidates():
+def test_stage4_preview_q01_finds_nested_vertex_candidates():
     candidates = discover_candidate_subgraphs(registry().get("Q01"))
     signatures = {(c.kind, c.vertices, c.photon_labels) for c in candidates}
     assert ("vertex", (5, 6, 7), ("r",)) in signatures
