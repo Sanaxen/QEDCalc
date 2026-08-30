@@ -18,3 +18,13 @@ def test_q01_probe_points_use_distinct_dimension_values():
     family = q01_integral_family()
     points = default_q01_probe_points(family)
     assert points[0][family.dimension_symbol] != points[1][family.dimension_symbol]
+
+
+def test_q01_probe_points_always_include_m_and_z_by_name():
+    family = q01_integral_family()
+    points = default_q01_probe_points(family)
+    for point in points:
+        names = {str(symbol): value for symbol, value in point.items()}
+        assert names["m"] == 1
+        assert "z" in names
+        assert names["z"].is_Rational
