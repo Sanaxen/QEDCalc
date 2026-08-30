@@ -84,7 +84,7 @@ This is only a normalization regression; it does not replace the one-loop integr
 
 ## Q01 integration bridge into QEDCalc
 
-`three_loop/qedexpr_bridge.py` now connects the first three-loop reference graph to the restored QEDCalc expression backend:
+`three_loop/qedexpr_bridge.py` connects the first three-loop reference graph to the restored QEDCalc expression backend:
 
 `topology -> ordered amplitude -> QEDCalc QEDExpr -> magnetic projector metadata`
 
@@ -102,7 +102,36 @@ Thus the first photon is represented structurally by gamma endpoints `k_L`, `k_R
 
 The overall three-loop normalization is still represented by the explicit placeholder `C_3`. Coupling powers, loop-normalization factors, gauge-dependent longitudinal pieces and renormalization ownership are not silently inferred by this bridge.
 
-The next physical step is to construct the actual spin-sum/trace projector action on the Q01 numerator, verify the finite-$q$ projected expression, and only then begin the $q\to0$ cancellation analysis.
+## Q01 finite-q projected trace
+
+`three_loop/projected_trace.py` now continues the chain to
+
+`topology -> QEDExpr -> scalarized numerator/denominator -> finite-q magnetic projector trace`.
+
+The electron and photon propagators are scalarized before the trace is built, so the scalar denominator is kept outside the Clifford word. The trace structure is
+
+$$
+\operatorname{Tr}\left[
+(\rlap{/}p'+m)\,
+K^{\mu}(D,z)\,
+(\rlap{/}p+m)\,
+N_{\mu}^{(3)}
+\right],
+$$
+
+where the projector kernel is
+
+$$
+K^{\mu}(D,z)
+=
+a(D,z)\gamma^{\mu}
++
+\frac{b(D,z)}{m}(p'+p)^{\mu}.
+$$
+
+The overall $1/m^2$ projector normalization is stored explicitly outside the trace. No $z=0$ substitution is performed at this point.
+
+This is intentionally an unexpanded D-dimensional trace. QEDCalc already contains arbitrary-length D-dimensional Clifford-trace and fully contracted Lorentz-scalar machinery; the next computation step is to apply those engines to this Q01 trace, reduce the result to scalar products, and then organize the finite-$q$ expression for the $q\to0$ cancellation analysis.
 
 ## Stage 4 preview — divergent-subgraph candidates
 
@@ -127,8 +156,8 @@ Run:
 run_three_loop_stage1_3_validation.bat
 ```
 
-The validation checks stages 1–3, the Q01 QEDExpr bridge, and the existing stage-4-preview checks. It remains separate from `run_v090_validation.bat`; before merging higher-loop work, both should remain green.
+The validation checks stages 1–3, the Q01 QEDExpr bridge, the Q01 finite-q projected-trace structure, and the existing stage-4-preview checks. It remains separate from `run_v090_validation.bat`; before merging higher-loop work, both should remain green.
 
 ## Repository integration note
 
-The previously missing `qedcalc/` source tree has now been restored. Stage 3 directly imports and reuses the restored QEDCalc projector machinery, and the Q01 bridge now also imports the restored `qedcalc.core.expression` classes directly.
+The previously missing `qedcalc/` source tree has now been restored. Stage 3 directly imports and reuses the restored QEDCalc projector machinery, and the Q01 bridge/projected-trace layers import the restored `qedcalc.core.expression` and propagator machinery directly.
