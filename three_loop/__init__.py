@@ -52,6 +52,13 @@ from .laporta_plan import (
     total_complexity,
     build_sector_demand_profiles,
 )
+from .ibp_frontier import (
+    IBPDerivativeTemplate,
+    IBPFrontierProfile,
+    build_ibp_derivative_templates,
+    one_step_ibp_frontier,
+    profile_ibp_frontier,
+)
 from .divergence import DivergentSubgraph, discover_candidate_subgraphs
 
 __all__ = [
@@ -75,5 +82,8 @@ __all__ = [
     "q01_scalar_numerator_to_integrals",
     "SectorDemandProfile", "physical_sector", "dot_degree",
     "numerator_degree", "total_complexity", "build_sector_demand_profiles",
+    "IBPDerivativeTemplate", "IBPFrontierProfile",
+    "build_ibp_derivative_templates", "one_step_ibp_frontier",
+    "profile_ibp_frontier",
     "DivergentSubgraph", "discover_candidate_subgraphs",
 ]
