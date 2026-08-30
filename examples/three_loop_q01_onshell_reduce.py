@@ -22,10 +22,32 @@ SUMMARY = ROOT / "output" / "3loop_q01_projected_scalar_onshell_summary.json"
 
 
 def _parse_saved_expression(text: str) -> sp.Expr:
-    """Parse the saved scalar expression while preserving apostrophe symbols."""
-    names = set(re.findall(r"SP__[A-Za-z0-9']+__[A-Za-z0-9']+|\bD\b|\bm\b|\bz\b", text))
-    local_dict = {name: sp.Symbol(name) for name in names}
-    return sp.sympify(text, locals=local_dict, evaluate=False)
+    """Parse saved scalar expressions whose Symbol names may contain apostrophes.
+
+    Python/SymPy's textual parser cannot directly read identifiers such as
+    ``SP__p'__p'``.  Replace every scalar-product atom by a parser-safe token,
+    parse that expression, then restore the exact original Symbol objects.
+    """
+    sp_names = sorted(
+        set(re.findall(r"SP__[A-Za-z0-9']+__[A-Za-z0-9']+", text)),
+        key=len,
+        reverse=True,
+    )
+    safe_text = text
+    safe_to_original = {}
+    for i, name in enumerate(sp_names):
+        safe = f"SPATOM_{i}"
+        safe_text = safe_text.replace(name, safe)
+        safe_to_original[sp.Symbol(safe)] = sp.Symbol(name)
+
+    local_dict = {
+        "D": sp.Symbol("D"),
+        "m": sp.Symbol("m"),
+        "z": sp.Symbol("z"),
+    }
+    local_dict.update({str(s): s for s in safe_to_original})
+    parsed = sp.sympify(safe_text, locals=local_dict, evaluate=False)
+    return parsed.xreplace(safe_to_original)
 
 
 def main() -> int:
