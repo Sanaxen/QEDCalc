@@ -1,4 +1,4 @@
-"""Three-loop stages 1-3 foundation."""
+"""Three-loop stages 1-3 foundation and QEDCalc integration bridge."""
 from .registry import PhotonEdge, ThreeLoopRegistry, ThreeLoopTopology
 from .amplitude import Factor, OrderedAmplitude, build_ordered_amplitude
 from .projector import (
@@ -7,6 +7,12 @@ from .projector import (
     project_f2_from_reduced_current,
     schwinger_gordon_checkpoint,
 )
+from .qedexpr_bridge import (
+    ProjectorReadyAmplitude,
+    ordered_amplitude_to_qedexpr,
+    build_projector_ready_amplitude,
+    q01_bridge_checkpoint,
+)
 from .divergence import DivergentSubgraph, discover_candidate_subgraphs
 
 __all__ = [
@@ -14,5 +20,7 @@ __all__ = [
     "Factor", "OrderedAmplitude", "build_ordered_amplitude",
     "MagneticProjector", "three_loop_magnetic_projector",
     "project_f2_from_reduced_current", "schwinger_gordon_checkpoint",
+    "ProjectorReadyAmplitude", "ordered_amplitude_to_qedexpr",
+    "build_projector_ready_amplitude", "q01_bridge_checkpoint",
     "DivergentSubgraph", "discover_candidate_subgraphs",
 ]
