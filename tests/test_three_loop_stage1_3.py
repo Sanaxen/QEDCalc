@@ -6,13 +6,17 @@ from three_loop import (
     ThreeLoopRegistry,
     build_ordered_amplitude,
     build_projector_ready_amplitude,
+    build_topology_projected_trace,
     discover_candidate_subgraphs,
+    projected_trace_checkpoint,
     q01_bridge_checkpoint,
     three_loop_magnetic_projector,
     schwinger_gordon_checkpoint,
 )
 from qedcalc.core.expression import (
+    DiracTrace,
     FermionPropagator,
+    Fraction,
     Gamma,
     LoopIntegralExpression,
     PhotonPropagator,
@@ -116,6 +120,31 @@ def test_q01_bridge_checkpoint_is_projector_ready():
         "metric_pairs": (("k_L", "k_R"), ("l_L", "l_R"), ("r_L", "r_R")),
         "projector_has_finite_q": True,
     }
+
+
+def test_q01_builds_unexpanded_finite_q_projector_trace():
+    D, z = sp.symbols("D z")
+    projected = build_topology_projected_trace(registry().get("Q01"), D=D, z=z)
+    assert isinstance(projected.trace, DiracTrace)
+    assert isinstance(projected.loop_integral, LoopIntegralExpression)
+    assert isinstance(projected.loop_integral.integrand, Fraction)
+    assert tuple(v.name for v in projected.loop_integral.loops) == ("k", "l", "r")
+    assert projected.projector.z == z
+    assert projected.projector.a.has(z)
+    assert projected.projector.b.has(z)
+
+
+def test_q01_projected_trace_checkpoint_preserves_mu_contraction_and_q():
+    D, z = sp.symbols("D z")
+    projected = build_topology_projected_trace(registry().get("Q01"), D=D, z=z)
+    checkpoint = projected_trace_checkpoint(projected)
+    assert checkpoint["diagram_id"] == "Q01"
+    assert checkpoint["loop_names"] == ("k", "l", "r")
+    assert checkpoint["has_dirac_trace"] is True
+    assert checkpoint["external_spin_slashes"] >= 2
+    assert checkpoint["projector_gamma_mu_up"] is True
+    assert checkpoint["vertex_gamma_mu_down"] is True
+    assert checkpoint["finite_q_not_substituted"] is True
 
 
 # The following checks belong to the next renormalization/divergent-subgraph stage.
