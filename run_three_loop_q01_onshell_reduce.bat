@@ -8,6 +8,8 @@ if exist ".venv\Scripts\python.exe" (
     set PY=py
 )
 
+set "PYTHONPATH=%CD%;%PYTHONPATH%"
+
 echo QEDCalc Q01 finite-q on-shell scalar reduction
 %PY% examples\three_loop_q01_onshell_reduce.py
 if errorlevel 1 (
