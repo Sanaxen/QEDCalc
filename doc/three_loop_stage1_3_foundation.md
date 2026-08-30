@@ -37,7 +37,7 @@ The finite-q D-dimensional Pauli projector reuses `qedcalc.operations.ladder.lad
 $$
 \begin{aligned}
 a(D,z) &= \frac{2}{z(D-2)(z-4)}, \\
-b(D,z) &= \frac{Dz-2z+4}{z(D-2)(z-4)^2},
+b(D,z) &= \frac{Dz-2z+4}{z(D-2)(z-4)^2}.
 \end{aligned}
 $$
 
@@ -82,6 +82,28 @@ $$
 
 This is only a normalization regression; it does not replace the one-loop integral calculation.
 
+## Q01 integration bridge into QEDCalc
+
+`three_loop/qedexpr_bridge.py` now connects the first three-loop reference graph to the restored QEDCalc expression backend:
+
+`topology -> ordered amplitude -> QEDCalc QEDExpr -> magnetic projector metadata`
+
+The bridge is deliberately exact only for the quenched Q01–Q50 family at this point. VP and LBL graphs still need explicit closed-loop builders and are rejected rather than guessed.
+
+For Q01 the bridge fixes the following structural regression targets:
+
+- loop momenta: `k`, `l`, `r`,
+- seven gamma matrices on the open electron line,
+- six electron propagators,
+- three photon propagators,
+- distinct Lorentz indices at the two ends of every photon line.
+
+Thus the first photon is represented structurally by gamma endpoints `k_L`, `k_R` connected by the metric pair `(k_L,k_R)`, with analogous pairs for `l` and `r`. This prevents a later Lorentz contraction from confusing the two photon endpoints.
+
+The overall three-loop normalization is still represented by the explicit placeholder `C_3`. Coupling powers, loop-normalization factors, gauge-dependent longitudinal pieces and renormalization ownership are not silently inferred by this bridge.
+
+The next physical step is to construct the actual spin-sum/trace projector action on the Q01 numerator, verify the finite-$q$ projected expression, and only then begin the $q\to0$ cancellation analysis.
+
 ## Stage 4 preview — divergent-subgraph candidates
 
 `three_loop/divergence.py` was implemented early before the stage-number correction. It is retained as forward regression coverage for the next renormalization stage.
@@ -105,12 +127,8 @@ Run:
 run_three_loop_stage1_3_validation.bat
 ```
 
-The validation checks stages 1–3 and also keeps the existing stage-4-preview checks. It remains separate from `run_v090_validation.bat`; before merging higher-loop work, both should remain green.
+The validation checks stages 1–3, the Q01 QEDExpr bridge, and the existing stage-4-preview checks. It remains separate from `run_v090_validation.bat`; before merging higher-loop work, both should remain green.
 
 ## Repository integration note
 
-The previously missing `qedcalc/` source tree has now been restored. Stage 3 directly imports and reuses the restored QEDCalc projector machinery. Stage 2 remains structurally isolated for now; the next integration step is to convert its ordered amplitude representation into QEDCalc expression objects and then connect
-
-`topology -> ordered amplitude -> QEDCalc expression -> magnetic projector -> F2`
-
-for one or more reference three-loop diagrams before generalizing to all 72.
+The previously missing `qedcalc/` source tree has now been restored. Stage 3 directly imports and reuses the restored QEDCalc projector machinery, and the Q01 bridge now also imports the restored `qedcalc.core.expression` classes directly.
