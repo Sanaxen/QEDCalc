@@ -5,9 +5,17 @@ import sympy as sp
 from three_loop import (
     ThreeLoopRegistry,
     build_ordered_amplitude,
+    build_projector_ready_amplitude,
     discover_candidate_subgraphs,
+    q01_bridge_checkpoint,
     three_loop_magnetic_projector,
     schwinger_gordon_checkpoint,
+)
+from qedcalc.core.expression import (
+    FermionPropagator,
+    Gamma,
+    LoopIntegralExpression,
+    PhotonPropagator,
 )
 
 
@@ -82,6 +90,29 @@ def test_stage3_qzero_is_laurent_not_direct_substitution():
 def test_stage3_schwinger_normalization_checkpoint():
     alpha = sp.Symbol("alpha")
     assert sp.simplify(schwinger_gordon_checkpoint(alpha=alpha) - alpha/(2*sp.pi)) == 0
+
+
+def test_q01_qedexpr_bridge_has_expected_graph_content():
+    q01 = registry().get("Q01")
+    ready = build_projector_ready_amplitude(q01)
+    assert isinstance(ready.loop_integral, LoopIntegralExpression)
+    assert tuple(v.name for v in ready.loop_integral.loops) == ("k", "l", "r")
+    nodes = tuple(ready.loop_integral.integrand.walk())
+    assert sum(isinstance(n, Gamma) for n in nodes) == 7
+    assert sum(isinstance(n, FermionPropagator) for n in nodes) == 6
+    assert sum(isinstance(n, PhotonPropagator) for n in nodes) == 3
+
+
+def test_q01_bridge_checkpoint_is_projector_ready():
+    checkpoint = q01_bridge_checkpoint(registry().get("Q01"))
+    assert checkpoint == {
+        "diagram_id": "Q01",
+        "loop_names": ("k", "l", "r"),
+        "gamma_count": 7,
+        "fermion_propagator_count": 6,
+        "photon_propagator_count": 3,
+        "projector_has_finite_q": True,
+    }
 
 
 # The following checks belong to the next renormalization/divergent-subgraph stage.
