@@ -39,6 +39,11 @@ from .integral_family import (
     q01_integral_family,
     q01_family_checkpoint,
 )
+from .integral_mapping import (
+    IntegralLinearCombination,
+    scalar_numerator_to_integrals,
+    q01_scalar_numerator_to_integrals,
+)
 from .divergence import DivergentSubgraph, discover_candidate_subgraphs
 
 __all__ = [
@@ -58,5 +63,7 @@ __all__ = [
     "Q01_PHYSICAL_DENOMINATOR_COUNT", "Q01_FAMILY_SIZE", "Q01_SEED",
     "q01_denominator_expressions", "q01_scalar_product_rules",
     "q01_integral_family", "q01_family_checkpoint",
+    "IntegralLinearCombination", "scalar_numerator_to_integrals",
+    "q01_scalar_numerator_to_integrals",
     "DivergentSubgraph", "discover_candidate_subgraphs",
 ]
