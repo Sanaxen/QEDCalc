@@ -124,7 +124,7 @@ def dependency_closure(
     trace: ModPPivotTrace,
     requested: Sequence[IntegralIndex],
 ) -> tuple[IntegralIndex, ...]:
-    """Return pivot nodes needed to reduce requested integrals under this trace."""
+    """Return pivot nodes needed by the final finite-field RHS dependency graph."""
     by_pivot = {IntegralIndex(record.pivot): record for record in trace.records}
     needed: set[IntegralIndex] = set()
     stack = list(requested)
@@ -138,4 +138,39 @@ def dependency_closure(
             child = IntegralIndex(powers)
             if child in by_pivot and child not in needed:
                 stack.append(child)
+    return tuple(sorted(needed, key=sector_rank, reverse=True))
+
+
+def replay_dependency_closure(
+    trace: ModPPivotTrace,
+    requested: Sequence[IntegralIndex],
+) -> tuple[IntegralIndex, ...]:
+    """Return every pivot record needed to reproduce the traced elimination.
+
+    Unlike :func:`dependency_closure`, this follows not only pivot integrals that
+    survive on the normalized RHS, but also earlier pivots that were substituted
+    out of a source row before its final pivot was chosen.  Those provenance
+    dependencies are required when replaying the same elimination exactly with
+    symbolic coefficients.
+    """
+    by_pivot = {IntegralIndex(record.pivot): record for record in trace.records}
+    needed: set[IntegralIndex] = set()
+    stack = list(requested)
+    while stack:
+        current = stack.pop()
+        if current in needed or current not in by_pivot:
+            continue
+        needed.add(current)
+        record = by_pivot[current]
+
+        for powers, _coeff in record.rhs:
+            child = IntegralIndex(powers)
+            if child in by_pivot and child not in needed:
+                stack.append(child)
+
+        for powers in record.eliminated_prior_pivots:
+            prior = IntegralIndex(powers)
+            if prior in by_pivot and prior not in needed:
+                stack.append(prior)
+
     return tuple(sorted(needed, key=sector_rank, reverse=True))
