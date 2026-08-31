@@ -27,6 +27,12 @@ from .sector_local_modp import _specialize_remaining_symbols_by_name
 
 
 @dataclass(frozen=True)
+class ModPLowerSectorRow:
+    sector: tuple[int, ...]
+    terminal_count: int
+
+
+@dataclass(frozen=True)
 class ModPSectorDescentProfile:
     sector: tuple[int, ...]
     target_count: int
@@ -42,6 +48,9 @@ class ModPSectorDescentProfile:
     higher_or_other_sector_terminal_count: int
     lower_sector_count: int
     largest_lower_sector_terminal_count: int
+    terminal_indices: tuple[tuple[int, ...], ...]
+    same_sector_terminal_indices: tuple[tuple[int, ...], ...]
+    lower_sector_rows: tuple[ModPLowerSectorRow, ...]
 
 
 def audit_modp_sector_descent(
@@ -85,20 +94,27 @@ def audit_modp_sector_descent(
         for record in support.records
         for powers in record.terminals
     }
-    same = 0
-    lower = 0
-    other = 0
+    same_terminals: list[IntegralIndex] = []
     lower_counts: dict[tuple[int, ...], int] = {}
+    other = 0
     source_lines = sum(sector)
     for terminal in terminals:
         t_sector = physical_sector(terminal, physical_count)
         if t_sector == sector:
-            same += 1
+            same_terminals.append(terminal)
         elif sum(t_sector) < source_lines:
-            lower += 1
             lower_counts[t_sector] = lower_counts.get(t_sector, 0) + 1
         else:
             other += 1
+
+    ordered_terminals = tuple(sorted(terminals, key=lambda index: index.powers))
+    ordered_same = tuple(sorted(same_terminals, key=lambda index: index.powers))
+    lower_rows = tuple(
+        ModPLowerSectorRow(sector=lower_sector, terminal_count=count)
+        for lower_sector, count in sorted(
+            lower_counts.items(), key=lambda item: (-item[1], item[0])
+        )
+    )
 
     return ModPSectorDescentProfile(
         sector=sector,
@@ -110,9 +126,12 @@ def audit_modp_sector_descent(
         solved_target_count=support.solved_target_count,
         unsolved_target_count=support.unsolved_target_count,
         distinct_terminal_count=len(terminals),
-        same_sector_terminal_count=same,
-        lower_sector_terminal_count=lower,
+        same_sector_terminal_count=len(same_terminals),
+        lower_sector_terminal_count=sum(lower_counts.values()),
         higher_or_other_sector_terminal_count=other,
         lower_sector_count=len(lower_counts),
         largest_lower_sector_terminal_count=max(lower_counts.values(), default=0),
+        terminal_indices=tuple(index.powers for index in ordered_terminals),
+        same_sector_terminal_indices=tuple(index.powers for index in ordered_same),
+        lower_sector_rows=lower_rows,
     )
