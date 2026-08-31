@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter
 from pathlib import Path
 
@@ -11,8 +12,19 @@ from three_loop.direct_symbolic_closure import audit_direct_symbolic_closure
 from three_loop.direct_symbolic_reduction import DirectSymbolicRule
 
 ROOT = Path(__file__).resolve().parents[1]
+TARGET_SOURCE = ROOT / "output" / "3loop_q01_integral_indices.txt"
 SOURCE = ROOT / "output" / "3loop_q01_direct_symbolic_reduction.json"
 OUTPUT = ROOT / "output" / "3loop_q01_direct_symbolic_closure.json"
+INDEX_RE = re.compile(r"I\(([-0-9, ]+)\)")
+
+
+def _load_targets(path: Path) -> tuple[IntegralIndex, ...]:
+    out = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        match = INDEX_RE.search(line)
+        if match:
+            out.append(IntegralIndex(tuple(int(part.strip()) for part in match.group(1).split(","))))
+    return tuple(dict.fromkeys(out))
 
 
 def _load_rules(data) -> tuple[DirectSymbolicRule, ...]:
@@ -22,14 +34,17 @@ def _load_rules(data) -> tuple[DirectSymbolicRule, ...]:
             target=tuple(row["target"]),
             source_label=row["source_label"],
             target_coefficient=sp.sympify(row["target_coefficient"]),
-            rhs=tuple((tuple(item[0]), sp.sympify(item[1])) for item in row["rhs"]),
+            rhs=tuple(
+                (tuple(item["index"]), sp.sympify(item["coefficient"]))
+                for item in row["rhs"]
+            ),
         ))
     return tuple(out)
 
 
 def main() -> None:
     data = json.loads(SOURCE.read_text(encoding="utf-8"))
-    targets = tuple(IntegralIndex(tuple(item)) for item in data["targets"])
+    targets = _load_targets(TARGET_SOURCE)
     rules = _load_rules(data)
     profile = audit_direct_symbolic_closure(targets, rules)
 
