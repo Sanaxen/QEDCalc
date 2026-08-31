@@ -48,6 +48,8 @@ class ModPSectorDescentProfile:
     higher_or_other_sector_terminal_count: int
     lower_sector_count: int
     largest_lower_sector_terminal_count: int
+    target_indices: tuple[tuple[int, ...], ...]
+    unsolved_target_indices: tuple[tuple[int, ...], ...]
     terminal_indices: tuple[tuple[int, ...], ...]
     same_sector_terminal_indices: tuple[tuple[int, ...], ...]
     lower_sector_rows: tuple[ModPLowerSectorRow, ...]
@@ -89,6 +91,8 @@ def audit_modp_sector_descent(
     trace = forward_eliminate_mod_p_with_trace(probed, int(prime), progress=progress)
     support = profile_terminal_support_mod_p(trace, targets)
 
+    pivot_set = set(trace.pivot_indices)
+    unsolved_targets = tuple(sorted((t for t in targets if t not in pivot_set), key=lambda index: index.powers))
     terminals = {
         IntegralIndex(powers)
         for record in support.records
@@ -107,6 +111,7 @@ def audit_modp_sector_descent(
         else:
             other += 1
 
+    ordered_targets = tuple(sorted(targets, key=lambda index: index.powers))
     ordered_terminals = tuple(sorted(terminals, key=lambda index: index.powers))
     ordered_same = tuple(sorted(same_terminals, key=lambda index: index.powers))
     lower_rows = tuple(
@@ -131,6 +136,8 @@ def audit_modp_sector_descent(
         higher_or_other_sector_terminal_count=other,
         lower_sector_count=len(lower_counts),
         largest_lower_sector_terminal_count=max(lower_counts.values(), default=0),
+        target_indices=tuple(index.powers for index in ordered_targets),
+        unsolved_target_indices=tuple(index.powers for index in unsolved_targets),
         terminal_indices=tuple(index.powers for index in ordered_terminals),
         same_sector_terminal_indices=tuple(index.powers for index in ordered_same),
         lower_sector_rows=lower_rows,
