@@ -89,6 +89,8 @@ def main() -> None:
         "higher_or_other_sector_terminal_count": profile.higher_or_other_sector_terminal_count,
         "lower_sector_count": profile.lower_sector_count,
         "largest_lower_sector_terminal_count": profile.largest_lower_sector_terminal_count,
+        "target_indices": profile.target_indices,
+        "unsolved_target_indices": profile.unsolved_target_indices,
         "terminal_indices": profile.terminal_indices,
         "same_sector_terminal_indices": profile.same_sector_terminal_indices,
         "lower_sector_rows": [row.__dict__ for row in profile.lower_sector_rows],
