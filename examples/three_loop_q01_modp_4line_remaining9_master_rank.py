@@ -36,7 +36,7 @@ def main() -> None:
             suffix = f" {current}/{total} ({100.0 * current / total:.1f}%)"
         print(f"[progress {elapsed:9.1f}s] {stage}{suffix}", flush=True)
 
-    print("QEDCalc Q01 remaining-nine local master-rank audit")
+    print("QEDCalc Q01 remaining-nine corrected local master-rank audit")
     print(f"dotted targets: {len(targets)}")
     print(f"candidate block size: {len(block)}")
     print(f"undotted base: I{UNDOTTED.powers}")
@@ -66,14 +66,16 @@ def main() -> None:
     print(f"primes: {profile.primes}")
     print(f"full ranks: {profile.full_ranks}")
     print(f"ranks without 9 dotted targets: {profile.without_target_ranks}")
-    print(f"constraints carried by 9 targets: {profile.target_constraint_ranks}")
-    print(f"free dimensions of 9-target block: {profile.target_free_dimensions}")
+    print(f"added column rank of 9 dotted targets: {profile.target_added_column_ranks}")
+    print(f"restricted rank of 9 dotted targets: {profile.target_restricted_ranks}")
+    print(f"conditional free dimensions of 9-target block: {profile.target_conditional_free_dimensions}")
     print(f"ranks without 10-integral block: {profile.without_block_ranks}")
-    print(f"constraints carried by 10-integral block: {profile.block_constraint_ranks}")
-    print(f"free dimensions of 10-integral block: {profile.block_free_dimensions}")
+    print(f"added column rank of 10-integral block: {profile.block_added_column_ranks}")
+    print(f"restricted rank of 10-integral block: {profile.block_restricted_ranks}")
+    print(f"conditional free dimensions of 10-integral block: {profile.block_conditional_free_dimensions}")
     print(f"stable across primes: {profile.stable_across_primes}")
     print(f"generated: {OUTPUT}")
-    print("Q01 remaining-nine local master-rank audit PASS")
+    print("Q01 remaining-nine corrected local master-rank audit PASS")
 
 
 if __name__ == "__main__":
