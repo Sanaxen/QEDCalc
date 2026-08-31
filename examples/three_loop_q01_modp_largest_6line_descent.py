@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import json
 import time
-from collections import Counter
 from pathlib import Path
 
 from qedcalc.operations.ibp import IntegralIndex
 from three_loop.ibp_frontier import build_ibp_derivative_templates
 from three_loop.integral_family import q01_integral_family
-from three_loop.laporta_plan import physical_sector
 from three_loop.modp_sector_descent import audit_modp_sector_descent
 from three_loop.sector_local_probe import default_q01_probe_points
 
@@ -50,7 +48,26 @@ def main() -> None:
         progress=progress,
     )
 
-    out = profile.__dict__ | {"elapsed_seconds": time.perf_counter() - start}
+    out = {
+        "sector": profile.sector,
+        "target_count": profile.target_count,
+        "equation_count": profile.equation_count,
+        "integral_count": profile.integral_count,
+        "prime": profile.prime,
+        "pivot_count": profile.pivot_count,
+        "solved_target_count": profile.solved_target_count,
+        "unsolved_target_count": profile.unsolved_target_count,
+        "distinct_terminal_count": profile.distinct_terminal_count,
+        "same_sector_terminal_count": profile.same_sector_terminal_count,
+        "lower_sector_terminal_count": profile.lower_sector_terminal_count,
+        "higher_or_other_sector_terminal_count": profile.higher_or_other_sector_terminal_count,
+        "lower_sector_count": profile.lower_sector_count,
+        "largest_lower_sector_terminal_count": profile.largest_lower_sector_terminal_count,
+        "terminal_indices": profile.terminal_indices,
+        "same_sector_terminal_indices": profile.same_sector_terminal_indices,
+        "lower_sector_rows": [row.__dict__ for row in profile.lower_sector_rows],
+        "elapsed_seconds": time.perf_counter() - start,
+    }
     OUTPUT.write_text(json.dumps(out, indent=2), encoding="utf-8")
 
     print(f"sector: {profile.sector}")
@@ -66,6 +83,12 @@ def main() -> None:
     print(f"higher/other-sector terminals: {profile.higher_or_other_sector_terminal_count}")
     print(f"distinct lower sectors: {profile.lower_sector_count}")
     print(f"largest lower-sector terminal count: {profile.largest_lower_sector_terminal_count}")
+    print("lower sectors:")
+    for row in profile.lower_sector_rows:
+        print(f"  {row.sector}: terminals={row.terminal_count}")
+    print("same-sector residual terminals:")
+    for powers in profile.same_sector_terminal_indices:
+        print(f"  I{powers}")
     print(f"generated: {OUTPUT}")
     print("Q01 largest 6-line mod-p sector descent PASS")
 
