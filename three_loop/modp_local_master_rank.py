@@ -1,17 +1,19 @@
 """Finite-field rank audit for a small candidate-master block.
 
-The audit is independent of the particular forward-pivot ordering.  For a
-homogeneous IBP matrix A and a selected column block B, the number of
-independent constraints carried by B relative to all other columns is
+For a homogeneous IBP system A x = 0 and a selected column block T, the
+quantity relevant to whether variables in T are determined by the complement
+is the rank of the restricted submatrix A_T itself.  If the complement is held
+fixed, the residual freedom inside T is
 
-    rank(A) - rank(A without B),
+    dim ker(A_T) = |T| - rank(A_T).
 
-so the residual block freedom is
+The older diagnostic rank(A) - rank(A without T) is retained only as an
+auxiliary column-span statistic.  It must not be interpreted as the master
+freedom of T: for the simple relation x + y = 0, deleting the x column leaves
+the full rank unchanged even though x is completely determined by y.
 
-    |B| - (rank(A) - rank(A without B)).
-
-This is a structural finite-field diagnostic, not an exact symbolic master
-proof.
+This remains a structural finite-field diagnostic, not an exact symbolic
+master proof.
 """
 from __future__ import annotations
 
@@ -43,11 +45,13 @@ class ModPLocalMasterRankProfile:
     primes: tuple[int, ...]
     full_ranks: tuple[int, ...]
     without_target_ranks: tuple[int, ...]
-    target_constraint_ranks: tuple[int, ...]
-    target_free_dimensions: tuple[int, ...]
+    target_added_column_ranks: tuple[int, ...]
+    target_restricted_ranks: tuple[int, ...]
+    target_conditional_free_dimensions: tuple[int, ...]
     without_block_ranks: tuple[int, ...]
-    block_constraint_ranks: tuple[int, ...]
-    block_free_dimensions: tuple[int, ...]
+    block_added_column_ranks: tuple[int, ...]
+    block_restricted_ranks: tuple[int, ...]
+    block_conditional_free_dimensions: tuple[int, ...]
     stable_across_primes: bool
 
 
@@ -62,9 +66,34 @@ def _drop_columns(
     return tuple(out)
 
 
+def _keep_columns(
+    equations: Iterable[IBPEquation], columns: set[IntegralIndex]
+) -> tuple[IBPEquation, ...]:
+    out = []
+    for equation in equations:
+        terms = {idx: coeff for idx, coeff in equation.terms.items() if idx in columns}
+        if terms:
+            out.append(IBPEquation(terms, equation.label))
+    return tuple(out)
+
+
 def _modp_rank(equations: Sequence[IBPEquation], prime: int, progress=None) -> int:
     rules = _forward_eliminate_mod_p(equations, int(prime), progress=progress)
     return len(rules)
+
+
+def conditional_block_rank_mod_p(
+    equations: Sequence[IBPEquation],
+    columns: Iterable[IntegralIndex],
+    prime: int,
+    *,
+    progress=None,
+) -> tuple[int, int]:
+    """Return (restricted rank, conditional free dimension) for a column block."""
+    ordered = tuple(dict.fromkeys(columns))
+    restricted = _keep_columns(equations, set(ordered))
+    rank = _modp_rank(restricted, int(prime), progress=progress)
+    return rank, len(ordered) - rank
 
 
 def audit_local_master_rank_mod_p(
@@ -109,14 +138,18 @@ def audit_local_master_rank_mod_p(
 
     no_targets = _drop_columns(probed, set(targets))
     no_block = _drop_columns(probed, set(block))
+    only_targets = _keep_columns(probed, set(targets))
+    only_block = _keep_columns(probed, set(block))
 
     full_ranks = []
     without_target_ranks = []
-    target_constraint_ranks = []
-    target_free_dimensions = []
+    target_added_column_ranks = []
+    target_restricted_ranks = []
+    target_conditional_free_dimensions = []
     without_block_ranks = []
-    block_constraint_ranks = []
-    block_free_dimensions = []
+    block_added_column_ranks = []
+    block_restricted_ranks = []
+    block_conditional_free_dimensions = []
     run_primes = []
 
     for run_no, prime in enumerate(primes, start=1):
@@ -127,26 +160,36 @@ def audit_local_master_rank_mod_p(
             progress("rank without dotted targets", run_no, len(primes))
         no_target_rank = _modp_rank(no_targets, int(prime), progress=progress)
         if progress is not None:
+            progress("rank dotted-target restricted matrix", run_no, len(primes))
+        target_rank = _modp_rank(only_targets, int(prime), progress=progress)
+        if progress is not None:
             progress("rank without candidate block", run_no, len(primes))
         no_block_rank = _modp_rank(no_block, int(prime), progress=progress)
+        if progress is not None:
+            progress("rank candidate-block restricted matrix", run_no, len(primes))
+        block_rank = _modp_rank(only_block, int(prime), progress=progress)
 
-        target_constraints = full_rank - no_target_rank
-        block_constraints = full_rank - no_block_rank
         full_ranks.append(full_rank)
         without_target_ranks.append(no_target_rank)
-        target_constraint_ranks.append(target_constraints)
-        target_free_dimensions.append(len(targets) - target_constraints)
+        target_added_column_ranks.append(full_rank - no_target_rank)
+        target_restricted_ranks.append(target_rank)
+        target_conditional_free_dimensions.append(len(targets) - target_rank)
         without_block_ranks.append(no_block_rank)
-        block_constraint_ranks.append(block_constraints)
-        block_free_dimensions.append(len(block) - block_constraints)
+        block_added_column_ranks.append(full_rank - no_block_rank)
+        block_restricted_ranks.append(block_rank)
+        block_conditional_free_dimensions.append(len(block) - block_rank)
         run_primes.append(int(prime))
 
     signatures = list(zip(
         full_ranks,
         without_target_ranks,
-        target_free_dimensions,
+        target_added_column_ranks,
+        target_restricted_ranks,
+        target_conditional_free_dimensions,
         without_block_ranks,
-        block_free_dimensions,
+        block_added_column_ranks,
+        block_restricted_ranks,
+        block_conditional_free_dimensions,
     ))
     stable = all(sig == signatures[0] for sig in signatures[1:]) if signatures else True
 
@@ -159,10 +202,12 @@ def audit_local_master_rank_mod_p(
         primes=tuple(run_primes),
         full_ranks=tuple(full_ranks),
         without_target_ranks=tuple(without_target_ranks),
-        target_constraint_ranks=tuple(target_constraint_ranks),
-        target_free_dimensions=tuple(target_free_dimensions),
+        target_added_column_ranks=tuple(target_added_column_ranks),
+        target_restricted_ranks=tuple(target_restricted_ranks),
+        target_conditional_free_dimensions=tuple(target_conditional_free_dimensions),
         without_block_ranks=tuple(without_block_ranks),
-        block_constraint_ranks=tuple(block_constraint_ranks),
-        block_free_dimensions=tuple(block_free_dimensions),
+        block_added_column_ranks=tuple(block_added_column_ranks),
+        block_restricted_ranks=tuple(block_restricted_ranks),
+        block_conditional_free_dimensions=tuple(block_conditional_free_dimensions),
         stable_across_primes=stable,
     )
