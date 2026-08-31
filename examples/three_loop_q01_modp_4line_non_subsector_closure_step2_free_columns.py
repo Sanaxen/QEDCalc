@@ -6,6 +6,7 @@ from pathlib import Path
 from qedcalc.operations.ibp import IntegralIndex, prune_zero_sectors, specialize_ibp_system
 from three_loop.ibp_frontier import build_ibp_derivative_templates
 from three_loop.integral_family import q01_integral_family
+from three_loop.laporta_plan import physical_sector
 from three_loop.local_block_elimination import local_same_seed_equations
 from three_loop.modp_dot_two_neighbor_rescue import dot_focused_two_neighbor_seeds
 from three_loop.modp_local_master_rank import _keep_columns
@@ -13,6 +14,8 @@ from three_loop.modp_sector_ordered_reduction import eliminate_forbidden_columns
 from three_loop.nonscalar_neighbor_rescue import focused_neighbor_seeds
 from three_loop.sector_local_modp import _specialize_remaining_symbols_by_name
 from three_loop.sector_local_probe import default_q01_probe_points
+
+from examples.three_loop_q01_modp_4line_non_subsector_rank import is_subsector
 
 ROOT = Path(__file__).resolve().parents[1]
 CLOSURE_SOURCE = ROOT / "output" / "3loop_q01_modp_4line_non_subsector_closure_step2.json"
@@ -79,11 +82,11 @@ def main() -> None:
     dot_data = json.loads(DOT_SOURCE.read_text(encoding="utf-8"))
     neighbor_data = json.loads(FREE8_NEIGHBOR_SOURCE.read_text(encoding="utf-8"))
 
+    source_sector = tuple(int(x) for x in closure_data["sector"])
     block = tuple(IntegralIndex(tuple(p)) for p in closure_data["expanded_block_indices"])
     free8 = tuple(IntegralIndex(tuple(p)) for p in free8_data["rows"][0]["free_indices"])
     free5 = tuple(IntegralIndex(tuple(p)) for p in free5_data["rows"][0]["free_indices"])
     dotted = tuple(IntegralIndex(tuple(p)) for p in dot_data["stable_unresolved_indices"])
-    forbidden = tuple(IntegralIndex(tuple(p)) for p in closure_data["forbidden_indices"])
 
     if len(block) != 1850:
         raise RuntimeError(f"expected 1850 block, got {len(block)}")
@@ -118,6 +121,27 @@ def main() -> None:
     probed = specialize_ibp_system(equations, point)
     probed = _specialize_remaining_symbols_by_name(probed, point)
 
+    # Recompute the forbidden non-subsector columns from this exact 865-seed
+    # equation system.  closure_step2.json stores only counts, not the full
+    # forbidden-index list, and recomputation also protects us against stale
+    # JSON schema assumptions.
+    all_indices = {index for equation in probed for index in equation.terms}
+    forbidden = tuple(
+        sorted(
+            (
+                index
+                for index in all_indices
+                if not is_subsector(physical_sector(index, PHYSICAL_COUNT), source_sector)
+            ),
+            key=lambda index: index.powers,
+        )
+    )
+    expected_forbidden = int(neighbor_data["forbidden_non_subsector_count"])
+    if len(forbidden) != expected_forbidden:
+        raise RuntimeError(
+            f"forbidden-column reconstruction mismatch: {len(forbidden)} != {expected_forbidden}"
+        )
+
     rows = []
     for prime in PRIMES:
         print(f"[progress] closure step2 free-column audit prime {prime}", flush=True)
@@ -133,7 +157,7 @@ def main() -> None:
 
     stable = all(row["free_indices"] == rows[0]["free_indices"] for row in rows[1:]) if rows else True
     out = {
-        "sector": closure_data["sector"],
+        "sector": source_sector,
         "expanded_block_count": len(block),
         "forbidden_non_subsector_count": len(forbidden),
         "seed_count": len(all_seeds),
@@ -144,7 +168,7 @@ def main() -> None:
     OUTPUT.write_text(json.dumps(out, indent=2), encoding="utf-8")
 
     print("QEDCalc Q01 four-line closure step2 free-column audit")
-    print(f"sector: {tuple(closure_data['sector'])}")
+    print(f"sector: {source_sector}")
     print(f"expanded block: {len(block)}")
     print(f"forbidden non-subsector columns: {len(forbidden)}")
     print(f"seeds: {len(all_seeds)}")
