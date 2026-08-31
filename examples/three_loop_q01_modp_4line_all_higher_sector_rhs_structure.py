@@ -18,9 +18,9 @@ def main() -> None:
     data = json.loads(SOURCE.read_text(encoding="utf-8"))
     source_sector = tuple(int(x) for x in data["sector"])
     source_lines = sum(source_sector)
-    reductions = data["reductions"]
+    reductions = data["rows"]
     if not reductions:
-        raise RuntimeError("all-higher sector reduction JSON contains no reductions")
+        raise RuntimeError("all-higher sector reduction JSON contains no rows")
 
     supports = []
     for reduction in reductions:
@@ -38,8 +38,10 @@ def main() -> None:
     same: list[IntegralIndex] = []
     lower: list[IntegralIndex] = []
     higher: list[IntegralIndex] = []
+    same_line_other: list[IntegralIndex] = []
     lower_counts = Counter()
     higher_counts = Counter()
+    same_line_other_counts = Counter()
     active_hist = Counter()
     dot_hist = Counter()
     numerator_hist = Counter()
@@ -55,18 +57,24 @@ def main() -> None:
         elif active < source_lines:
             lower.append(index)
             lower_counts[sector] += 1
-        else:
+        elif active > source_lines:
             higher.append(index)
             higher_counts[sector] += 1
+        else:
+            same_line_other.append(index)
+            same_line_other_counts[sector] += 1
 
     out = {
         "source_sector": source_sector,
         "rhs_integral_count": len(indices),
         "same_sector_count": len(same),
         "lower_sector_count": len(lower),
-        "higher_or_other_count": len(higher),
+        "higher_sector_count": len(higher),
+        "same_line_other_sector_count": len(same_line_other),
+        "higher_or_other_count": len(higher) + len(same_line_other),
         "distinct_lower_sector_count": len(lower_counts),
         "distinct_higher_sector_count": len(higher_counts),
+        "distinct_same_line_other_sector_count": len(same_line_other_counts),
         "largest_lower_sector_count": max(lower_counts.values(), default=0),
         "active_line_histogram": dict(sorted(active_hist.items())),
         "dot_degree_histogram": dict(sorted(dot_hist.items())),
@@ -80,7 +88,14 @@ def main() -> None:
             {"sector": sector, "count": count}
             for sector, count in sorted(higher_counts.items(), key=lambda item: (-item[1], item[0]))
         ],
-        "higher_or_other_indices": [index.powers for index in sorted(higher, key=lambda x: x.powers)],
+        "same_line_other_sector_rows": [
+            {"sector": sector, "count": count}
+            for sector, count in sorted(same_line_other_counts.items(), key=lambda item: (-item[1], item[0]))
+        ],
+        "higher_indices": [index.powers for index in sorted(higher, key=lambda x: x.powers)],
+        "same_line_other_indices": [
+            index.powers for index in sorted(same_line_other, key=lambda x: x.powers)
+        ],
     }
     OUTPUT.write_text(json.dumps(out, indent=2), encoding="utf-8")
 
@@ -89,9 +104,12 @@ def main() -> None:
     print(f"unique RHS integrals: {len(indices)}")
     print(f"same-sector RHS: {len(same)}")
     print(f"lower-sector RHS: {len(lower)}")
-    print(f"higher/other RHS: {len(higher)}")
+    print(f"higher-sector RHS: {len(higher)}")
+    print(f"same-line other-sector RHS: {len(same_line_other)}")
+    print(f"higher/other RHS: {len(higher) + len(same_line_other)}")
     print(f"distinct lower sectors: {len(lower_counts)}")
     print(f"distinct higher sectors: {len(higher_counts)}")
+    print(f"distinct same-line other sectors: {len(same_line_other_counts)}")
     print(f"largest lower-sector count: {max(lower_counts.values(), default=0)}")
     print(f"active-line histogram: {dict(sorted(active_hist.items()))}")
     print(f"dot-degree histogram: {dict(sorted(dot_hist.items()))}")
