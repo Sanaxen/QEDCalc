@@ -23,7 +23,10 @@ def test_modp_pivot_trace_matches_existing_pivot_set():
 def test_dependency_closure_follows_pivot_rhs_graph():
     a = IntegralIndex((2, 0))
     b = IntegralIndex((1, 0))
-    c = IntegralIndex((0, 1))
+    # Use a strictly lower-rank terminal integral so b is guaranteed to be
+    # the second pivot under sector_rank.  With c=(0,1), c outranks b by
+    # sector id and the second equation would pivot c instead.
+    c = IntegralIndex((0, 0))
     equations = (
         IBPEquation({a: sp.Integer(1), b: sp.Integer(1)}, "eq0"),
         IBPEquation({b: sp.Integer(1), c: sp.Integer(1)}, "eq1"),
