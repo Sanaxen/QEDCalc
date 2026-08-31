@@ -8,6 +8,7 @@ if exist ".venv\Scripts\python.exe" (
     set PY=py
 )
 
+set PYTHONPATH=%CD%;%PYTHONPATH%
 %PY% examples\three_loop_q01_extended_symbolic_closure.py
 if errorlevel 1 (
     echo Q01 extended exact symbolic dependency closure FAIL
