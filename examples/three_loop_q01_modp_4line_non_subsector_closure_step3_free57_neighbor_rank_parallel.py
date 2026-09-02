@@ -1,24 +1,24 @@
 from __future__ import annotations
 
+import gc
 import json
 import os
 import time
 from pathlib import Path
 
-from qedcalc.operations.ibp import IntegralIndex, prune_zero_sectors, specialize_ibp_system
+from qedcalc.operations.ibp import IntegralIndex, prune_zero_sectors
 from three_loop.ibp_frontier import build_ibp_derivative_templates
 from three_loop.integral_family import q01_integral_family
 from three_loop.laporta_plan import physical_sector
 from three_loop.local_block_elimination import local_same_seed_equations
 from three_loop.modp_dot_two_neighbor_rescue import dot_focused_two_neighbor_seeds
+from three_loop.modp_sparse_constrained_rank import sparse_constrained_target_rank_at_probe
 from three_loop.nonscalar_neighbor_rescue import focused_neighbor_seeds
 from three_loop.parallel import run_process_jobs
 from three_loop.runtime_config import format_runtime_config, load_runtime_config
-from three_loop.sector_local_modp import _specialize_remaining_symbols_by_name
 from three_loop.sector_local_probe import default_q01_probe_points
 
 from examples.three_loop_q01_modp_4line_non_subsector_rank import is_subsector
-from examples.three_loop_q01_modp_4line_sector_ordered_rank import constrained_target_rank
 
 ROOT = Path(__file__).resolve().parents[1]
 STEP3_SOURCE = ROOT / "output" / "3loop_q01_modp_4line_non_subsector_closure_step3.json"
@@ -62,7 +62,7 @@ def _load_inputs():
     return source_sector, block, free57, free41, free8, free5, dotted
 
 
-def _build_augmented_system(prime: int):
+def _build_augmented_symbolic_system(prime: int):
     source_sector, block, free57, free41, free8, free5, dotted = _load_inputs()
     family = q01_integral_family()
     templates = build_ibp_derivative_templates(family)
@@ -108,35 +108,30 @@ def _build_augmented_system(prime: int):
         flush=True,
     )
 
+    # Memory-saving change: prune each 15-equation seed batch immediately.
+    # This avoids holding both the complete raw and complete pruned systems.
     started = time.perf_counter()
     equations = []
     total = len(all_seeds)
     for n, seed in enumerate(all_seeds, start=1):
-        equations.extend(local_same_seed_equations(family, seed, templates=templates))
+        local = local_same_seed_equations(family, seed, templates=templates)
+        equations.extend(prune_zero_sectors(family, local))
         if n == total or n % 500 == 0:
             print(
-                f"[worker pid={os.getpid()} prime={prime}] build equations {n}/{total}",
+                f"[worker pid={os.getpid()} prime={prime}] build/prune equations {n}/{total}",
                 flush=True,
             )
-    equations = prune_zero_sectors(family, equations)
+    equations = tuple(equations)
     equation_seconds = time.perf_counter() - started
     print(
-        f"[worker pid={os.getpid()} prime={prime}] equations built: {len(equations)}",
+        f"[worker pid={os.getpid()} prime={prime}] symbolic equations ready: {len(equations)}",
         flush=True,
     )
 
+    # Sector classification depends only on integral indices, not coefficients,
+    # so find forbidden columns before any probe-specialized system is built.
     started = time.perf_counter()
-    point = default_q01_probe_points(family)[0]
-    probed = specialize_ibp_system(equations, point)
-    probed = _specialize_remaining_symbols_by_name(probed, point)
-    specialize_seconds = time.perf_counter() - started
-    print(
-        f"[worker pid={os.getpid()} prime={prime}] specialized",
-        flush=True,
-    )
-
-    started = time.perf_counter()
-    all_indices = {index for equation in probed for index in equation.terms}
+    all_indices = {index for equation in equations for index in equation.terms}
     forbidden = tuple(
         sorted(
             (
@@ -151,11 +146,12 @@ def _build_augmented_system(prime: int):
         {physical_sector(index, PHYSICAL_COUNT) for index in forbidden}
     )
     forbidden_scan_seconds = time.perf_counter() - started
+    del all_indices
+    gc.collect()
 
     timings = {
         "seed_seconds": seed_seconds,
         "equation_build_seconds": equation_seconds,
-        "specialize_seconds": specialize_seconds,
         "forbidden_scan_seconds": forbidden_scan_seconds,
     }
     counts = {
@@ -167,26 +163,34 @@ def _build_augmented_system(prime: int):
         "forbidden_non_subsector_count": len(forbidden),
         "distinct_forbidden_sector_count": len(forbidden_sectors),
     }
-    return source_sector, block, forbidden, probed, timings, counts
+    point = default_q01_probe_points(family)[0]
+    return source_sector, block, forbidden, equations, point, timings, counts
 
 
 def _prime_worker(prime: int):
     worker_started = time.perf_counter()
-    source_sector, block, forbidden, probed, setup_timings, counts = _build_augmented_system(prime)
+    source_sector, block, forbidden, equations, point, setup_timings, counts = (
+        _build_augmented_symbolic_system(prime)
+    )
 
     print(
-        f"[worker pid={os.getpid()} prime={prime}] constrained rank start: "
+        f"[worker pid={os.getpid()} prime={prime}] sparse constrained rank start: "
         f"forbidden={len(forbidden)}, target={len(block)}",
         flush=True,
     )
     started = time.perf_counter()
-    forbidden_rank, target_rank, free_dim = constrained_target_rank(
-        probed, forbidden, block, int(prime)
+    result = sparse_constrained_target_rank_at_probe(
+        equations,
+        forbidden,
+        block,
+        point,
+        int(prime),
     )
     rank_seconds = time.perf_counter() - started
     print(
-        f"[worker pid={os.getpid()} prime={prime}] constrained rank done: "
-        f"forbidden_rank={forbidden_rank}, target_rank={target_rank}, free={free_dim}",
+        f"[worker pid={os.getpid()} prime={prime}] sparse constrained rank done: "
+        f"forbidden_rank={result.forbidden_rank}, target_rank={result.target_rank}, "
+        f"free={result.conditional_free_dimension}",
         flush=True,
     )
 
@@ -196,12 +200,19 @@ def _prime_worker(prime: int):
         "sector": source_sector,
         "block_count": len(block),
         **counts,
-        "forbidden_rank": forbidden_rank,
-        "sector_ordered_target_rank": target_rank,
-        "conditional_free_dimension": free_dim,
+        "forbidden_rank": result.forbidden_rank,
+        "sector_ordered_target_rank": result.target_rank,
+        "conditional_free_dimension": result.conditional_free_dimension,
+        "sparse_projection": {
+            "input_equation_count": result.input_equation_count,
+            "projected_nonzero_row_count": result.projected_nonzero_row_count,
+            "projected_term_count": result.projected_term_count,
+            "residual_row_count": result.residual_row_count,
+            "residual_term_count": result.residual_term_count,
+        },
         "timings": {
             **setup_timings,
-            "constrained_rank_seconds": rank_seconds,
+            "sparse_constrained_rank_seconds": rank_seconds,
             "worker_total_seconds": time.perf_counter() - worker_started,
         },
     }
@@ -211,12 +222,19 @@ def main() -> None:
     wall_started = time.perf_counter()
     config = load_runtime_config(root=ROOT, max_useful_processes=len(PRIMES))
 
-    print("QEDCalc Q01 four-line closure step3 free57 neighbor rank audit")
+    print("QEDCalc Q01 four-line closure step3 free57 neighbor sparse-rank audit")
     print(format_runtime_config(config), flush=True)
     print(
-        "note: each finite-field worker reconstructs the augmented seed system on Windows spawn",
+        "memory mode: sparse forbidden+target projection; no dense rank matrix; "
+        "no full specialized-system copy",
         flush=True,
     )
+    if config.effective_processes > 1:
+        print(
+            "warning: each Windows spawn worker still owns an independent symbolic equation system; "
+            "use QEDCALC_PROCESSES=1 for minimum memory",
+            flush=True,
+        )
 
     jobs = run_process_jobs(
         _prime_worker,
@@ -248,6 +266,7 @@ def main() -> None:
         "equation_count": first["equation_count"],
         "forbidden_non_subsector_count": first["forbidden_non_subsector_count"],
         "distinct_forbidden_sector_count": first["distinct_forbidden_sector_count"],
+        "algorithm": "sparse_forward_constrained_rank_streamed_probe",
         "runtime": {
             "requested_processes": config.requested_processes,
             "effective_processes": config.effective_processes,
@@ -272,6 +291,7 @@ def main() -> None:
     print(f"distinct forbidden sectors: {first['distinct_forbidden_sector_count']}")
     for row in rows:
         t = row["timings"]
+        s = row["sparse_projection"]
         print(
             f"prime {row['prime']}: pid={row['pid']}, forbidden rank={row['forbidden_rank']}, "
             f"sector-ordered target rank={row['sector_ordered_target_rank']}, "
@@ -279,17 +299,22 @@ def main() -> None:
             f"worker time={t['worker_total_seconds']:.3f}s"
         )
         print(
+            "  sparse projection: "
+            f"rows={s['projected_nonzero_row_count']}, terms={s['projected_term_count']}, "
+            f"residual rows={s['residual_row_count']}, residual terms={s['residual_term_count']}"
+        )
+        print(
             "  timings: "
             f"seeds={t['seed_seconds']:.3f}s, equations={t['equation_build_seconds']:.3f}s, "
-            f"specialize={t['specialize_seconds']:.3f}s, forbidden scan={t['forbidden_scan_seconds']:.3f}s, "
-            f"constrained rank={t['constrained_rank_seconds']:.3f}s"
+            f"forbidden scan={t['forbidden_scan_seconds']:.3f}s, "
+            f"sparse rank={t['sparse_constrained_rank_seconds']:.3f}s"
         )
     print(f"stable across primes: {stable}")
     print(f"wall time: {wall_seconds:.3f}s")
     print(f"generated: {OUTPUT}")
     if not stable:
         raise RuntimeError("free57 neighbor constrained-rank result differs across primes")
-    print("Q01 four-line closure step3 free57 neighbor rank audit PASS")
+    print("Q01 four-line closure step3 free57 neighbor sparse-rank audit PASS")
 
 
 if __name__ == "__main__":
