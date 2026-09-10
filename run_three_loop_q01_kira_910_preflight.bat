@@ -41,10 +41,21 @@ if errorlevel 1 (
   exit /b 2
 )
 
+rem The previous WSL setup stores Fermat at $HOME/fermat/Ferl7 and appends
+rem FERMATPATH to ~/.bashrc.  A non-interactive `bash -lc` does not reliably
+rem process ~/.bashrc, so provide the known path explicitly when it is absent.
+wsl.exe bash -lc "if [ -z \"${FERMATPATH:-}\" ]; then export FERMATPATH=\"$HOME/fermat/Ferl7\"; fi; if [ ! -x \"$FERMATPATH\" ]; then echo \"ERROR: Fermat executable was not found or is not executable: $FERMATPATH\"; exit 3; fi; echo \"Fermat: $FERMATPATH\""
+if errorlevel 1 (
+  echo ERROR: Fermat setup check failed in WSL.
+  pause
+  exit /b 3
+)
+
 rem Pass the Windows project path directly to WSL.  Do not round-trip a UTF-8
 rem wslpath result through FOR /F, because that corrupts non-ASCII path names
-rem under the Windows console code page.
-wsl.exe --cd "%PROJECT_WIN%" bash -lc "set -o pipefail; kira jobs_preflight.yaml 2>&1 | tee q01_full_preflight.log"
+rem under the Windows console code page.  Set FERMATPATH again in the same
+rem shell that launches Kira so the variable is guaranteed to be visible.
+wsl.exe --cd "%PROJECT_WIN%" bash -lc "set -o pipefail; if [ -z \"${FERMATPATH:-}\" ]; then export FERMATPATH=\"$HOME/fermat/Ferl7\"; fi; echo \"Fermat: $FERMATPATH\"; kira jobs_preflight.yaml 2>&1 | tee q01_full_preflight.log"
 set "RC=%ERRORLEVEL%"
 
 echo.
