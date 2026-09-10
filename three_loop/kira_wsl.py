@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
+import re
 import shutil
 import subprocess
 import time
@@ -29,14 +30,7 @@ def _safe_text(value: str | None) -> str:
 
 
 def _run_wsl_capture(args: list[str]) -> subprocess.CompletedProcess[str]:
-    """Run WSL and decode its text output as UTF-8, never Windows cp932.
-
-    Linux-side tools normally emit UTF-8.  On Japanese Windows, using
-    ``text=True`` without an explicit encoding makes subprocess use cp932,
-    which can fail before QEDCalc gets a chance to inspect stderr/stdout.
-    ``errors='replace'`` keeps diagnostic output readable even if a tool emits
-    an unexpected byte sequence.
-    """
+    """Run WSL and decode Linux-side output explicitly as UTF-8."""
     return subprocess.run(
         args,
         text=True,
@@ -47,28 +41,43 @@ def _run_wsl_capture(args: list[str]) -> subprocess.CompletedProcess[str]:
     )
 
 
-def wsl_path(path: str | Path) -> str:
-    """Convert a Windows path to a WSL path without losing backslashes.
+def _windows_path_to_wsl_mount(path: str) -> str:
+    """Convert an absolute Windows drive path to WSL's /mnt/<drive>/ form.
 
-    Passing ``C:\\...`` directly as an argument to ``wsl.exe wslpath`` is not
-    reliable on all Windows/WSL combinations: the Linux command-line bridge
-    may consume backslashes before ``wslpath`` sees them.  Instead, pass the
-    Windows path as bash positional parameter ``$1`` and quote that parameter
-    inside the Linux shell.  This also preserves spaces and non-ASCII names.
+    This conversion is intentionally performed in Python rather than by
+    invoking ``wslpath``.  That avoids quoting/backslash issues when the path
+    contains Japanese characters, spaces, or other non-ASCII text.
     """
-    exe = _wsl_executable()
+    win = PureWindowsPath(path)
+    drive = win.drive
+    if not re.fullmatch(r"[A-Za-z]:", drive):
+        raise ValueError(f"not an absolute Windows drive path: {path!r}")
+
+    drive_letter = drive[0].lower()
+    parts = win.parts[1:]
+    suffix = "/".join(parts)
+    return f"/mnt/{drive_letter}/{suffix}" if suffix else f"/mnt/{drive_letter}"
+
+
+def wsl_path(path: str | Path) -> str:
+    """Convert a Windows checkout path to the corresponding WSL mount path."""
     resolved = str(Path(path).resolve())
-    shell = 'wslpath -a -- "$1"'
-    proc = _run_wsl_capture(
-        [exe, "bash", "-lc", shell, "qedcalc-wslpath", resolved]
-    )
-    if proc.returncode != 0:
-        details = _safe_text(proc.stderr) or _safe_text(proc.stdout)
-        raise RuntimeError(f"wslpath failed: {details or 'no diagnostic output'}")
-    value = _safe_text(proc.stdout)
-    if not value:
-        raise RuntimeError("wslpath returned an empty path")
-    return value
+    try:
+        return _windows_path_to_wsl_mount(resolved)
+    except ValueError:
+        # Fallback for unusual environments where the caller is not running
+        # from a normal Windows drive path.
+        exe = _wsl_executable()
+        proc = _run_wsl_capture([exe, "wslpath", "-a", resolved])
+        if proc.returncode != 0:
+            details = _safe_text(proc.stderr) or _safe_text(proc.stdout)
+            raise RuntimeError(
+                f"wslpath failed: {details or 'no diagnostic output'}"
+            )
+        value = _safe_text(proc.stdout)
+        if not value:
+            raise RuntimeError("wslpath returned an empty path")
+        return value
 
 
 def kira_wsl_version() -> str:
@@ -102,16 +111,16 @@ def run_kira_wsl(
     log_path = project / log_name
     exe = _wsl_executable()
 
-    # Pass the converted path as $1 instead of interpolating it into shell text.
-    # This keeps spaces and non-ASCII Windows directory names safe.
-    shell = 'cd -- "$1" && exec kira "$2"'
+    # WSL supports changing the Linux working directory directly.  Avoiding a
+    # bash wrapper here removes an entire layer of quoting/positional-argument
+    # handling and keeps spaces and Japanese directory names intact.
     started = time.perf_counter()
     with log_path.open("w", encoding="utf-8", newline="\n") as log:
         log.write(f"Kira version/preflight:\n{version}\n")
         log.write(f"WSL project path: {linux_dir}\n\n")
         log.flush()
         proc = subprocess.run(
-            [exe, "bash", "-lc", shell, "qedcalc-kira", linux_dir, jobs_file],
+            [exe, "--cd", linux_dir, "kira", jobs_file],
             stdout=log,
             stderr=subprocess.STDOUT,
             text=True,
