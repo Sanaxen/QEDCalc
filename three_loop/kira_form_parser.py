@@ -72,44 +72,80 @@ def iter_form_statements(path: str | Path) -> Iterator[str]:
         raise ValueError(f"unterminated FORM statement at end of file: {tail[:120]!r}")
 
 
-def _coefficient_before_integral(rhs: str, start: int, previous_end: int) -> str:
-    """Extract the coefficient multiplying one RHS integral.
+def _split_top_level_additive_terms(rhs: str) -> list[str]:
+    """Split a FORM RHS at additive signs outside all parentheses.
 
-    After Kira back substitution every additive top-level term contains one
-    integral token.  We find the additive term boundary by scanning backwards
-    from the integral while respecting parenthesis depth, so plus/minus signs
-    inside ``num(...)`` do not split the coefficient.
+    Kira coefficients can contain ``+`` and ``-`` inside ``num(...)`` or other
+    parenthesised factors.  Those signs are part of one coefficient and must
+    not split a reduction term.  A leading sign is retained on each returned
+    term so the coefficient remains exact.
     """
+    text = rhs.strip()
+    if not text:
+        return []
+
+    terms: list[str] = []
     depth = 0
-    boundary = previous_end
-    i = start - 1
-    while i >= previous_end:
-        ch = rhs[i]
-        if ch == ")":
+    start = 0
+    for i, ch in enumerate(text):
+        if ch == "(":
             depth += 1
-        elif ch == "(":
+        elif ch == ")":
             depth -= 1
             if depth < 0:
-                raise ValueError("unbalanced parentheses while parsing FORM coefficient")
-        elif depth == 0 and ch in "+-":
-            # Treat exponent signs and unary signs inside a multiplicative
-            # token conservatively; Kira FORM coefficients normally use
-            # num(...), products and rational literals here.
-            prev = rhs[i - 1] if i > 0 else ""
-            if prev not in "eE^":
-                boundary = i
-                break
-        i -= 1
-    coefficient = rhs[boundary:start].strip()
-    if not coefficient:
-        coefficient = "+1"
-    elif coefficient in {"+", "-"}:
-        coefficient += "1"
-    # Kira normally writes ``+ coeff*Integral``.  Remove only the final
-    # multiplication marker belonging to the integral, not internal products.
-    if coefficient.endswith("*"):
-        coefficient = coefficient[:-1].rstrip()
-    return coefficient
+                raise ValueError("unbalanced parentheses in FORM RHS")
+        elif depth == 0 and ch in "+-" and i > start:
+            # Do not split an exponent sign such as 1e-10.  FORM/Kira mostly
+            # emits exact rational expressions, but keeping this guard costs
+            # nothing and makes the structural parser less brittle.
+            prev = text[i - 1]
+            if prev in "eE^":
+                continue
+            piece = text[start:i].strip()
+            if piece:
+                terms.append(piece)
+            start = i
+
+    if depth != 0:
+        raise ValueError("unbalanced parentheses in FORM RHS")
+
+    piece = text[start:].strip()
+    if piece:
+        terms.append(piece)
+    return terms
+
+
+def _coefficient_from_term(term: str, integral_match: re.Match[str]) -> str:
+    """Remove one integral token and retain all surrounding FORM factors.
+
+    Kira 3.1 may emit either ``num(...)*I(...)`` or ``I(...)*(1)`` (and, in
+    general, products on both sides of the integral token).  The previous
+    parser assumed that the coefficient always preceded the integral.  Here we
+    reconstruct the full multiplicative coefficient from both sides while
+    preserving FORM source syntax.
+    """
+    before = term[: integral_match.start()].strip()
+    after = term[integral_match.end() :].strip()
+
+    # The stars immediately adjacent to the removed integral are multiplication
+    # separators, not coefficient content.  Remove only those separators; all
+    # other FORM source text is kept verbatim.
+    if before.endswith("*"):
+        before = before[:-1].rstrip()
+    if after.startswith("*"):
+        after = after[1:].lstrip()
+
+    if not before and not after:
+        return "+1"
+    if before in {"+", "-"} and not after:
+        return before + "1"
+    if before in {"+", "-"} and after:
+        return before + after
+    if not before:
+        return after
+    if not after:
+        return before
+    return f"{before}*{after}"
 
 
 def parse_form_rule(statement: str, *, expected_family: str | None = None) -> KiraFormRule:
@@ -123,36 +159,42 @@ def parse_form_rule(statement: str, *, expected_family: str | None = None) -> Ki
     lhs = KiraFormIntegral(family, _parse_indices(match.group("args")))
     rhs = match.group("rhs").strip()
 
-    integral_matches = list(_INTEGRAL_RE.finditer(rhs))
-    if not integral_matches:
+    # Zero rules do not contain an integral at all.
+    if not _INTEGRAL_RE.search(rhs):
         return KiraFormRule(lhs=lhs, terms=(), rhs_form=rhs)
 
     terms: list[KiraFormTerm] = []
-    previous_end = 0
-    for integral_match in integral_matches:
+    for additive_term in _split_top_level_additive_terms(rhs):
+        integral_matches = list(_INTEGRAL_RE.finditer(additive_term))
+        if not integral_matches:
+            # A non-zero standalone scalar term would not be a valid reduction
+            # of this integral family and should not be silently discarded.
+            if additive_term.strip() not in {"0", "+0", "-0"}:
+                raise ValueError(
+                    f"FORM RHS term has no integral token: {additive_term!r}"
+                )
+            continue
+        if len(integral_matches) != 1:
+            raise ValueError(
+                "FORM RHS additive term contains more than one integral token: "
+                f"{additive_term!r}"
+            )
+
+        integral_match = integral_matches[0]
         target_family = integral_match.group("family")
         if expected_family is not None and target_family != expected_family:
             raise ValueError(
                 f"unexpected RHS family {target_family!r}, expected {expected_family!r}"
             )
-        coeff = _coefficient_before_integral(
-            rhs, integral_match.start(), previous_end
-        )
+
         terms.append(
             KiraFormTerm(
-                coefficient_form=coeff,
+                coefficient_form=_coefficient_from_term(additive_term, integral_match),
                 integral=KiraFormIntegral(
                     target_family, _parse_indices(integral_match.group("args"))
                 ),
             )
         )
-        previous_end = integral_match.end()
-
-    # Ensure text between one integral and the next is only the next term's
-    # coefficient; after the final integral only whitespace may remain.
-    trailing = rhs[previous_end:].strip()
-    if trailing:
-        raise ValueError(f"unexpected trailing FORM text after final integral: {trailing!r}")
 
     return KiraFormRule(lhs=lhs, terms=tuple(terms), rhs_form=rhs)
 
