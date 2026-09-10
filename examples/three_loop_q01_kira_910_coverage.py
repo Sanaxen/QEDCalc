@@ -12,13 +12,11 @@ artifact instead of the native text artifact.
 from __future__ import annotations
 
 from collections import Counter
-from dataclasses import asdict
 import json
 import os
 from pathlib import Path
 import re
-import sys
-from typing import Any, Iterable
+from typing import Any
 
 from three_loop.kira_isp_bridge import expand_qedcalc_integral_to_kira
 from three_loop.kira_reducer import KiraReductionTable
@@ -33,6 +31,7 @@ NATIVE_TXT = ROOT / "output" / "3loop_q01_integral_indices.txt"
 EXPECTED_NATIVE = 910
 
 _INT_TOKEN_RE = re.compile(r"[-+]?\d+")
+_INTEGRAL_RE = re.compile(r"\bI\(\s*([-+]?\d+(?:\s*,\s*[-+]?\d+){11})\s*\)")
 
 
 def _indices12(value: Any) -> tuple[int, ...] | None:
@@ -43,7 +42,13 @@ def _indices12(value: Any) -> tuple[int, ...] | None:
             return None
     if isinstance(value, str):
         text = value.strip()
-        # Accept forms such as I(1,...), Q01(...), [1,...], or comma lists.
+        match = _INTEGRAL_RE.search(text)
+        if match is not None:
+            try:
+                return tuple(int(v.strip()) for v in match.group(1).split(","))
+            except ValueError:
+                return None
+        # Accept forms such as Q01(...), [1,...], or bare comma lists.
         if "(" in text and ")" in text:
             text = text[text.find("(") + 1 : text.rfind(")")]
         elif "[" in text and "]" in text:
@@ -64,37 +69,46 @@ def _indices12(value: Any) -> tuple[int, ...] | None:
 
 
 def _load_native_txt(path: Path) -> tuple[tuple[int, ...], ...] | None:
-    """Load the canonical Q01 integral-index text artifact if it is complete."""
+    """Load the canonical Q01 integral-index text artifact if it is complete.
+
+    The saved file contains coefficient expressions followed by ``* I(...)`` on
+    most lines, so extract the integral token from anywhere in each non-empty
+    line instead of requiring the whole line to be only an integral.
+    """
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
     except (OSError, UnicodeError):
         return None
 
     parsed: list[tuple[int, ...]] = []
-    malformed: list[tuple[int, str]] = []
+    non_integral: list[tuple[int, str]] = []
     for line_no, line in enumerate(lines, 1):
         text = line.strip()
         if not text:
             continue
-        value = _indices12(text)
-        if value is None:
-            malformed.append((line_no, text))
+        match = _INTEGRAL_RE.search(text)
+        if match is None:
+            # Allow harmless header/comment lines, but remember them for diagnostics.
+            non_integral.append((line_no, text))
             continue
-        parsed.append(value)
+        try:
+            parsed.append(tuple(int(v.strip()) for v in match.group(1).split(",")))
+        except ValueError:
+            non_integral.append((line_no, text))
 
     unique = tuple(dict.fromkeys(parsed))
-    if malformed:
-        print(f"WARNING: native TXT contains {len(malformed)} non-integral line(s); not using it.")
-        for line_no, text in malformed[:5]:
-            print(f"  line {line_no}: {text[:160]}")
-        return None
     if len(parsed) != EXPECTED_NATIVE or len(unique) != EXPECTED_NATIVE:
         print(
             "WARNING: native TXT does not contain exactly "
             f"{EXPECTED_NATIVE} unique 12-index integrals "
-            f"(parsed={len(parsed)}, unique={len(unique)}); not using it."
+            f"(parsed={len(parsed)}, unique={len(unique)}, non_integral_lines={len(non_integral)}); not using it."
         )
+        for line_no, text in non_integral[:5]:
+            print(f"  non-integral line {line_no}: {text[:160]}")
         return None
+
+    if non_integral:
+        print(f"native TXT: ignored {len(non_integral)} non-integral/header line(s).")
     return unique
 
 
@@ -114,7 +128,6 @@ def _extract_integral_sets(obj: Any, trail: str = "$") -> list[tuple[str, tuple[
         return found
 
     if isinstance(obj, dict):
-        # Some manifests store integral strings as dictionary keys.
         key_parsed = [_indices12(k) for k in obj.keys()]
         valid_keys = [v for v in key_parsed if v is not None]
         if len(valid_keys) == len(obj) and len(set(valid_keys)) == EXPECTED_NATIVE:
@@ -167,7 +180,6 @@ def _discover_saved_integrals() -> tuple[Path, str, tuple[tuple[int, ...], ...]]
             continue
         searched.append(str(path))
         try:
-            # Avoid accidentally loading giant unrelated JSON artifacts.
             if path.stat().st_size > 128 * 1024 * 1024:
                 continue
             data = json.loads(path.read_text(encoding="utf-8"))
@@ -176,7 +188,6 @@ def _discover_saved_integrals() -> tuple[Path, str, tuple[tuple[int, ...], ...]]
         for trail, integrals in _extract_integral_sets(data):
             candidates.append((_candidate_score(path, trail), path, trail, integrals))
 
-    # Deduplicate identical datasets, retaining the highest-scoring location.
     best_by_dataset: dict[tuple[tuple[int, ...], ...], tuple[int, Path, str]] = {}
     for score, path, trail, integrals in candidates:
         canonical = tuple(sorted(integrals))
@@ -208,7 +219,7 @@ def _discover_saved_integrals() -> tuple[Path, str, tuple[tuple[int, ...], ...]]
             print(f"  candidate score={score}: {path} :: {trail}")
         raise SystemExit(2)
 
-    score, path, trail, dataset = ranked[0]
+    _, path, trail, dataset = ranked[0]
     return path, trail, dataset
 
 
