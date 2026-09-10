@@ -50,6 +50,21 @@ def _parse_indices(text: str) -> tuple[int, ...]:
     return tuple(int(part.strip()) for part in text.split(","))
 
 
+def _integral_pattern(expected_family: str | None) -> re.Pattern[str]:
+    """Return the integral-token regex for one reduction family.
+
+    FORM coefficients contain function-like objects such as ``num(...)`` and
+    ``den(...)``.  They must never be mistaken for integral tokens.  Once the
+    expected Kira family is known, match only that exact family name.
+    """
+    if expected_family is None:
+        return _INTEGRAL_RE
+    return re.compile(
+        rf"(?P<family>{re.escape(expected_family)})"
+        r"\((?P<args>-?\d+(?:\s*,\s*-?\d+)*)\)"
+    )
+
+
 def iter_form_statements(path: str | Path) -> Iterator[str]:
     """Yield semicolon-terminated FORM statements without loading the file.
 
@@ -95,9 +110,6 @@ def _split_top_level_additive_terms(rhs: str) -> list[str]:
             if depth < 0:
                 raise ValueError("unbalanced parentheses in FORM RHS")
         elif depth == 0 and ch in "+-" and i > start:
-            # Do not split an exponent sign such as 1e-10.  FORM/Kira mostly
-            # emits exact rational expressions, but keeping this guard costs
-            # nothing and makes the structural parser less brittle.
             prev = text[i - 1]
             if prev in "eE^":
                 continue
@@ -119,17 +131,13 @@ def _coefficient_from_term(term: str, integral_match: re.Match[str]) -> str:
     """Remove one integral token and retain all surrounding FORM factors.
 
     Kira 3.1 may emit either ``num(...)*I(...)`` or ``I(...)*(1)`` (and, in
-    general, products on both sides of the integral token).  The previous
-    parser assumed that the coefficient always preceded the integral.  Here we
-    reconstruct the full multiplicative coefficient from both sides while
-    preserving FORM source syntax.
+    general, products on both sides of the integral token).  Reconstruct the
+    full multiplicative coefficient from both sides while preserving FORM
+    source syntax.
     """
     before = term[: integral_match.start()].strip()
     after = term[integral_match.end() :].strip()
 
-    # The stars immediately adjacent to the removed integral are multiplication
-    # separators, not coefficient content.  Remove only those separators; all
-    # other FORM source text is kept verbatim.
     if before.endswith("*"):
         before = before[:-1].rstrip()
     if after.startswith("*"):
@@ -158,20 +166,18 @@ def parse_form_rule(statement: str, *, expected_family: str | None = None) -> Ki
         raise ValueError(f"unexpected LHS family {family!r}, expected {expected_family!r}")
     lhs = KiraFormIntegral(family, _parse_indices(match.group("args")))
     rhs = match.group("rhs").strip()
+    integral_re = _integral_pattern(expected_family or family)
 
-    # Zero rules do not contain an integral at all.
-    if not _INTEGRAL_RE.search(rhs):
+    if not integral_re.search(rhs):
         return KiraFormRule(lhs=lhs, terms=(), rhs_form=rhs)
 
     terms: list[KiraFormTerm] = []
     for additive_term in _split_top_level_additive_terms(rhs):
-        integral_matches = list(_INTEGRAL_RE.finditer(additive_term))
+        integral_matches = list(integral_re.finditer(additive_term))
         if not integral_matches:
-            # A non-zero standalone scalar term would not be a valid reduction
-            # of this integral family and should not be silently discarded.
             if additive_term.strip() not in {"0", "+0", "-0"}:
                 raise ValueError(
-                    f"FORM RHS term has no integral token: {additive_term!r}"
+                    f"FORM RHS term has no {family} integral token: {additive_term!r}"
                 )
             continue
         if len(integral_matches) != 1:
@@ -182,11 +188,6 @@ def parse_form_rule(statement: str, *, expected_family: str | None = None) -> Ki
 
         integral_match = integral_matches[0]
         target_family = integral_match.group("family")
-        if expected_family is not None and target_family != expected_family:
-            raise ValueError(
-                f"unexpected RHS family {target_family!r}, expected {expected_family!r}"
-            )
-
         terms.append(
             KiraFormTerm(
                 coefficient_form=_coefficient_from_term(additive_term, integral_match),
