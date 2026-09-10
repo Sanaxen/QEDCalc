@@ -27,18 +27,10 @@ if errorlevel 1 (
 )
 
 set "PROJECT_WIN=%CD%\output\kira_q01_full_demand_r9s3d0"
-for /f "usebackq delims=" %%I in (`wsl.exe wslpath -a "%PROJECT_WIN%"`) do set "PROJECT_WSL=%%I"
-
-if not defined PROJECT_WSL (
-  echo ERROR: failed to translate the Kira project path to a WSL path.
-  pause
-  exit /b 2
-)
 
 echo.
 echo QEDCalc Q01 full-demand Kira preflight
 echo project: %PROJECT_WIN%
-echo WSL project: %PROJECT_WSL%
 echo mode: symmetries + initiate only; triangular/back substitution disabled
 echo.
 
@@ -49,7 +41,10 @@ if errorlevel 1 (
   exit /b 2
 )
 
-wsl.exe bash -lc "set -o pipefail; cd \"%PROJECT_WSL%\" && kira jobs_preflight.yaml 2>&1 | tee q01_full_preflight.log"
+rem Pass the Windows project path directly to WSL.  Do not round-trip a UTF-8
+rem wslpath result through FOR /F, because that corrupts non-ASCII path names
+rem under the Windows console code page.
+wsl.exe --cd "%PROJECT_WIN%" bash -lc "set -o pipefail; kira jobs_preflight.yaml 2>&1 | tee q01_full_preflight.log"
 set "RC=%ERRORLEVEL%"
 
 echo.
