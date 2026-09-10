@@ -24,18 +24,37 @@ def _wsl_executable() -> str:
     return exe
 
 
-def wsl_path(path: str | Path) -> str:
-    exe = _wsl_executable()
-    resolved = str(Path(path).resolve())
-    proc = subprocess.run(
-        [exe, "wslpath", "-a", resolved],
+def _safe_text(value: str | None) -> str:
+    return value.strip() if value else ""
+
+
+def _run_wsl_capture(args: list[str]) -> subprocess.CompletedProcess[str]:
+    """Run WSL and decode its text output as UTF-8, never Windows cp932.
+
+    Linux-side tools normally emit UTF-8.  On Japanese Windows, using
+    ``text=True`` without an explicit encoding makes subprocess use cp932,
+    which can fail before QEDCalc gets a chance to inspect stderr/stdout.
+    ``errors='replace'`` keeps diagnostic output readable even if a tool emits
+    an unexpected byte sequence.
+    """
+    return subprocess.run(
+        args,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         capture_output=True,
         check=False,
     )
+
+
+def wsl_path(path: str | Path) -> str:
+    exe = _wsl_executable()
+    resolved = str(Path(path).resolve())
+    proc = _run_wsl_capture([exe, "wslpath", "-a", resolved])
     if proc.returncode != 0:
-        raise RuntimeError(f"wslpath failed: {proc.stderr.strip() or proc.stdout.strip()}")
-    value = proc.stdout.strip()
+        details = _safe_text(proc.stderr) or _safe_text(proc.stdout)
+        raise RuntimeError(f"wslpath failed: {details or 'no diagnostic output'}")
+    value = _safe_text(proc.stdout)
     if not value:
         raise RuntimeError("wslpath returned an empty path")
     return value
@@ -44,19 +63,16 @@ def wsl_path(path: str | Path) -> str:
 def kira_wsl_version() -> str:
     exe = _wsl_executable()
     command = "command -v kira >/dev/null 2>&1 && kira --version"
-    proc = subprocess.run(
-        [exe, "bash", "-lc", command],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    proc = _run_wsl_capture([exe, "bash", "-lc", command])
+    stdout = _safe_text(proc.stdout)
+    stderr = _safe_text(proc.stderr)
     if proc.returncode != 0:
         raise RuntimeError(
             "Kira was not found in the default WSL distribution. "
             "Install Kira in WSL or make 'kira' available on WSL PATH. "
-            f"Details: {proc.stderr.strip() or proc.stdout.strip()}"
+            f"Details: {stderr or stdout or 'no diagnostic output'}"
         )
-    return (proc.stdout.strip() or proc.stderr.strip()).strip()
+    return stdout or stderr or "Kira version output unavailable"
 
 
 def run_kira_wsl(
@@ -88,6 +104,8 @@ def run_kira_wsl(
             stdout=log,
             stderr=subprocess.STDOUT,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=False,
         )
     wall = time.perf_counter() - started
