@@ -3,7 +3,8 @@
 This script does not regenerate the expensive projected trace or rerun Kira.
 It loads the canonical 910 native QEDCalc integrals, expands native D10-D12
 linear ISP powers into the Q01_full Kira quadratic basis, and verifies that
-every resulting Kira integral is present in the exact-demand FORM export.
+every resulting Kira integral is reducible through the exact-demand FORM
+export to masters (possibly through intermediate exported rules).
 """
 from __future__ import annotations
 
@@ -14,7 +15,8 @@ import re
 from typing import Any
 
 from three_loop.kira_isp_bridge import expand_qedcalc_integral_to_kira
-from three_loop.kira_reducer import KiraReductionTable
+from three_loop.kira_form_parser import iter_kira_form_rules
+from three_loop.kira_reducer import load_master_indices
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,9 +30,10 @@ EXPECTED_NATIVE = 910
 EXPECTED_UNIQUE_KIRA = 944
 
 _INTEGRAL_RE = re.compile(r"\bI\(\s*([-+]?\d+(?:\s*,\s*[-+]?\d+){11})\s*\)")
+IndexTuple = tuple[int, ...]
 
 
-def _load_native_txt(path: Path) -> tuple[tuple[int, ...], ...]:
+def _load_native_txt(path: Path) -> tuple[IndexTuple, ...]:
     if not path.exists():
         raise SystemExit(f"ERROR: native Q01 integral artifact not found: {path}")
     try:
@@ -38,7 +41,7 @@ def _load_native_txt(path: Path) -> tuple[tuple[int, ...], ...]:
     except (OSError, UnicodeError) as exc:
         raise SystemExit(f"ERROR: cannot read native Q01 integral artifact: {exc}") from exc
 
-    parsed: list[tuple[int, ...]] = []
+    parsed: list[IndexTuple] = []
     for line in lines:
         match = _INTEGRAL_RE.search(line)
         if match is None:
@@ -54,6 +57,54 @@ def _load_native_txt(path: Path) -> tuple[tuple[int, ...], ...]:
     return unique
 
 
+def _load_rule_dependencies() -> tuple[dict[IndexTuple, tuple[IndexTuple, ...]], set[IndexTuple]]:
+    """Load the FORM export structurally without requiring master-only RHS rules.
+
+    kira2form may emit a target rule whose RHS still references another exported
+    reduction rule.  That is valid as long as the dependency chain terminates in
+    masters (or zero).  Coefficients are irrelevant for this coverage audit.
+    """
+    masters = set(load_master_indices(MASTERS_FILE, family=FAMILY))
+    dependencies: dict[IndexTuple, tuple[IndexTuple, ...]] = {}
+
+    for rule in iter_kira_form_rules(FORM_FILE, family=FAMILY):
+        lhs = tuple(rule.lhs.indices)
+        if lhs in dependencies:
+            raise ValueError(f"duplicate Kira reduction rule for {lhs}")
+        dependencies[lhs] = tuple(tuple(term.integral.indices) for term in rule.terms)
+
+    return dependencies, masters
+
+
+def _resolve_to_masters(
+    key: IndexTuple,
+    dependencies: dict[IndexTuple, tuple[IndexTuple, ...]],
+    masters: set[IndexTuple],
+    memo: dict[IndexTuple, bool],
+    active: set[IndexTuple],
+) -> bool:
+    """Return True iff one integral's exported dependency chain closes on masters/zero."""
+    if key in masters:
+        return True
+    cached = memo.get(key)
+    if cached is not None:
+        return cached
+    if key in active:
+        memo[key] = False
+        return False
+    if key not in dependencies:
+        memo[key] = False
+        return False
+
+    active.add(key)
+    rhs = dependencies[key]
+    # Empty RHS is a zero rule and therefore fully resolved.
+    ok = all(_resolve_to_masters(dep, dependencies, masters, memo, active) for dep in rhs)
+    active.remove(key)
+    memo[key] = ok
+    return ok
+
+
 def main() -> None:
     print("QEDCalc Q01 full-demand Kira coverage audit")
     print("mode: saved artifacts only; no projected trace or Kira reduction is rerun")
@@ -67,17 +118,22 @@ def main() -> None:
     native_integrals = _load_native_txt(NATIVE_TXT)
     print("native integrals total:", len(native_integrals))
 
-    table = KiraReductionTable.from_form_export(
-        FORM_FILE,
-        MASTERS_FILE,
-        family=FAMILY,
-    )
-    print("Kira rules loaded:", len(table.rules))
-    print("Kira masters loaded:", len(table.masters))
+    dependencies, masters = _load_rule_dependencies()
+    memo: dict[IndexTuple, bool] = {}
+    print("Kira rules loaded:", len(dependencies))
+    print("Kira masters loaded:", len(masters))
+
+    nonmaster_rhs = {
+        dep
+        for rhs in dependencies.values()
+        for dep in rhs
+        if dep not in masters
+    }
+    print("unique non-master RHS dependencies:", len(nonmaster_rhs))
 
     status_counts: Counter[str] = Counter()
-    unique_expanded: set[tuple[int, ...]] = set()
-    missing_kira: set[tuple[int, ...]] = set()
+    unique_expanded: set[IndexTuple] = set()
+    missing_kira: set[IndexTuple] = set()
     total_expanded_terms = 0
     max_expansion_size = 0
     missing_examples: list[dict[str, Any]] = []
@@ -96,18 +152,17 @@ def main() -> None:
         max_expansion_size = max(max_expansion_size, len(expansion.terms))
         resolved = 0
         unresolved = 0
-        local_missing: list[tuple[int, ...]] = []
+        local_missing: list[IndexTuple] = []
 
         for term in expansion.terms:
-            kira = term.kira_indices
+            kira = tuple(term.kira_indices)
             unique_expanded.add(kira)
-            result = table.reduce_kira(kira)
-            if result.status == "not_in_table":
+            if _resolve_to_masters(kira, dependencies, masters, memo, set()):
+                resolved += 1
+            else:
                 unresolved += 1
                 missing_kira.add(kira)
                 local_missing.append(kira)
-            else:
-                resolved += 1
 
         if unresolved == 0:
             status_counts["fully_reduced"] += 1
@@ -125,6 +180,11 @@ def main() -> None:
                 }
             )
 
+    unresolved_dependencies = sorted(
+        dep for dep in nonmaster_rhs
+        if not _resolve_to_masters(dep, dependencies, masters, memo, set())
+    )
+
     summary = {
         "native_integrals_total": len(native_integrals),
         "status_counts": dict(sorted(status_counts.items())),
@@ -133,8 +193,11 @@ def main() -> None:
         "expected_unique_expanded_kira_integrals": EXPECTED_UNIQUE_KIRA,
         "unique_missing_kira_integrals": len(missing_kira),
         "max_isp_expansion_size": max_expansion_size,
-        "kira_rules_loaded": len(table.rules),
-        "kira_masters_loaded": len(table.masters),
+        "kira_rules_loaded": len(dependencies),
+        "kira_masters_loaded": len(masters),
+        "unique_nonmaster_rhs_dependencies": len(nonmaster_rhs),
+        "unresolved_nonmaster_rhs_dependencies": len(unresolved_dependencies),
+        "unresolved_dependency_examples": [list(v) for v in unresolved_dependencies[:10]],
         "missing_examples": missing_examples,
         "rejected_examples": rejected_examples,
     }
@@ -147,6 +210,7 @@ def main() -> None:
     print("expanded Kira terms:", total_expanded_terms)
     print("unique expanded Kira integrals:", len(unique_expanded))
     print("unique missing Kira integrals:", len(missing_kira))
+    print("unresolved non-master RHS dependencies:", len(unresolved_dependencies))
     print("max ISP expansion size:", max_expansion_size)
     print("report:", OUTPUT_JSON)
 
@@ -158,6 +222,7 @@ def main() -> None:
         and status_counts["missing"] == 0
         and status_counts["rejected"] == 0
         and len(missing_kira) == 0
+        and len(unresolved_dependencies) == 0
     )
     if not ok:
         print("Q01 full-demand Kira 910-integral coverage FAIL")
