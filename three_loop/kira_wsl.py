@@ -95,6 +95,43 @@ def kira_wsl_version() -> str:
     return stdout or stderr or "Kira version output unavailable"
 
 
+def fermat_wsl_path() -> str:
+    """Locate a Fermat executable inside the default WSL distribution.
+
+    Kira is often launched by QEDCalc as a non-interactive WSL process.  In
+    that mode Ubuntu's interactive ``~/.bashrc`` is not a reliable place to
+    obtain FERMATPATH.  Detect Fermat explicitly and pass the path to Kira.
+
+    Detection order:
+      1. an already exported executable FERMATPATH;
+      2. ``fer64`` available on PATH;
+      3. the standard QEDCalc setup location ``~/fermat/Ferl7/fer64``.
+    """
+    exe = _wsl_executable()
+    command = r'''
+if [ -n "${FERMATPATH:-}" ] && [ -x "$FERMATPATH" ]; then
+    printf '%s\n' "$FERMATPATH"
+elif command -v fer64 >/dev/null 2>&1; then
+    command -v fer64
+elif [ -x "$HOME/fermat/Ferl7/fer64" ]; then
+    printf '%s\n' "$HOME/fermat/Ferl7/fer64"
+else
+    exit 1
+fi
+'''.strip()
+    proc = _run_wsl_capture([exe, "bash", "-lc", command])
+    value = _safe_text(proc.stdout)
+    if proc.returncode != 0 or not value:
+        details = _safe_text(proc.stderr)
+        raise RuntimeError(
+            "Fermat was not found in WSL. Set FERMATPATH to an executable "
+            "Fermat binary, put fer64 on PATH, or install it at "
+            "$HOME/fermat/Ferl7/fer64. "
+            f"Details: {details or 'no diagnostic output'}"
+        )
+    return value.splitlines()[0].strip()
+
+
 def run_kira_wsl(
     project_dir: str | Path,
     *,
@@ -107,20 +144,30 @@ def run_kira_wsl(
         raise FileNotFoundError(project / jobs_file)
 
     version = kira_wsl_version()
+    fermat_path = fermat_wsl_path()
     linux_dir = wsl_path(project)
     log_path = project / log_name
     exe = _wsl_executable()
 
-    # WSL supports changing the Linux working directory directly.  Avoiding a
-    # bash wrapper here removes an entire layer of quoting/positional-argument
-    # handling and keeps spaces and Japanese directory names intact.
+    # WSL supports changing the Linux working directory directly.  Avoid a
+    # bash wrapper for the actual Kira process, and pass FERMATPATH explicitly
+    # so execution does not depend on interactive shell startup files.
     started = time.perf_counter()
     with log_path.open("w", encoding="utf-8", newline="\n") as log:
         log.write(f"Kira version/preflight:\n{version}\n")
+        log.write(f"Fermat path: {fermat_path}\n")
         log.write(f"WSL project path: {linux_dir}\n\n")
         log.flush()
         proc = subprocess.run(
-            [exe, "--cd", linux_dir, "kira", jobs_file],
+            [
+                exe,
+                "--cd",
+                linux_dir,
+                "env",
+                f"FERMATPATH={fermat_path}",
+                "kira",
+                jobs_file,
+            ],
             stdout=log,
             stderr=subprocess.STDOUT,
             text=True,
