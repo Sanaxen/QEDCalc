@@ -48,9 +48,20 @@ def _run_wsl_capture(args: list[str]) -> subprocess.CompletedProcess[str]:
 
 
 def wsl_path(path: str | Path) -> str:
+    """Convert a Windows path to a WSL path without losing backslashes.
+
+    Passing ``C:\\...`` directly as an argument to ``wsl.exe wslpath`` is not
+    reliable on all Windows/WSL combinations: the Linux command-line bridge
+    may consume backslashes before ``wslpath`` sees them.  Instead, pass the
+    Windows path as bash positional parameter ``$1`` and quote that parameter
+    inside the Linux shell.  This also preserves spaces and non-ASCII names.
+    """
     exe = _wsl_executable()
     resolved = str(Path(path).resolve())
-    proc = _run_wsl_capture([exe, "wslpath", "-a", resolved])
+    shell = 'wslpath -a -- "$1"'
+    proc = _run_wsl_capture(
+        [exe, "bash", "-lc", shell, "qedcalc-wslpath", resolved]
+    )
     if proc.returncode != 0:
         details = _safe_text(proc.stderr) or _safe_text(proc.stdout)
         raise RuntimeError(f"wslpath failed: {details or 'no diagnostic output'}")
