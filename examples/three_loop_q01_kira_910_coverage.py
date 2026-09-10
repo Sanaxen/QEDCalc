@@ -1,13 +1,13 @@
 """Audit coverage of the saved Q01 910-integral set against the Kira r6s2d2 table.
 
 This runner deliberately does NOT regenerate the expensive Q01 projected trace.
-It discovers a previously saved JSON artifact containing exactly 910 unique
-12-index native QEDCalc integrals, expands native D10-D12 numerator ISPs into
-the Kira quadratic basis, and measures how much of that demand is covered by
-the existing fully back-substituted Kira table.
+It first tries the saved native-integral text artifact produced by QEDCalc
+(`output/3loop_q01_integral_indices.txt`).  The text artifact is accepted only
+when it contains exactly 910 unique 12-index native QEDCalc integrals.
 
-Set QEDCALC_Q01_INTEGRALS_JSON to an explicit JSON path if automatic discovery
-finds no unique candidate.
+For backward compatibility, JSON discovery remains available.  Set
+QEDCALC_Q01_INTEGRALS_JSON to an explicit JSON path to force a particular JSON
+artifact instead of the native text artifact.
 """
 from __future__ import annotations
 
@@ -29,6 +29,7 @@ PROJECT = ROOT / "output" / "kira_q01_4line_full_r6s2d2"
 FORM_FILE = PROJECT / "results" / "Q01_4line" / "kira_Q01_4line.inc"
 MASTERS_FILE = PROJECT / "results" / "Q01_4line" / "masters.final"
 OUTPUT_JSON = PROJECT / "qedcalc_kira_q01_910_coverage.json"
+NATIVE_TXT = ROOT / "output" / "3loop_q01_integral_indices.txt"
 EXPECTED_NATIVE = 910
 
 _INT_TOKEN_RE = re.compile(r"[-+]?\d+")
@@ -60,6 +61,41 @@ def _indices12(value: Any) -> tuple[int, ...] | None:
                 if parsed is not None:
                     return parsed
     return None
+
+
+def _load_native_txt(path: Path) -> tuple[tuple[int, ...], ...] | None:
+    """Load the canonical Q01 integral-index text artifact if it is complete."""
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError):
+        return None
+
+    parsed: list[tuple[int, ...]] = []
+    malformed: list[tuple[int, str]] = []
+    for line_no, line in enumerate(lines, 1):
+        text = line.strip()
+        if not text:
+            continue
+        value = _indices12(text)
+        if value is None:
+            malformed.append((line_no, text))
+            continue
+        parsed.append(value)
+
+    unique = tuple(dict.fromkeys(parsed))
+    if malformed:
+        print(f"WARNING: native TXT contains {len(malformed)} non-integral line(s); not using it.")
+        for line_no, text in malformed[:5]:
+            print(f"  line {line_no}: {text[:160]}")
+        return None
+    if len(parsed) != EXPECTED_NATIVE or len(unique) != EXPECTED_NATIVE:
+        print(
+            "WARNING: native TXT does not contain exactly "
+            f"{EXPECTED_NATIVE} unique 12-index integrals "
+            f"(parsed={len(parsed)}, unique={len(unique)}); not using it."
+        )
+        return None
+    return unique
 
 
 def _extract_integral_sets(obj: Any, trail: str = "$") -> list[tuple[str, tuple[tuple[int, ...], ...]]]:
@@ -117,6 +153,10 @@ def _discover_saved_integrals() -> tuple[Path, str, tuple[tuple[int, ...], ...]]
             raise FileNotFoundError(f"QEDCALC_Q01_INTEGRALS_JSON does not exist: {path}")
         paths = [path]
     else:
+        native_txt = _load_native_txt(NATIVE_TXT) if NATIVE_TXT.exists() else None
+        if native_txt is not None:
+            return NATIVE_TXT, "$txt", native_txt
+
         output_root = ROOT / "output"
         paths = sorted(output_root.rglob("*.json")) if output_root.exists() else []
 
@@ -149,9 +189,11 @@ def _discover_saved_integrals() -> tuple[Path, str, tuple[tuple[int, ...], ...]]
         key=lambda item: (-item[0], str(item[1]), item[2]),
     )
     if not ranked:
-        print("ERROR: no saved JSON artifact containing exactly 910 unique 12-index Q01 integrals was found.")
+        print("ERROR: no saved artifact containing exactly 910 unique 12-index Q01 integrals was found.")
         print("The expensive projected trace was NOT recomputed.")
-        print("Set QEDCALC_Q01_INTEGRALS_JSON to the saved mapping JSON if you know its path.")
+        if not explicit:
+            print("Expected native TXT:", NATIVE_TXT)
+        print("Set QEDCALC_Q01_INTEGRALS_JSON to a saved mapping JSON if needed.")
         print(f"JSON files searched: {len(searched)}")
         for item in searched[:30]:
             print(f"  searched: {item}")
@@ -196,7 +238,7 @@ def main() -> None:
 
     source_path, source_trail, native_integrals = _discover_saved_integrals()
     print("native source:", source_path)
-    print("native JSON path:", source_trail)
+    print("native artifact path:", source_trail)
     print("native integrals total:", len(native_integrals))
 
     table = KiraReductionTable.from_form_export(FORM_FILE, MASTERS_FILE)
@@ -260,6 +302,7 @@ def main() -> None:
     missing_demand = [_demand_stats(v) for v in sorted(missing_kira)]
     summary = {
         "native_source": str(source_path),
+        "native_artifact_path": source_trail,
         "native_json_path": source_trail,
         "native_integrals_total": len(native_integrals),
         "status_counts": dict(sorted(status_counts.items())),
