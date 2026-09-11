@@ -1,0 +1,63 @@
+@echo off
+setlocal
+cd /d "%~dp0"
+set "PYTHONPATH=%CD%"
+
+if not exist ".venv\Scripts\python.exe" (
+  echo ERROR: QEDCalc virtual environment was not found.
+  echo Expected: %CD%\.venv\Scripts\python.exe
+  pause
+  exit /b 1
+)
+
+".venv\Scripts\python.exe" examples\three_loop_q01_kira_910_exact_export_generate.py
+if errorlevel 1 (
+  set "RC=%ERRORLEVEL%"
+  echo.
+  echo Q01 exact-944 Kira FORM export generation failed with error code %RC%.
+  pause
+  exit /b %RC%
+)
+
+where wsl.exe >nul 2>&1
+if errorlevel 1 (
+  echo ERROR: wsl.exe was not found.
+  pause
+  exit /b 2
+)
+
+set "PROJECT_WIN=%CD%\output\kira_q01_full_demand_r9s3d0"
+
+wsl.exe bash -lc "command -v kira >/dev/null 2>&1"
+if errorlevel 1 (
+  echo ERROR: kira was not found in the WSL PATH.
+  pause
+  exit /b 2
+)
+
+wsl.exe bash -lc "test -x $HOME/fermat/Ferl7/fer64"
+if errorlevel 1 (
+  echo ERROR: Fermat executable was not found or is not executable at $HOME/fermat/Ferl7/fer64.
+  pause
+  exit /b 3
+)
+
+echo.
+echo QEDCalc Q01 exact-944 Kira FORM export
+echo project: %PROJECT_WIN%
+echo mode: exact944 completed database only; reduction is NOT rerun
+echo.
+
+wsl.exe --cd "%PROJECT_WIN%" bash -lc "set -o pipefail; export FERMATPATH=$HOME/fermat/Ferl7/fer64; kira jobs_exact944_export.yaml 2>&1 | tee q01_exact944_export.log"
+set "RC=%ERRORLEVEL%"
+
+echo.
+if "%RC%"=="0" (
+  echo Q01 exact-944 Kira FORM export PASS
+  echo Results directory:
+  dir /b "%PROJECT_WIN%\exact944\results\Q01_full"
+) else (
+  echo Q01 exact-944 Kira FORM export failed with error code %RC%.
+)
+pause
+exit /b %RC%
