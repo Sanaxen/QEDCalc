@@ -26,13 +26,18 @@ FORM_FILE = RESULTS / "kira_q01_944_targets.inc"
 MASTERS_FILE = RESULTS / "masters.final"
 MAPPINGS = EXACT / "sectormappings" / "Q01_full"
 TRIVIAL_FILE = MAPPINGS / "trivialsector"
-NONTRIVIAL_FILE = MAPPINGS / "nonTrivialSector"
 REPORT = PROJECT / "qedcalc_kira_q01_exact944_leaf_sector_diagnostic.json"
 FAMILY = "Q01_full"
 IndexTuple = tuple[int, ...]
 
 
-def _load_sector_csv(path: Path) -> set[int]:
+def _load_trivial_sector_csv(path: Path) -> set[int]:
+    """Load Kira's comma-separated ``trivialsector`` file.
+
+    ``nonTrivialSector`` is intentionally *not* parsed here: Kira 3.1 stores a
+    richer record format there (not a simple CSV of sector ids).  This
+    diagnostic only needs the authoritative trivial-sector list.
+    """
     text = path.read_text(encoding="utf-8").strip()
     values: set[int] = set()
     for raw in text.replace("\n", ",").split(","):
@@ -83,17 +88,12 @@ def main() -> None:
         if child not in masters and child not in zero_rules and child not in rules
     }
 
-    trivial_sectors = _load_sector_csv(TRIVIAL_FILE)
-    nontrivial_sectors = _load_sector_csv(NONTRIVIAL_FILE) if NONTRIVIAL_FILE.exists() else set()
-
+    trivial_sectors = _load_trivial_sector_csv(TRIVIAL_FILE)
     trivial_leaves = {leaf for leaf in leaves if _sector(leaf) in trivial_sectors}
     remaining = leaves - trivial_leaves
 
     leaf_sector_counts = Counter(_sector(leaf) for leaf in leaves)
     remaining_sector_counts = Counter(_sector(leaf) for leaf in remaining)
-    remaining_marked_nontrivial = {
-        leaf for leaf in remaining if _sector(leaf) in nontrivial_sectors
-    }
 
     print("FORM rules loaded:", len(rules) + len(zero_rules))
     print("FORM explicit-zero rules:", len(zero_rules))
@@ -104,7 +104,7 @@ def main() -> None:
     print("leaves in trivial sectors:", len(trivial_leaves))
     print("remaining leaves after trivial-sector classification:", len(remaining))
     print("remaining distinct sectors:", len(remaining_sector_counts))
-    print("remaining leaves in saved nonTrivialSector:", len(remaining_marked_nontrivial))
+    print("nonTrivialSector: not parsed (Kira 3.1 rich record format)")
 
     print("remaining sector counts (top 30):")
     for sector, count in remaining_sector_counts.most_common(30):
@@ -120,7 +120,7 @@ def main() -> None:
         "leaves_in_trivial_sectors": len(trivial_leaves),
         "remaining_leaves": len(remaining),
         "remaining_distinct_sectors": len(remaining_sector_counts),
-        "remaining_leaves_in_nontrivial_sector_file": len(remaining_marked_nontrivial),
+        "nontrivial_sector_file_parsed": False,
         "remaining_sector_counts": [
             {"sector": sector, "count": count}
             for sector, count in sorted(remaining_sector_counts.items())
