@@ -20,6 +20,12 @@ _LHS_RE = re.compile(
 )
 
 
+def _is_zero_form_expr(text: str) -> bool:
+    """Return True for FORM zero spellings such as ``0``, ``+0`` or ``+ 0``."""
+    compact = re.sub(r"\s+", "", text)
+    return compact in {"0", "+0", "-0"}
+
+
 @dataclass(frozen=True)
 class KiraFormIntegral:
     family: str
@@ -43,7 +49,7 @@ class KiraFormRule:
 
     @property
     def is_zero(self) -> bool:
-        return not self.terms and self.rhs_form.strip() in {"0", "+0", "-0"}
+        return not self.terms and _is_zero_form_expr(self.rhs_form)
 
 
 def _parse_indices(text: str) -> tuple[int, ...]:
@@ -175,7 +181,7 @@ def parse_form_rule(statement: str, *, expected_family: str | None = None) -> Ki
     for additive_term in _split_top_level_additive_terms(rhs):
         integral_matches = list(integral_re.finditer(additive_term))
         if not integral_matches:
-            if additive_term.strip() not in {"0", "+0", "-0"}:
+            if not _is_zero_form_expr(additive_term):
                 raise ValueError(
                     f"FORM RHS term has no {family} integral token: {additive_term!r}"
                 )
