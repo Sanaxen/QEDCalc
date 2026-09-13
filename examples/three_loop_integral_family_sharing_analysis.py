@@ -2,13 +2,17 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from three_loop.family_sharing import analyze_three_loop_family_sharing
 from three_loop.registry import ThreeLoopRegistry
 
 
-ROOT = Path(__file__).resolve().parents[1]
 REGISTRY_PATH = ROOT / "data" / "three_loop_topologies.json"
 OUTPUT_PATH = ROOT / "output" / "3loop_integral_family_sharing.json"
 
