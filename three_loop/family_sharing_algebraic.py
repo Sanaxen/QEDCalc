@@ -136,6 +136,11 @@ def _linear_rank(expressions: tuple[sp.Expr, ...] | list[sp.Expr]) -> int:
     return int(sp.Matrix(rows).rank())
 
 
+def q_physical_rank(topology: ThreeLoopTopology) -> int:
+    """Return the scalar-product rank of the nine physical Q denominators."""
+    return _linear_rank(list(q_physical_denominators(topology)))
+
+
 def _choose_completion_isps(
     topology: ThreeLoopTopology, physical: tuple[sp.Expr, ...]
 ) -> tuple[tuple[str, str], ...]:
@@ -167,6 +172,16 @@ def _choose_completion_isps(
     if rank != 12:
         raise ValueError(f"{topology.diagram_id}: could not complete scalar-product rank to 12")
     return tuple(chosen)
+
+
+def q_completion_isp_pairs(topology: ThreeLoopTopology) -> tuple[tuple[str, str], ...]:
+    """Public deterministic auxiliary basis for one Q topology.
+
+    The returned basis complements the *independent* physical denominator span
+    to rank 12.  Rank-deficient physical families therefore receive 4 or 5
+    auxiliary scalar products after duplicate-denominator elimination.
+    """
+    return _choose_completion_isps(topology, q_physical_denominators(topology))
 
 
 @dataclass(frozen=True)
