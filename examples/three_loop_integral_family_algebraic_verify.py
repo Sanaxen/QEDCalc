@@ -1,8 +1,9 @@
-"""Algebraically verify full 12-denominator sharing for Q reflection pairs."""
+"""Algebraically verify Q reflection sharing and classify Kira readiness."""
 from __future__ import annotations
 
 import json
 import sys
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -43,53 +44,78 @@ def main() -> int:
             continue
         verified.append(algebraic_map.as_dict())
 
+    direct_ready = [item for item in verified if item["direct_12_denominator_kira_ready"]]
+    preprocess = [item for item in verified if item["requires_dependent_propagator_preprocessing"]]
+    rank_hist = Counter(int(item["source_physical_rank"]) for item in verified)
+
     q_total = len([topology for topology in registry if topology.diagram_id.startswith("Q")])
-    exact_family_count = q_total - len(verified)
+    reflection_family_count = q_total - len(verified)
+    direct_kira_family_count = q_total - len(direct_ready)
     q01 = next((item for item in verified if item["source_id"] == "Q01"), None)
 
     report = {
-        "schema_version": 1,
+        "schema_version": 2,
         "q_diagram_count": q_total,
         "q_reflection_candidate_pair_count": len(q_groups),
-        "q_full_family_verified_pair_count": len(verified),
+        "q_algebraically_reflection_equivalent_pair_count": len(verified),
+        "q_direct_12_denominator_kira_ready_pair_count": len(direct_ready),
+        "q_dependent_propagator_preprocessing_pair_count": len(preprocess),
         "failed_pair_count": len(failed),
-        "q_exact_family_count_after_verified_reflection_sharing": exact_family_count,
+        "q_reflection_family_count": reflection_family_count,
+        "q_direct_kira_family_count_without_preprocessing": direct_kira_family_count,
+        "physical_rank_histogram": dict(sorted(rank_hist.items())),
         "verified_pairs": verified,
         "failed_pairs": failed,
-        "reuse_rule": (
-            "Each verified pair shares one 12-dimensional IBP family after the "
-            "recorded loop/external momentum reflection.  The target ISP basis is "
-            "induced from the representative basis rather than chosen independently."
-        ),
-        "q01_note": (
-            "Q01 keeps its existing (k.r, l.q, q.r) auxiliary basis so completed "
-            "and in-progress Q01 Kira work remains the canonical representative for Q41."
+        "interpretation": (
+            "All algebraically verified pairs have exactly mapped physical propagators. "
+            "Pairs with physical rank 9 are directly representable as nine physical "
+            "denominators plus three ISPs. Lower-rank pairs remain reflection-equivalent "
+            "but need dependent-propagator preprocessing before conventional Kira-family reuse."
         ),
         "next_stage": (
-            "Build integral-index translation into each representative family and "
-            "deduplicate/union the demanded integrals before generating Kira jobs."
+            "For lower-rank pairs, derive the linear dependence relations among physical "
+            "propagators and build a safe partial-fraction/decomposition plan. In parallel, "
+            "directly Kira-ready pairs can proceed to integral-index translation and demand union."
         ),
     }
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     print(f"Q reflection candidate pairs: {len(q_groups)}")
-    print(f"full 12-denominator family verified pairs: {len(verified)}")
+    print(f"algebraically reflection-equivalent pairs: {len(verified)}")
+    print(f"direct 12-denominator Kira-ready pairs: {len(direct_ready)}")
+    print(f"dependent-propagator preprocessing pairs: {len(preprocess)}")
     print(f"failed pairs: {len(failed)}")
     print(f"Q diagrams: {q_total}")
-    print(f"exact Q families after verified sharing: {exact_family_count}")
+    print(f"reflection families after verified sharing: {reflection_family_count}")
+    print(f"direct Kira families without preprocessing: {direct_kira_family_count}")
+    print("physical-rank histogram:")
+    for rank, count in sorted(rank_hist.items()):
+        print(f"  rank {rank}: {count} pairs")
+
     if q01 is not None:
         print("\nQ01 <-> Q41 canonical-family proof:")
-        print(f"  source rank: {q01['source_family_rank']}")
-        print(f"  target rank: {q01['target_family_rank']}")
+        print(f"  physical rank: {q01['source_physical_rank']}")
+        print(f"  completed rank: {q01['source_completed_rank']}")
+        print(f"  auxiliary count needed: {q01['auxiliary_count_needed']}")
         print(f"  legacy Q01 ISP basis preserved: {q01['q01_legacy_basis_preserved']}")
         print("  induced Q41 ISPs:")
         for expr in q01["induced_target_isps"]:
             print(f"    {expr}")
+
+    if preprocess:
+        print("\nPairs needing dependent-propagator preprocessing:")
+        for item in preprocess:
+            print(
+                f"  {item['source_id']} <-> {item['target_id']}: "
+                f"physical rank={item['source_physical_rank']}, "
+                f"auxiliaries needed={item['auxiliary_count_needed']}"
+            )
     if failed:
         print("\nFailures:")
         for item in failed:
             print(f"  {item['group']}: {item['reason']}")
+
     print(f"\nreport: {OUTPUT_PATH}")
     if failed:
         print("Three-loop Q integral-family algebraic verification FAIL")
