@@ -49,32 +49,36 @@ def _add_scaled(dst: dict[str, int], src: Mapping[str, int], scale: int) -> None
         dst[name] += scale * value
 
 
-def _dot(a: Mapping[str, int], b: Mapping[str, int]) -> sp.Expr:
+def _scalar_atom(left: str, right: str) -> sp.Expr:
+    """Return one scalar product after applying the finite-q on-shell rules."""
     m = sp.Symbol("m")
     z = sp.Symbol("z")
+    if left == right == "p":
+        return m**2
+    if left == right == "q":
+        return z * m**2
+    if {left, right} == {"p", "q"}:
+        return -z * m**2 / 2
+    return sp_atom(left, right)
+
+
+def _dot(a: Mapping[str, int], b: Mapping[str, int]) -> sp.Expr:
+    """Exact bilinear scalar product of two integer momentum combinations.
+
+    Do not skip a basis direction merely because its coefficient in ``a`` is
+    zero: for an off-diagonal pair the contribution ``a[j] * b[i]`` may still
+    be non-zero.  The previous triangular implementation made exactly that
+    mistake and therefore lost terms such as ``(-r).(-(p+q))``.
+    """
     result = sp.Integer(0)
     for i, left in enumerate(VECTOR_NAMES):
-        ca = a[left]
-        if not ca:
-            continue
-        for right in VECTOR_NAMES[i:]:
-            cb_left = b[right]
-            cb_right = b[left] if right != left else 0
-            coefficient = ca * cb_left
-            if right != left:
-                coefficient += a[right] * b[left]
-            if not coefficient:
-                continue
-            pair = {left, right}
-            if left == right == "p":
-                atom = m**2
-            elif left == right == "q":
-                atom = z * m**2
-            elif pair == {"p", "q"}:
-                atom = -z * m**2 / 2
-            else:
-                atom = sp_atom(left, right)
-            result += coefficient * atom
+        diagonal = a[left] * b[left]
+        if diagonal:
+            result += diagonal * _scalar_atom(left, left)
+        for right in VECTOR_NAMES[i + 1:]:
+            coefficient = a[left] * b[right] + a[right] * b[left]
+            if coefficient:
+                result += coefficient * _scalar_atom(left, right)
     return sp.expand(result)
 
 
@@ -226,19 +230,15 @@ def verify_q_reflection_family_algebraically(
     target_physical = q_physical_denominators(target)
 
     index_map: list[tuple[int, int]] = []
+    substitutions = {
+        sp_atom(a, b): _transformed_pair((a, b), transform)
+        for a, b in SP_PAIRS
+    }
+
     # Electron segment i -> 7-i under reversal (1-based denominator indices).
     for i in range(1, 7):
         target_i = 7 - i
-        # Reconstruct the source segment momentum from its denominator indirectly
-        # by using the topology event walk, then compare symbolic expressions via
-        # a direct scalar-product substitution generated from the momentum map.
-        # The simpler exact expression transform is linear on scalar products.
-        src_expr = source_physical[i - 1]
-        substitutions = {
-            sp_atom(a, b): _transformed_pair((a, b), transform)
-            for a, b in SP_PAIRS
-        }
-        transformed = sp.expand(src_expr.xreplace(substitutions))
+        transformed = sp.expand(source_physical[i - 1].xreplace(substitutions))
         if sp.simplify(transformed - target_physical[target_i - 1]) != 0:
             raise ValueError(
                 f"{source.diagram_id}->{target.diagram_id}: electron D{i} does not map to D{target_i}"
@@ -251,10 +251,6 @@ def verify_q_reflection_family_algebraically(
         target_label = label_map[source_label]
         i = source_photon_index[source_label]
         j = target_photon_index[target_label]
-        substitutions = {
-            sp_atom(a, b): _transformed_pair((a, b), transform)
-            for a, b in SP_PAIRS
-        }
         transformed = sp.expand(source_physical[i - 1].xreplace(substitutions))
         if sp.simplify(transformed - target_physical[j - 1]) != 0:
             raise ValueError(
