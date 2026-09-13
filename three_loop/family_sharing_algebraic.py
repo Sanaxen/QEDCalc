@@ -1,14 +1,15 @@
 """Algebraic denominator/ISP verification for three-loop Q-family sharing.
 
-This stage upgrades open-chain reflection candidates to exact reusable integral
-family maps.  It constructs the physical propagators directly from the topology,
-derives the reflection momentum transformation, and completes the nine physical
-propagators to a full 12-dimensional scalar-product basis.
+This stage upgrades open-chain reflection candidates by checking the physical
+propagators algebraically and then analysing the rank of the scalar-product
+span.  A nine-propagator graph with physical rank nine needs three auxiliary
+ISPs to form the usual 12-dimensional IBP family.  Some topologies have a
+lower physical rank; those are still reflection-equivalent, but they require
+preprocessing (for example a dependent-propagator/partial-fraction treatment)
+before they can be represented by a standard 12-denominator Kira family.
 
 For Q01 the existing QEDCalc ISP basis (k.r, l.q, q.r) is kept exactly so the
-current Q01 Kira work remains the canonical representative.  Partner families
-receive the ISP basis induced by the reflection map; this is what allows target
-integrals to be translated into the representative Kira family without guessing.
+current Q01 Kira work remains the canonical representative.
 """
 from __future__ import annotations
 
@@ -49,36 +50,28 @@ def _add_scaled(dst: dict[str, int], src: Mapping[str, int], scale: int) -> None
         dst[name] += scale * value
 
 
-def _scalar_atom(left: str, right: str) -> sp.Expr:
-    """Return one scalar product after applying the finite-q on-shell rules."""
+def _dot(a: Mapping[str, int], b: Mapping[str, int]) -> sp.Expr:
+    """Bilinear scalar product in the (p,q,k,l,r) basis."""
     m = sp.Symbol("m")
     z = sp.Symbol("z")
-    if left == right == "p":
-        return m**2
-    if left == right == "q":
-        return z * m**2
-    if {left, right} == {"p", "q"}:
-        return -z * m**2 / 2
-    return sp_atom(left, right)
-
-
-def _dot(a: Mapping[str, int], b: Mapping[str, int]) -> sp.Expr:
-    """Exact bilinear scalar product of two integer momentum combinations.
-
-    Do not skip a basis direction merely because its coefficient in ``a`` is
-    zero: for an off-diagonal pair the contribution ``a[j] * b[i]`` may still
-    be non-zero.  The previous triangular implementation made exactly that
-    mistake and therefore lost terms such as ``(-r).(-(p+q))``.
-    """
     result = sp.Integer(0)
     for i, left in enumerate(VECTOR_NAMES):
-        diagonal = a[left] * b[left]
-        if diagonal:
-            result += diagonal * _scalar_atom(left, left)
-        for right in VECTOR_NAMES[i + 1:]:
-            coefficient = a[left] * b[right] + a[right] * b[left]
-            if coefficient:
-                result += coefficient * _scalar_atom(left, right)
+        for right in VECTOR_NAMES[i:]:
+            coefficient = a[left] * b[right]
+            if right != left:
+                coefficient += a[right] * b[left]
+            if not coefficient:
+                continue
+            pair = {left, right}
+            if left == right == "p":
+                atom = m**2
+            elif left == right == "q":
+                atom = z * m**2
+            elif pair == {"p", "q"}:
+                atom = -z * m**2 / 2
+            else:
+                atom = sp_atom(left, right)
+            result += coefficient * atom
     return sp.expand(result)
 
 
@@ -118,7 +111,6 @@ def q_physical_denominators(topology: ThreeLoopTopology) -> tuple[sp.Expr, ...]:
 
 
 def _source_vector_transform(label_map: Mapping[str, str]) -> dict[str, dict[str, int]]:
-    """Return source-vector expressions in target variables for chain reflection."""
     transform: dict[str, dict[str, int]] = {}
     p = _zero_vector()
     p["p"] = -1
@@ -133,16 +125,6 @@ def _source_vector_transform(label_map: Mapping[str, str]) -> dict[str, dict[str
     return transform
 
 
-def _transform_vector(
-    vector: Mapping[str, int], transform: Mapping[str, Mapping[str, int]]
-) -> dict[str, int]:
-    out = _zero_vector()
-    for source_name, coefficient in vector.items():
-        if coefficient:
-            _add_scaled(out, transform[source_name], coefficient)
-    return out
-
-
 def _transformed_pair(
     pair: tuple[str, str], transform: Mapping[str, Mapping[str, int]]
 ) -> sp.Expr:
@@ -154,9 +136,16 @@ def _linear_rank(expressions: tuple[sp.Expr, ...] | list[sp.Expr]) -> int:
     return int(sp.Matrix(rows).rank())
 
 
-def _choose_representative_isps(
+def _choose_completion_isps(
     topology: ThreeLoopTopology, physical: tuple[sp.Expr, ...]
 ) -> tuple[tuple[str, str], ...]:
+    """Choose as many auxiliary scalar products as needed to reach rank 12.
+
+    For a standard nine-independent-propagator family this returns exactly three
+    ISPs.  If the physical propagators have rank < 9 it returns more than three;
+    that is diagnostic evidence that dependent-propagator preprocessing is
+    required before a conventional 12-denominator Kira family can be built.
+    """
     if topology.diagram_id == "Q01":
         expressions = list(physical) + [sp_atom(a, b) for a, b in Q01_ISP_PAIRS]
         if _linear_rank(expressions) != 12:
@@ -175,8 +164,8 @@ def _choose_representative_isps(
             rank = new_rank
         if rank == 12:
             break
-    if rank != 12 or len(chosen) != 3:
-        raise ValueError(f"{topology.diagram_id}: could not construct 12-dimensional family basis")
+    if rank != 12:
+        raise ValueError(f"{topology.diagram_id}: could not complete scalar-product rank to 12")
     return tuple(chosen)
 
 
@@ -189,10 +178,15 @@ class AlgebraicFamilyMap:
     physical_index_map: tuple[tuple[int, int], ...]
     representative_isp_pairs: tuple[tuple[str, str], ...]
     induced_target_isps: tuple[str, ...]
-    source_family_rank: int
-    target_family_rank: int
+    source_physical_rank: int
+    target_physical_rank: int
+    auxiliary_count_needed: int
+    source_completed_rank: int
+    target_completed_rank: int
     physical_verified: bool
-    full_family_verified: bool
+    reflection_equivalent: bool
+    direct_12_denominator_kira_ready: bool
+    requires_dependent_propagator_preprocessing: bool
     q01_legacy_basis_preserved: bool
 
     def as_dict(self) -> dict[str, object]:
@@ -207,11 +201,20 @@ class AlgebraicFamilyMap:
             "physical_index_map": [list(item) for item in self.physical_index_map],
             "representative_isp_pairs": [list(pair) for pair in self.representative_isp_pairs],
             "induced_target_isps": list(self.induced_target_isps),
-            "source_family_rank": self.source_family_rank,
-            "target_family_rank": self.target_family_rank,
+            "source_physical_rank": self.source_physical_rank,
+            "target_physical_rank": self.target_physical_rank,
+            "auxiliary_count_needed": self.auxiliary_count_needed,
+            "source_completed_rank": self.source_completed_rank,
+            "target_completed_rank": self.target_completed_rank,
             "physical_verified": self.physical_verified,
-            "full_family_verified": self.full_family_verified,
+            "reflection_equivalent": self.reflection_equivalent,
+            "direct_12_denominator_kira_ready": self.direct_12_denominator_kira_ready,
+            "requires_dependent_propagator_preprocessing": self.requires_dependent_propagator_preprocessing,
             "q01_legacy_basis_preserved": self.q01_legacy_basis_preserved,
+            # Backward-compatible aliases used by the earlier report printer.
+            "source_family_rank": self.source_completed_rank,
+            "target_family_rank": self.target_completed_rank,
+            "full_family_verified": self.direct_12_denominator_kira_ready,
         }
 
 
@@ -220,7 +223,7 @@ def verify_q_reflection_family_algebraically(
     target: ThreeLoopTopology,
     propagator_map: ReflectionPropagatorMap,
 ) -> AlgebraicFamilyMap:
-    """Prove a Q reflection pair is one reusable 12-dimensional IBP family."""
+    """Verify reflection equivalence and classify Kira-family readiness."""
     if not source.diagram_id.startswith("Q") or not target.diagram_id.startswith("Q"):
         raise ValueError("algebraic Q verifier only accepts Q diagrams")
     label_map = dict(propagator_map.loop_label_map)
@@ -229,13 +232,11 @@ def verify_q_reflection_family_algebraically(
     source_physical = q_physical_denominators(source)
     target_physical = q_physical_denominators(target)
 
-    index_map: list[tuple[int, int]] = []
     substitutions = {
         sp_atom(a, b): _transformed_pair((a, b), transform)
         for a, b in SP_PAIRS
     }
-
-    # Electron segment i -> 7-i under reversal (1-based denominator indices).
+    index_map: list[tuple[int, int]] = []
     for i in range(1, 7):
         target_i = 7 - i
         transformed = sp.expand(source_physical[i - 1].xreplace(substitutions))
@@ -258,17 +259,27 @@ def verify_q_reflection_family_algebraically(
             )
         index_map.append((i, j))
 
-    isp_pairs = _choose_representative_isps(source, source_physical)
+    source_physical_rank = _linear_rank(list(source_physical))
+    target_physical_rank = _linear_rank(list(target_physical))
+    if source_physical_rank != target_physical_rank:
+        raise ValueError(
+            f"{source.diagram_id}->{target.diagram_id}: physical ranks differ "
+            f"source={source_physical_rank}, target={target_physical_rank}"
+        )
+
+    isp_pairs = _choose_completion_isps(source, source_physical)
     source_isps = tuple(sp_atom(a, b) for a, b in isp_pairs)
     induced_target_isps = tuple(_transformed_pair(pair, transform) for pair in isp_pairs)
     source_rank = _linear_rank(list(source_physical) + list(source_isps))
     target_rank = _linear_rank(list(target_physical) + list(induced_target_isps))
     if source_rank != 12 or target_rank != 12:
         raise ValueError(
-            f"{source.diagram_id}->{target.diagram_id}: incomplete family rank "
+            f"{source.diagram_id}->{target.diagram_id}: incomplete completed rank "
             f"source={source_rank}, target={target_rank}"
         )
 
+    auxiliary_count = len(isp_pairs)
+    direct_ready = source_physical_rank == 9 and target_physical_rank == 9 and auxiliary_count == 3
     return AlgebraicFamilyMap(
         source_id=source.diagram_id,
         target_id=target.diagram_id,
@@ -277,9 +288,14 @@ def verify_q_reflection_family_algebraically(
         physical_index_map=tuple(sorted(index_map)),
         representative_isp_pairs=isp_pairs,
         induced_target_isps=tuple(str(sp.expand(expr)) for expr in induced_target_isps),
-        source_family_rank=source_rank,
-        target_family_rank=target_rank,
+        source_physical_rank=source_physical_rank,
+        target_physical_rank=target_physical_rank,
+        auxiliary_count_needed=auxiliary_count,
+        source_completed_rank=source_rank,
+        target_completed_rank=target_rank,
         physical_verified=True,
-        full_family_verified=True,
+        reflection_equivalent=True,
+        direct_12_denominator_kira_ready=direct_ready,
+        requires_dependent_propagator_preprocessing=not direct_ready,
         q01_legacy_basis_preserved=(source.diagram_id != "Q01" or isp_pairs == Q01_ISP_PAIRS),
     )
