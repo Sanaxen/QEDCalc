@@ -6,6 +6,9 @@ This helper therefore creates a *separate* supplemental FireFly job containing
 only those unresolved targets.  The validated original FireFly alt_dir is never
 modified.
 
+The supplemental alt_dir is versioned so a failed FireFly reconstruction state
+is never reused after changing job bounds or target-generation logic.
+
 Modes:
   generate  read the saved closure-audit JSON and create the target/job files;
   audit     inspect the supplemental kira2form export and classify all targets.
@@ -30,7 +33,9 @@ SOURCE_AUDIT = PROJECT / "q01_symmetry_closure_firefly_export_audit.json"
 TARGET_FILE = PROJECT / "q01_symmetry_supplement_targets"
 JOB_FILE = PROJECT / "jobs_q01_symmetry_supplement_firefly.yaml"
 LOG_FILE = PROJECT / "q01_symmetry_supplement_firefly.log"
-ALT_DIR_NAME = "symmetry_supplement_firefly"
+# v1 may contain an incompatible FireFly saved state from an earlier aborted
+# run.  Never reuse it after the r-bound fix; start a fresh isolated state.
+ALT_DIR_NAME = "symmetry_supplement_firefly_v2"
 ALT_ROOT = PROJECT / ALT_DIR_NAME
 OUTPUT_JSON = PROJECT / "q01_symmetry_supplement_firefly_audit.json"
 TOP_SECTOR = 511
@@ -69,12 +74,6 @@ def _bounds(indices: IndexTuple) -> tuple[int, int, int]:
     return r, s, d
 
 
-def _sector_active_lines(sector: int) -> int:
-    if sector <= 0:
-        raise ValueError(f"sector must be positive, got {sector}")
-    return int(sector).bit_count()
-
-
 def _load_source_unresolved() -> tuple[IndexTuple, ...]:
     if not SOURCE_AUDIT.exists():
         raise SystemExit(f"ERROR: source closure audit not found: {SOURCE_AUDIT}")
@@ -96,12 +95,11 @@ def generate() -> None:
         maxima[2] = max(maxima[2], d)
     target_rmax, smax, dmax = maxima
 
-    # Kira requires r to be large enough for the selected sector itself, not
-    # merely large enough for the mandatory target list.  Sector 511 has nine
-    # active lines, so r<9 is rejected before reduction starts even when every
-    # supplied target happens to have a smaller positive-index sum.
-    sector_rmin = _sector_active_lines(TOP_SECTOR)
-    rmax = max(target_rmax, sector_rmin)
+    # Kira also requires r to be large enough to represent the selected top
+    # sector itself.  Sector 511 has nine active denominator lines, hence r>=9
+    # regardless of the maximum r of the selected mandatory targets.
+    sector_min_r = TOP_SECTOR.bit_count()
+    rmax = max(target_rmax, sector_min_r)
 
     TARGET_FILE.write_text(
         "\n".join(_integral_text(v) for v in targets) + "\n",
@@ -116,7 +114,7 @@ def generate() -> None:
     print("mode: isolated supplemental reduction; original FireFly alt_dir is untouched")
     print("supplement targets:", len(targets))
     print("target-derived r max:", target_rmax)
-    print(f"top sector: {TOP_SECTOR}; active lines / minimum r: {sector_rmin}")
+    print(f"top sector: {TOP_SECTOR}; active lines / minimum r: {sector_min_r}")
     print(f"effective seed bounds: r={rmax} s={smax} d={dmax}")
     print("alt_dir:", ALT_DIR_NAME)
     print("generated target list:", TARGET_FILE)
@@ -180,6 +178,7 @@ def audit() -> None:
     }
     summary = {
         "mode": "isolated supplemental FireFly reduction for symmetry-expansion targets",
+        "alt_dir": ALT_DIR_NAME,
         "targets": len(targets),
         "form_export": str(form_path),
         "target_status": status,
@@ -191,6 +190,7 @@ def audit() -> None:
     OUTPUT_JSON.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
 
     print("QEDCalc Q01 symmetry supplemental FireFly audit")
+    print("alt_dir:", ALT_DIR_NAME)
     print("requested targets:", len(targets))
     print("exported reduction rules:", len(rules))
     print("exported zero rules:", len(zeros))
