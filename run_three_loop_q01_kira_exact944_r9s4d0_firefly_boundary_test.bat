@@ -60,14 +60,15 @@ if not exist "%PROJECT_WIN%" (
 echo.
 echo QEDCalc Q01 exact944 r9s4d0 FireFly seed-boundary test
 echo project: %PROJECT_WIN%
-echo mode: fresh Kira reduction with FireFly enabled
+echo mode: clean fresh Kira reduction with FireFly enabled
 echo enlarged seed: r=9 s=4 d=0
 echo mandatory targets: original exact944 union final60
 echo alt_dir: exact944_r9s4d0_firefly
-echo note: this does not reuse the interrupted exact944_r9s4d0_fermat run
+echo cleanup: remove stale FireFly saves and the dedicated FireFly alt_dir
+echo note: this does not reuse the interrupted Fermat run or a previous FireFly state
 echo.
 
-wsl.exe --cd "%PROJECT_WIN%" bash -lc "set -o pipefail; export FERMATPATH=$HOME/fermat/Ferl7/fer64; echo Fermat: $FERMATPATH; kira jobs_q01_exact944_r9s4d0_firefly_boundary.yaml 2>&1 | tee q01_exact944_r9s4d0_firefly_boundary.log"
+wsl.exe --cd "%PROJECT_WIN%" bash -lc "set -o pipefail; echo Cleaning stale FireFly state...; rm -rf firefly_saves ff_save exact944_r9s4d0_firefly; export FERMATPATH=$HOME/fermat/Ferl7/fer64; echo Fermat: $FERMATPATH; kira jobs_q01_exact944_r9s4d0_firefly_boundary.yaml 2>&1 | tee q01_exact944_r9s4d0_firefly_boundary.log"
 set "RC=%ERRORLEVEL%"
 if not "%RC%"=="0" (
   echo.
