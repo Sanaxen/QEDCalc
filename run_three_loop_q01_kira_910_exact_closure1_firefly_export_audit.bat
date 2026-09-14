@@ -19,8 +19,8 @@ if not exist "%AUDIT_PY%" (
 )
 
 ".venv\Scripts\python.exe" "%AUDIT_PY%" generate-export
-if errorlevel 1 (
-  set "RC=%ERRORLEVEL%"
+set "RC=%ERRORLEVEL%"
+if not "%RC%"=="0" (
   echo.
   echo Q01 exact944 closure-wave-1 FireFly export job generation failed with error code %RC%.
   pause
