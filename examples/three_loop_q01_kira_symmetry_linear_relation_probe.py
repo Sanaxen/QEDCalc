@@ -1,23 +1,24 @@
 """Construct exact Q01 master-form relations from saved Kira momentum symmetries.
 
-This stage performs no Kira, FireFly, or projected-trace recomputation.  It
-combines three already-validated ingredients:
+This stage performs no Kira, FireFly, Fermat, or projected-trace recomputation.
+It combines four already-validated ingredients:
 
 * the 60 master forms used by the saved projected amplitude;
 * Kira's saved sectorRelations / sectorSymmetries momentum transformations;
-* the saved FireFly FORM reduction graph.
+* the saved closure-wave-1 FireFly FORM reduction graph;
+* the saved 146-target ordinary Kira/Fermat supplemental FORM reduction.
 
 For every relevant momentum map, positive denominator powers must map to a
 single inverse propagator, while negative indices (numerators/ISPs) are allowed
-to become affine linear combinations of P1..P12.  Those numerator polynomials
+to become affine linear combinations of P1..P12. Those numerator polynomials
 are expanded exactly, every resulting integral is recursively reduced through
-the saved FireFly graph, and a linear relation among the 60 displayed master
-forms is recorded whenever the transformed side closes on that set.
+the merged saved reduction graph, and a linear relation among the 60 displayed
+master forms is recorded whenever the transformed side closes on that set.
 
-The probe then estimates the rank of the exact relation system at several exact
-rational (d,z) points.  Agreement of the generic ranks is a strong diagnostic
-of the number of independent master directions, but this script deliberately
-does not yet rewrite the projected amplitude onto a chosen canonical basis.
+The probe then evaluates the rank of the exact relation system at several exact
+rational (d,z) points. Agreement of the generic ranks diagnoses the number of
+independent master directions, but this script deliberately does not yet rewrite
+the projected amplitude onto a chosen canonical basis.
 """
 from __future__ import annotations
 
@@ -44,15 +45,21 @@ from examples.three_loop_q01_kira_momentum_map_isp_probe import (
     _single_p_image,
     _transformed_propagators,
 )
+from examples.three_loop_q01_kira_symmetry_supplement_fermat import (
+    _find_export as _find_fermat_supplement_export,
+)
 from examples.three_loop_q01_projected_amplitude_firefly_reduce import (
     _load_weighted_form_graph,
     _make_recursive_reducer,
 )
+from three_loop.kira_form_coefficients import form_coefficient_to_sympy
+from three_loop.kira_form_parser import iter_kira_form_rules
 
 OUTPUT_JSON = PROJECT / "q01_kira_symmetry_linear_relation_probe.json"
 
 IndexTuple = tuple[int, ...]
 BasisVector = dict[IndexTuple, sp.Expr]
+WeightedRules = dict[IndexTuple, tuple[tuple[sp.Expr, IndexTuple], ...]]
 
 D = sp.Symbol("d")
 Z = sp.Symbol("z")
@@ -61,6 +68,72 @@ GENERIC_POINTS = (
     {D: sp.Integer(7), Z: sp.Integer(3)},
     {D: sp.Integer(11), Z: sp.Integer(5)},
 )
+
+
+def _indices12(values: Iterable[int]) -> IndexTuple:
+    result = tuple(int(v) for v in values)
+    if len(result) != 12:
+        raise ValueError(f"expected 12 integral indices, got {len(result)}")
+    return result
+
+
+def _load_supplement_rules(form_file: Path) -> tuple[WeightedRules, set[IndexTuple]]:
+    rules: WeightedRules = {}
+    zeros: set[IndexTuple] = set()
+    for rule in iter_kira_form_rules(form_file, family=FAMILY):
+        lhs = _indices12(rule.lhs.indices)
+        if lhs in rules or lhs in zeros:
+            raise SystemExit(f"ERROR: duplicate supplemental FORM rule for {lhs}")
+        if rule.terms:
+            terms: list[tuple[sp.Expr, IndexTuple]] = []
+            for term in rule.terms:
+                rhs = _indices12(term.integral.indices)
+                try:
+                    coefficient = form_coefficient_to_sympy(term.coefficient_form)
+                except Exception as exc:
+                    raise SystemExit(
+                        "ERROR: could not parse supplemental FORM coefficient for "
+                        f"{lhs} -> {rhs}: {term.coefficient_form!r}: {exc}"
+                    ) from exc
+                terms.append((coefficient, rhs))
+            rules[lhs] = tuple(terms)
+        elif rule.is_zero:
+            zeros.add(lhs)
+        else:
+            raise SystemExit(
+                "ERROR: supplemental FORM rule has neither terms nor zero RHS: "
+                f"{lhs}"
+            )
+    return rules, zeros
+
+
+def _merge_reduction_graph(
+    base_rules: WeightedRules,
+    base_zeros: set[IndexTuple],
+    masters: set[IndexTuple],
+    supplement_rules: WeightedRules,
+    supplement_zeros: set[IndexTuple],
+) -> tuple[WeightedRules, set[IndexTuple], set[IndexTuple]]:
+    overlap_rules = set(base_rules) & set(supplement_rules)
+    overlap_rule_zero = (set(base_rules) & supplement_zeros) | (set(supplement_rules) & base_zeros)
+    if overlap_rules or overlap_rule_zero:
+        samples = sorted(overlap_rules | overlap_rule_zero)[:8]
+        raise SystemExit(
+            "ERROR: supplemental Fermat graph overlaps the validated FireFly graph; "
+            f"samples={samples}"
+        )
+
+    rules = dict(base_rules)
+    rules.update(supplement_rules)
+    zeros = set(base_zeros) | set(supplement_zeros)
+
+    all_rhs = {rhs for terms in rules.values() for _, rhs in terms}
+    terminal_rhs = {
+        rhs
+        for rhs in all_rhs
+        if rhs not in masters and rhs not in zeros and rhs not in rules
+    }
+    return rules, zeros, terminal_rhs
 
 
 def _loop_matrix(momentum_map: dict[str, dict[str, sp.Expr]]) -> sp.Matrix:
@@ -77,12 +150,7 @@ def _expand_transformed_integral(
     source: IndexTuple,
     images: tuple[sp.Expr, ...],
 ) -> tuple[tuple[sp.Expr, IndexTuple], ...] | None:
-    """Apply one momentum map to an indexed integral and expand numerator ISPs.
-
-    Positive powers are denominators.  Negative powers are polynomial
-    numerators.  The returned coefficient includes constant factors from mapped
-    denominators and from the expanded numerator polynomial.
-    """
+    """Apply one momentum map to an indexed integral and expand numerator ISPs."""
     target = [0] * 12
     prefactor = sp.Integer(1)
     numerator = sp.Integer(1)
@@ -126,8 +194,6 @@ def _normalize_relation(vector: BasisVector) -> BasisVector:
     out = {key: value for key, value in out.items() if value != 0}
     if not out:
         return {}
-    # Normalize by the first nonzero coefficient so duplicate proportional rows
-    # can be recognized without a full symbolic row-reduction.
     first_key = sorted(out)[0]
     pivot = out[first_key]
     return {key: sp.cancel(value / pivot) for key, value in out.items()}
@@ -163,7 +229,7 @@ def _generic_rank(
 
 def main() -> None:
     print("QEDCalc Q01 Kira symmetry linear-relation probe")
-    print("mode: saved sectormappings + saved FireFly graph only; no recomputation")
+    print("mode: saved sectormappings + merged FireFly/Fermat graph; no recomputation")
 
     final_forms = _load_final_forms()
     basis = tuple(sorted(final_forms))
@@ -193,8 +259,17 @@ def main() -> None:
         print(f"parsed {path.name} momentum mappings:", local)
 
     form_file, masters_file = _find_export_files()
-    rules, zero_rules, masters, terminal_rhs, _ = _load_weighted_form_graph(
+    base_rules, base_zeros, masters, _base_terminal, _ = _load_weighted_form_graph(
         form_file, masters_file
+    )
+    supplement_form = _find_fermat_supplement_export()
+    supplement_rules, supplement_zeros = _load_supplement_rules(supplement_form)
+    rules, zero_rules, terminal_rhs = _merge_reduction_graph(
+        base_rules,
+        base_zeros,
+        masters,
+        supplement_rules,
+        supplement_zeros,
     )
     reduce_one, memo = _make_recursive_reducer(
         rules=rules,
@@ -202,9 +277,14 @@ def main() -> None:
         masters=masters,
         terminal_rhs=terminal_rhs,
     )
-    print("saved FORM reduction rules:", len(rules))
-    print("saved FORM zero rules:", len(zero_rules))
-    print("saved terminal/master leaves:", len(masters | terminal_rhs))
+    print("saved FireFly FORM reduction rules:", len(base_rules))
+    print("saved FireFly FORM zero rules:", len(base_zeros))
+    print("saved Fermat supplemental rules:", len(supplement_rules))
+    print("saved Fermat supplemental zero rules:", len(supplement_zeros))
+    print("merged FORM reduction rules:", len(rules))
+    print("merged FORM zero rules:", len(zero_rules))
+    print("merged terminal/master leaves:", len(masters | terminal_rhs))
+    print("supplement FORM export:", supplement_form)
 
     transform_cache: dict[tuple[str, int], tuple[sp.Expr, ...]] = {}
     attempted = 0
@@ -217,6 +297,7 @@ def main() -> None:
     unique_relations: list[BasisVector] = []
     signatures: set[tuple[tuple[IndexTuple, str], ...]] = set()
     samples: list[dict[str, object]] = []
+    missing_samples: list[IndexTuple] = []
 
     for source in basis:
         source_sector = _sector(source)
@@ -225,8 +306,6 @@ def main() -> None:
             loop_matrix = _loop_matrix(momentum_map)
             determinant = sp.expand(loop_matrix.det())
             if determinant not in (sp.Integer(1), sp.Integer(-1)):
-                # Kira symmetry maps used here should be unimodular.  Do not use
-                # any map with a non-unit loop Jacobian in an integral identity.
                 continue
             unimodular += 1
 
@@ -248,6 +327,8 @@ def main() -> None:
                     reduced = reduce_one(target)
                 except KeyError:
                     reduction_missing += 1
+                    if len(missing_samples) < 12 and target not in missing_samples:
+                        missing_samples.append(target)
                     failed = True
                     break
                 _accumulate(rhs, reduced, coefficient)
@@ -297,12 +378,16 @@ def main() -> None:
     print("relation-building applications attempted:", attempted)
     print("unimodular applications:", unimodular)
     print("numerator expansion failures:", expansion_failures)
-    print("expanded integrals missing from saved reduction graph:", reduction_missing)
+    print("expanded integrals missing from merged reduction graph:", reduction_missing)
     print("relations closing outside displayed 60-form set:", out_of_final_basis)
     print("exact trivial identities:", trivial_relations)
     print("closed nontrivial relation applications:", closed_relations)
     print("unique exact relation rows:", len(unique_relations))
-    print("memoized FireFly reduction nodes:", len(memo))
+    print("memoized merged reduction nodes:", len(memo))
+    if missing_samples:
+        print("missing merged-graph samples:")
+        for value in missing_samples:
+            print("  ", _integral_text(value))
 
     ranks: list[int] = []
     point_rows: list[dict[str, object]] = []
@@ -327,13 +412,16 @@ def main() -> None:
     independent = len(basis) - generic_rank if generic_rank is not None else None
 
     summary = {
-        "mode": "exact symmetry relations from saved Kira momentum maps plus saved FireFly graph",
+        "mode": "exact symmetry relations from saved Kira maps plus merged FireFly/Fermat reduction graph",
         "final_master_forms": len(basis),
+        "firefly_reduction_rules": len(base_rules),
+        "fermat_supplemental_rules": len(supplement_rules),
+        "merged_reduction_rules": len(rules),
         "parsed_mapping_lines": parsed,
         "relation_building_applications_attempted": attempted,
         "unimodular_applications": unimodular,
         "numerator_expansion_failures": expansion_failures,
-        "expanded_integrals_missing_from_saved_reduction_graph": reduction_missing,
+        "expanded_integrals_missing_from_merged_reduction_graph": reduction_missing,
         "relations_closing_outside_displayed_final_basis": out_of_final_basis,
         "trivial_identity_applications": trivial_relations,
         "closed_nontrivial_relation_applications": closed_relations,
@@ -342,12 +430,14 @@ def main() -> None:
         "generic_rank_consistent": consistent_rank,
         "generic_relation_rank": generic_rank,
         "generic_independent_master_directions": independent,
+        "missing_integral_samples": [_integral_text(v) for v in missing_samples],
         "samples": samples,
         "pass": (
             parsed > 0
             and attempted > 0
             and unimodular > 0
             and expansion_failures == 0
+            and reduction_missing == 0
             and len(unique_relations) > 0
             and consistent_rank
         ),
