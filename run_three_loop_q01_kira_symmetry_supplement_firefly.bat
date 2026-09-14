@@ -10,9 +10,9 @@ if not exist ".venv\Scripts\python.exe" (
   exit /b 1
 )
 
-set "HELPER=examples\three_loop_q01_kira_symmetry_supplement_firefly.py"
+set "HELPER=examples\three_loop_q01_kira_symmetry_supplement_firefly_noniterative.py"
 if not exist "%HELPER%" (
-  echo ERROR: Q01 symmetry supplemental FireFly helper was not found.
+  echo ERROR: Q01 symmetry supplemental non-iterative FireFly helper was not found.
   echo Expected: %CD%\%HELPER%
   pause
   exit /b 1
@@ -60,9 +60,9 @@ set "PROJECT_WIN=%CD%\output\kira_q01_full_demand_r9s3d0"
 echo.
 echo QEDCalc Q01 symmetry supplemental Kira FireFly
 echo project: %PROJECT_WIN%
-echo mode: supplemental targets only; iterative_reduction=sectorwise; bunch_size=1
-echo alt_dir: symmetry_supplement_firefly_v2
-echo NOTE: exact944closure1_firefly and the stale symmetry_supplement_firefly state are not modified.
+echo mode: supplemental targets only; iterative_reduction disabled; bunch_size=1
+echo alt_dir: symmetry_supplement_firefly_v3_noniterative
+echo NOTE: exact944closure1_firefly and earlier supplemental alt_dirs are not modified.
 echo.
 
 wsl.exe --cd "%PROJECT_WIN%" bash -lc "set -o pipefail; export FERMATPATH=$HOME/fermat/Ferl7/fer64; echo Fermat: $FERMATPATH; kira --bunch_size=1 jobs_q01_symmetry_supplement_firefly.yaml 2>&1 | tee q01_symmetry_supplement_firefly.log"
