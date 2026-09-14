@@ -212,7 +212,7 @@ def _generic_rank(
         valid = True
         for key in basis:
             try:
-                value = sp.cancel(relation.get(key, 0).subs(point))
+                value = sp.cancel(sp.sympify(relation.get(key, sp.Integer(0))).subs(point))
             except Exception:
                 valid = False
                 break
