@@ -4,12 +4,13 @@ The expensive projected Q01 trace and the FireFly reduction are never recomputed
 The launcher uses this module in two phases:
 
 1. generate a small ``kira2form`` job that reads the isolated FireFly ``alt_dir``;
-2. audit the exported table against the saved 910 native QEDCalc integrals and the
-   944 closure-wave-1 mandatory Kira targets.
+2. audit the exported table against the saved 910 native QEDCalc integrals, the
+   original 944 exact demands, and the larger closure-wave-1 target set.
 
 A successful audit establishes the chain
 
-    910 native QEDCalc integrals -> 944 mandatory Kira demands -> master integrals
+    910 native QEDCalc integrals -> original exact944 demands
+    -> closure-wave-1 targets -> master integrals
 
 using QEDCalc's existing ISP bridge and Kira FORM-table parser.
 """
@@ -29,13 +30,14 @@ from three_loop.kira_reducer import KiraReductionTable
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT = ROOT / "output" / "kira_q01_full_demand_r9s3d0"
 FAMILY = "Q01_full"
-TARGET_FILE = PROJECT / "q01_exact944_closure1_targets"
+ORIGINAL_TARGET_FILE = PROJECT / "q01_944_targets"
+CLOSURE_TARGET_FILE = PROJECT / "q01_exact944_closure1_targets"
 ALT_DIR_NAME = "exact944closure1_firefly"
 ALT_ROOT = PROJECT / ALT_DIR_NAME
 EXPORT_JOB = PROJECT / "jobs_exact944_closure1_firefly_export.yaml"
 OUTPUT_JSON = PROJECT / "q01_exact944_closure1_firefly_export_audit.json"
 EXPECTED_NATIVE = 910
-EXPECTED_DEMANDS = 944
+EXPECTED_ORIGINAL = 944
 
 
 def _indices12(values: Iterable[int]) -> tuple[int, ...]:
@@ -53,35 +55,72 @@ def _parse_family_line(line: str) -> tuple[int, ...]:
     return _indices12(int(v.strip()) for v in text[len(prefix):-1].split(","))
 
 
-def _load_demands() -> tuple[tuple[int, ...], ...]:
-    if not TARGET_FILE.exists():
-        raise SystemExit(f"ERROR: mandatory target list not found: {TARGET_FILE}")
+def _load_target_file(
+    path: Path,
+    *,
+    label: str,
+    expected_count: int | None = None,
+) -> tuple[tuple[int, ...], ...]:
+    if not path.exists():
+        raise SystemExit(f"ERROR: {label} target list not found: {path}")
     try:
-        demands = tuple(
+        values = tuple(
             _parse_family_line(line)
-            for line in TARGET_FILE.read_text(encoding="utf-8").splitlines()
+            for line in path.read_text(encoding="utf-8").splitlines()
             if line.strip()
         )
     except (OSError, UnicodeError, ValueError) as exc:
-        raise SystemExit(f"ERROR: could not parse mandatory target list: {exc}") from exc
+        raise SystemExit(f"ERROR: could not parse {label} target list: {exc}") from exc
 
-    unique = tuple(dict.fromkeys(demands))
-    if len(demands) != EXPECTED_DEMANDS or len(unique) != EXPECTED_DEMANDS:
+    unique = tuple(dict.fromkeys(values))
+    if not values:
+        raise SystemExit(f"ERROR: {label} target list is empty: {path}")
+    if len(values) != len(unique):
         raise SystemExit(
-            "ERROR: exact944 mandatory target list is not the expected complete set: "
-            f"total={len(demands)} unique={len(unique)} expected={EXPECTED_DEMANDS}"
+            f"ERROR: {label} target list contains duplicates: "
+            f"total={len(values)} unique={len(unique)}"
+        )
+    if expected_count is not None and len(unique) != expected_count:
+        raise SystemExit(
+            f"ERROR: {label} target list has the wrong size: "
+            f"total={len(values)} unique={len(unique)} expected={expected_count}"
         )
     return unique
 
 
+def _load_target_sets() -> tuple[
+    tuple[tuple[int, ...], ...],
+    tuple[tuple[int, ...], ...],
+]:
+    original = _load_target_file(
+        ORIGINAL_TARGET_FILE,
+        label="original exact944",
+        expected_count=EXPECTED_ORIGINAL,
+    )
+    closure = _load_target_file(
+        CLOSURE_TARGET_FILE,
+        label="closure-wave-1",
+    )
+    original_set = set(original)
+    closure_set = set(closure)
+    missing_original = sorted(original_set - closure_set)
+    if missing_original:
+        raise SystemExit(
+            "ERROR: closure-wave-1 target list does not contain all original exact944 demands; "
+            f"missing={len(missing_original)}"
+        )
+    return original, closure
+
+
 def generate_export_job() -> None:
-    demands = _load_demands()
-    text = f'''jobs:\n  - kira2form:\n      target:\n        - [{FAMILY},{TARGET_FILE.name}]\n      alt_dir: {ALT_DIR_NAME}\n'''
+    original, closure = _load_target_sets()
+    closure_added = len(set(closure) - set(original))
+    text = f'''jobs:\n  - kira2form:\n      target:\n        - [{FAMILY},{CLOSURE_TARGET_FILE.name}]\n      alt_dir: {ALT_DIR_NAME}\n'''
     EXPORT_JOB.write_text(text, encoding="utf-8", newline="\n")
 
     required = (
         "kira2form:",
-        f"[{FAMILY},{TARGET_FILE.name}]",
+        f"[{FAMILY},{CLOSURE_TARGET_FILE.name}]",
         f"alt_dir: {ALT_DIR_NAME}",
     )
     missing = [token for token in required if token not in text]
@@ -89,7 +128,9 @@ def generate_export_job() -> None:
         raise SystemExit(f"ERROR: generated export-job audit failed: {missing}")
 
     print("QEDCalc Q01 exact944 closure-wave-1 FireFly export generator")
-    print("mandatory Kira demands:", len(demands))
+    print("original exact944 demands:", len(original))
+    print("closure-wave-1 targets:", len(closure))
+    print("closure-added targets:", closure_added)
     print("alt_dir:", ALT_DIR_NAME)
     print("generated:", EXPORT_JOB)
     print("Q01 exact944 closure-wave-1 FireFly export generation PASS")
@@ -105,6 +146,7 @@ def _find_export_files() -> tuple[Path, Path]:
 
     form_candidates = [
         result_dir / f"kira_{FAMILY}.inc",
+        result_dir / f"kira_{CLOSURE_TARGET_FILE.name}.inc",
         result_dir / "kira.inc",
     ]
     form_candidates.extend(sorted(result_dir.glob("*.inc")))
@@ -130,9 +172,13 @@ def audit() -> None:
     print("project:", PROJECT)
     print("mode: saved artifacts only; projected trace and FireFly reduction are NOT recomputed")
 
-    demands = _load_demands()
-    demand_set = set(demands)
-    print("mandatory Kira demands:", len(demands))
+    original, closure = _load_target_sets()
+    original_set = set(original)
+    closure_set = set(closure)
+    closure_added = sorted(closure_set - original_set)
+    print("original exact944 demands:", len(original))
+    print("closure-wave-1 targets:", len(closure))
+    print("closure-added targets:", len(closure_added))
 
     source_path, source_trail, native_integrals = _discover_saved_integrals()
     if len(native_integrals) != EXPECTED_NATIVE:
@@ -162,12 +208,12 @@ def audit() -> None:
             print("  ", item)
         raise SystemExit(2)
 
-    missing_from_mandatory = sorted(expanded_set - demand_set)
-    mandatory_not_from_native = sorted(demand_set - expanded_set)
+    missing_from_original = sorted(expanded_set - original_set)
+    missing_from_closure = sorted(expanded_set - closure_set)
     print("expanded Kira terms:", expanded_total)
     print("unique expanded Kira integrals:", len(expanded_set))
-    print("expanded integrals missing from mandatory list:", len(missing_from_mandatory))
-    print("mandatory closure-only demands:", len(mandatory_not_from_native))
+    print("expanded integrals missing from original exact944:", len(missing_from_original))
+    print("expanded integrals missing from closure-wave-1:", len(missing_from_closure))
 
     form_file, masters_file = _find_export_files()
     print("FORM export:", form_file)
@@ -183,13 +229,21 @@ def audit() -> None:
     print("Kira rules loaded:", len(table.rules))
     print("Kira masters loaded:", len(table.masters))
 
-    demand_status: Counter[str] = Counter()
-    unresolved_demands: list[tuple[int, ...]] = []
-    for demand in demands:
+    original_status: Counter[str] = Counter()
+    unresolved_original: list[tuple[int, ...]] = []
+    for demand in original:
         result = table.reduce_kira(demand)
-        demand_status[result.status] += 1
+        original_status[result.status] += 1
         if result.status == "not_in_table":
-            unresolved_demands.append(demand)
+            unresolved_original.append(demand)
+
+    closure_status: Counter[str] = Counter()
+    unresolved_closure: list[tuple[int, ...]] = []
+    for demand in closure:
+        result = table.reduce_kira(demand)
+        closure_status[result.status] += 1
+        if result.status == "not_in_table":
+            unresolved_closure.append(demand)
 
     native_status: Counter[str] = Counter()
     native_missing_terms: set[tuple[int, ...]] = set()
@@ -218,10 +272,13 @@ def audit() -> None:
 
     pass_checks = {
         "native_count_910": len(native_integrals) == EXPECTED_NATIVE,
-        "mandatory_count_944": len(demands) == EXPECTED_DEMANDS,
-        "all_native_expansions_in_mandatory_set": not missing_from_mandatory,
+        "original_exact_demand_count_944": len(original) == EXPECTED_ORIGINAL,
+        "all_original_exact944_in_closure": original_set <= closure_set,
+        "all_native_expansions_in_original_exact944": not missing_from_original,
+        "all_native_expansions_in_closure": not missing_from_closure,
         "all_910_native_integrals_fully_reduced": native_status["fully_reduced"] == EXPECTED_NATIVE,
-        "all_944_mandatory_demands_resolved": not unresolved_demands,
+        "all_original_exact944_demands_resolved": not unresolved_original,
+        "all_closure_wave1_targets_resolved": not unresolved_closure,
         "form_rhs_closed_to_masters": True,
     }
     passed = all(pass_checks.values())
@@ -233,17 +290,21 @@ def audit() -> None:
         "native_source": str(source_path),
         "native_artifact_path": source_trail,
         "native_integrals": len(native_integrals),
-        "mandatory_demands": len(demands),
+        "original_exact_demands": len(original),
+        "closure_targets": len(closure),
+        "closure_added_targets": len(closure_added),
         "expanded_terms_total": expanded_total,
         "unique_expanded_kira_integrals": len(expanded_set),
-        "mandatory_closure_only_demands": len(mandatory_not_from_native),
-        "expanded_missing_from_mandatory": [list(v) for v in missing_from_mandatory],
+        "expanded_missing_from_original_exact944": [list(v) for v in missing_from_original],
+        "expanded_missing_from_closure": [list(v) for v in missing_from_closure],
         "form_export": str(form_file),
         "masters_file": str(masters_file),
         "kira_rules_loaded": len(table.rules),
         "kira_masters_loaded": len(table.masters),
-        "demand_status": dict(sorted(demand_status.items())),
-        "unresolved_mandatory_demands": [list(v) for v in unresolved_demands],
+        "original_status": dict(sorted(original_status.items())),
+        "unresolved_original_exact944_demands": [list(v) for v in unresolved_original],
+        "closure_status": dict(sorted(closure_status.items())),
+        "unresolved_closure_targets": [list(v) for v in unresolved_closure],
         "native_status": dict(sorted(native_status.items())),
         "native_missing_unique_terms": [list(v) for v in sorted(native_missing_terms)],
         "native_missing_examples": native_missing_examples,
@@ -252,8 +313,10 @@ def audit() -> None:
     }
     OUTPUT_JSON.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
 
-    print("mandatory status:", dict(sorted(demand_status.items())))
-    print("unresolved mandatory demands:", len(unresolved_demands))
+    print("original exact944 status:", dict(sorted(original_status.items())))
+    print("unresolved original exact944 demands:", len(unresolved_original))
+    print("closure-wave-1 status:", dict(sorted(closure_status.items())))
+    print("unresolved closure-wave-1 targets:", len(unresolved_closure))
     print("native status:", dict(sorted(native_status.items())))
     print("native missing unique Kira terms:", len(native_missing_terms))
     print("audit JSON:", OUTPUT_JSON)
