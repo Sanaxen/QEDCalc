@@ -2,8 +2,9 @@
 
 This helper reuses the validated r10s3d0 boundary-test implementation by
 applying asserted source transformations.  It changes the seed from r+1 to
-s+1, enables FireFly, and writes all generated artifacts to a dedicated
-FireFly alt_dir so an interrupted Fermat run cannot contaminate the audit.
+s+1, enables FireFly, disables the ordinary Fermat solve stages, and writes all
+generated artifacts to a dedicated FireFly alt_dir so an interrupted Fermat run
+cannot contaminate the audit.
 """
 from __future__ import annotations
 
@@ -21,7 +22,7 @@ text = _SOURCE.read_text(encoding="utf-8")
 replacements = [
     (
         "It uses ordinary Kira triangular reduction + back substitution with Fermat;\nFireFly is deliberately disabled.",
-        "It uses Kira triangular reduction + back substitution with FireFly enabled.\nThe FireFly artifacts are isolated from the ordinary Fermat boundary run.",
+        "It uses Kira finite-field reduction with FireFly enabled.\nThe FireFly artifacts are isolated from the ordinary Fermat boundary run.",
     ),
     ("R_BOUND, S_BOUND, D_BOUND = 10, 3, 0", "R_BOUND, S_BOUND, D_BOUND = 9, 4, 0"),
     ("r=10,s=3,d=0", "r=9,s=4,d=0"),
@@ -31,10 +32,12 @@ replacements = [
     ("after enlarging r from 9 to 10", "after enlarging s from 3 to 4"),
     ("first Q01 exact944 seed-boundary extension", "Q01 exact944 s+1 FireFly seed-boundary extension"),
     ("first one-axis stability test beyond the saved r=9,s=3,d=0 scope", "s-axis FireFly stability test beyond the saved r=9,s=3,d=0 scope"),
+    ("run_triangular: true", "run_triangular: false"),
+    ("run_back_substitution: true", "run_back_substitution: false"),
     ("run_firefly: false", "run_firefly: true"),
     (
         "mode: ordinary triangular + back substitution; FireFly disabled",
-        "mode: triangular + back substitution; FireFly enabled",
+        "mode: FireFly finite-field reduction; ordinary solve stages disabled",
     ),
     (
         '"fresh Q01 exact944 r10s3d0 Kira/Fermat seed-boundary test"',
