@@ -40,6 +40,13 @@ if errorlevel 1 (
   exit /b 3
 )
 
+wsl.exe bash -lc "test -x $HOME/fermat/Ferl7/fer64"
+if errorlevel 1 (
+  echo ERROR: Fermat executable was not found or is not executable at $HOME/fermat/Ferl7/fer64.
+  pause
+  exit /b 4
+)
+
 set "PROJECT_WIN=%CD%\output\kira_q01_full_demand_r9s3d0"
 
 echo.
@@ -50,7 +57,7 @@ echo alt_dir: exact944closure1_firefly
 echo NOTE: the interrupted exact944closure1 directory is not modified.
 echo.
 
-wsl.exe --cd "%PROJECT_WIN%" bash -lc "set -o pipefail; kira --bunch_size=1 jobs_exact944_closure1_firefly.yaml 2>&1 | tee q01_exact944_closure1_firefly.log"
+wsl.exe --cd "%PROJECT_WIN%" bash -lc "set -o pipefail; export FERMATPATH=$HOME/fermat/Ferl7/fer64; echo Fermat: $FERMATPATH; kira --bunch_size=1 jobs_exact944_closure1_firefly.yaml 2>&1 | tee q01_exact944_closure1_firefly.log"
 set "RC=%ERRORLEVEL%"
 
 echo.
