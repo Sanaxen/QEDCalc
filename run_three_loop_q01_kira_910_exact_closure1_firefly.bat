@@ -1,0 +1,63 @@
+@echo off
+setlocal
+cd /d "%~dp0"
+set "PYTHONPATH=%CD%"
+
+if not exist ".venv\Scripts\python.exe" (
+  echo ERROR: QEDCalc virtual environment was not found.
+  echo Expected: %CD%\.venv\Scripts\python.exe
+  pause
+  exit /b 1
+)
+
+".venv\Scripts\python.exe" examples\three_loop_q01_kira_910_exact_closure1_firefly_generate.py
+if errorlevel 1 (
+  set "RC=%ERRORLEVEL%"
+  echo.
+  echo Q01 exact944 closure-wave-1 FireFly job generation failed with error code %RC%.
+  pause
+  exit /b %RC%
+)
+
+where wsl.exe >nul 2>&1
+if errorlevel 1 (
+  echo ERROR: wsl.exe was not found.
+  pause
+  exit /b 2
+)
+
+wsl.exe bash -lc "command -v kira >/dev/null 2>&1"
+if errorlevel 1 (
+  echo ERROR: kira was not found in the WSL PATH.
+  pause
+  exit /b 2
+)
+
+wsl.exe bash -lc "kira --version | grep -qi 'FireFly'"
+if errorlevel 1 (
+  echo ERROR: this Kira build does not report FireFly support.
+  pause
+  exit /b 3
+)
+
+set "PROJECT_WIN=%CD%\output\kira_q01_full_demand_r9s3d0"
+
+echo.
+echo QEDCalc Q01 exact944 closure-wave-1 Kira FireFly
+echo project: %PROJECT_WIN%
+echo mode: full FireFly reduction; iterative_reduction=sectorwise; bunch_size=1
+echo alt_dir: exact944closure1_firefly
+echo NOTE: the interrupted exact944closure1 directory is not modified.
+echo.
+
+wsl.exe --cd "%PROJECT_WIN%" bash -lc "set -o pipefail; kira --bunch_size=1 jobs_exact944_closure1_firefly.yaml 2>&1 | tee q01_exact944_closure1_firefly.log"
+set "RC=%ERRORLEVEL%"
+
+echo.
+if "%RC%"=="0" (
+  echo Q01 exact944 closure-wave-1 Kira FireFly PASS
+) else (
+  echo Q01 exact944 closure-wave-1 Kira FireFly failed with error code %RC%.
+)
+pause
+exit /b %RC%
