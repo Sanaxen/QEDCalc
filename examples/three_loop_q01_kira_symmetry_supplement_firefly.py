@@ -33,6 +33,7 @@ LOG_FILE = PROJECT / "q01_symmetry_supplement_firefly.log"
 ALT_DIR_NAME = "symmetry_supplement_firefly"
 ALT_ROOT = PROJECT / ALT_DIR_NAME
 OUTPUT_JSON = PROJECT / "q01_symmetry_supplement_firefly_audit.json"
+TOP_SECTOR = 511
 
 _TARGET_RE = re.compile(
     rf"^{re.escape(FAMILY)}\[(?P<args>-?\d+(?:\s*,\s*-?\d+){{11}})\]$"
@@ -68,6 +69,12 @@ def _bounds(indices: IndexTuple) -> tuple[int, int, int]:
     return r, s, d
 
 
+def _sector_active_lines(sector: int) -> int:
+    if sector <= 0:
+        raise ValueError(f"sector must be positive, got {sector}")
+    return int(sector).bit_count()
+
+
 def _load_source_unresolved() -> tuple[IndexTuple, ...]:
     if not SOURCE_AUDIT.exists():
         raise SystemExit(f"ERROR: source closure audit not found: {SOURCE_AUDIT}")
@@ -87,7 +94,14 @@ def generate() -> None:
         maxima[0] = max(maxima[0], r)
         maxima[1] = max(maxima[1], s)
         maxima[2] = max(maxima[2], d)
-    rmax, smax, dmax = maxima
+    target_rmax, smax, dmax = maxima
+
+    # Kira requires r to be large enough for the selected sector itself, not
+    # merely large enough for the mandatory target list.  Sector 511 has nine
+    # active lines, so r<9 is rejected before reduction starts even when every
+    # supplied target happens to have a smaller positive-index sum.
+    sector_rmin = _sector_active_lines(TOP_SECTOR)
+    rmax = max(target_rmax, sector_rmin)
 
     TARGET_FILE.write_text(
         "\n".join(_integral_text(v) for v in targets) + "\n",
@@ -95,13 +109,15 @@ def generate() -> None:
         newline="\n",
     )
 
-    text = f'''jobs:\n  - reduce_sectors:\n      reduce:\n        - {{topologies: [{FAMILY}], sectors: [511], r: {rmax}, s: {smax}, d: {dmax}}}\n      select_integrals:\n        select_mandatory_list:\n          - [{FAMILY},{TARGET_FILE.name}]\n      run_symmetries: true\n      run_initiate: true\n      run_triangular: false\n      run_back_substitution: false\n      run_firefly: true\n      iterative_reduction: sectorwise\n      alt_dir: {ALT_DIR_NAME}\n  - kira2form:\n      target:\n        - [{FAMILY},{TARGET_FILE.name}]\n      alt_dir: {ALT_DIR_NAME}\n'''
+    text = f'''jobs:\n  - reduce_sectors:\n      reduce:\n        - {{topologies: [{FAMILY}], sectors: [{TOP_SECTOR}], r: {rmax}, s: {smax}, d: {dmax}}}\n      select_integrals:\n        select_mandatory_list:\n          - [{FAMILY},{TARGET_FILE.name}]\n      run_symmetries: true\n      run_initiate: true\n      run_triangular: false\n      run_back_substitution: false\n      run_firefly: true\n      iterative_reduction: sectorwise\n      alt_dir: {ALT_DIR_NAME}\n  - kira2form:\n      target:\n        - [{FAMILY},{TARGET_FILE.name}]\n      alt_dir: {ALT_DIR_NAME}\n'''
     JOB_FILE.write_text(text, encoding="utf-8", newline="\n")
 
     print("QEDCalc Q01 symmetry supplemental FireFly generator")
     print("mode: isolated supplemental reduction; original FireFly alt_dir is untouched")
     print("supplement targets:", len(targets))
-    print(f"seed bounds: r={rmax} s={smax} d={dmax}")
+    print("target-derived r max:", target_rmax)
+    print(f"top sector: {TOP_SECTOR}; active lines / minimum r: {sector_rmin}")
+    print(f"effective seed bounds: r={rmax} s={smax} d={dmax}")
     print("alt_dir:", ALT_DIR_NAME)
     print("generated target list:", TARGET_FILE)
     print("generated job:", JOB_FILE)
