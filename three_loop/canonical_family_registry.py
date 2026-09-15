@@ -37,7 +37,7 @@ def _q02_witness_text(witness: dict[str, Any]) -> str:
         f"reflection={witness['reflection']}; "
         f"loops={witness['loop_momentum_transform']}; "
         f"external={witness['external_momentum_transform']}; "
-        f"physical->canonical={witness['physical_propagator_permutation']}; "
+        f"physical->canonical={witness['physical_to_canonical_mapping']}; "
         "all canonical P1..P12 exact."
     )
 
@@ -132,7 +132,7 @@ def _promote_q02(rows: list[dict[str, Any]], record_by_id: dict[str, dict[str, A
             "canonical_propagator_basis": list(boot["canonical_propagators"]),
             "loop_momentum_transform": dict(witness["loop_momentum_transform"]),
             "external_momentum_transform": dict(witness["external_momentum_transform"]),
-            "physical_to_canonical_mapping": list(witness["physical_propagator_permutation"]),
+            "physical_to_canonical_mapping": list(witness["physical_to_canonical_mapping"]),
             "sign_normalization_transform": (
                 "Topology physical denominators are mapped exactly to the deduplicated Q02 basis; "
                 "duplicate physical D4 and D6 share one canonical denominator and their powers add."
