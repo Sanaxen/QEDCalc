@@ -24,9 +24,9 @@ if errorlevel 1 (
   exit /b 4
 )
 
-set "HELPER=examples\three_loop_q01_projected_amplitude_master_coefficients_fermat.py"
+set "HELPER=examples\three_loop_q01_projected_amplitude_master_coefficients_fermat_stdio.py"
 if not exist "%HELPER%" (
-  echo ERROR: Fermat coefficient-synthesis helper was not found.
+  echo ERROR: direct-stdio Fermat coefficient-synthesis helper was not found.
   pause
   exit /b 1
 )
@@ -34,6 +34,7 @@ if not exist "%HELPER%" (
 echo.
 echo QEDCalc Q01 projected-amplitude -^> final60 master coefficient synthesis [FERMAT]
 echo mode: saved artifacts only; no projected trace or Kira reduction
+echo Fermat transport: direct stdin/stdout ^(validated by standalone probe^)
 echo low-memory SymPy checkpoint will be imported automatically when compatible
 echo.
 
