@@ -3,27 +3,27 @@
 This module is intentionally algebraic and conservative. It does not claim a
 new Kira family merely from graph topology. For a chosen representative it
 
-1. derives the nine physical scalar denominators from the topology inventory;
-2. checks whether those lines already map to Q01 under the currently allowed
+1. derives the topology-level physical denominators;
+2. checks whether they already map to Q01 under the currently allowed
    reflection + signed loop-relabel transform class;
-3. measures the physical scalar-product rank and records any left-null
-   relations among the physical denominators;
-4. greedily selects as many quadratic auxiliaries as are actually required to
-   span the 12-dimensional loop scalar-product space;
-5. proves every member of the same structural candidate class against the full
-   generated denominator set by exact SymPy equality.
+3. detects exact duplicate physical denominators before doing rank analysis;
+4. measures the scalar-product rank of the unique physical denominators;
+5. greedily adds only as many quadratic auxiliaries as are needed to span the
+   12-dimensional loop scalar-product space;
+6. proves every member of the same structural candidate class against the
+   resulting 12-propagator family by exact SymPy equality.
 
-A rank-deficient physical set is deliberately *not* forced into a fake
-"9 physical + 3 auxiliary = 12" Kira family.  Such a case is reported as an
-overcomplete algebraic candidate that requires a partial-fraction/family-split
-step before a Kira-ready canonical family is registered.
+Exact duplicate physical denominators are not a partial-fraction problem.  They
+represent repeated powers of one propagator and are collapsed to a single Kira
+family entry, with an explicit original-D -> canonical-P mapping retained for
+later exponent aggregation.
 """
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from functools import reduce
 from itertools import permutations, product
 from math import gcd
-from functools import reduce
 from typing import Any, Iterable
 
 import sympy as sp
@@ -49,7 +49,7 @@ class FamilyWitness:
     reflection: bool
     loop_momentum_transform: dict[str, str]
     external_momentum_transform: dict[str, str]
-    physical_propagator_permutation: list[int]
+    physical_to_canonical_mapping: list[int]
     propagator_exact_match: list[bool]
 
     def to_dict(self) -> dict[str, Any]:
@@ -96,13 +96,7 @@ def _normalize_null_vector(vec: sp.Matrix) -> list[sp.Expr]:
 
 
 def physical_denominator_relations(physical: list[sp.Expr]) -> list[dict[str, Any]]:
-    """Return left-null SP relations, including their affine residuals.
-
-    A coefficient vector c satisfies sum_i c_i * coeff_SP(D_i) = 0.  The full
-    denominator combination may leave a scalar residual depending on m2 and z;
-    that residual is retained because it determines the later partial-fraction
-    identity rather than being silently discarded.
-    """
+    """Return left-null SP relations, including full affine residuals."""
     relations: list[dict[str, Any]] = []
     for raw in _sp_matrix(physical).T.nullspace():
         coeffs = _normalize_null_vector(raw)
@@ -120,8 +114,36 @@ def physical_denominator_relations(physical: list[sp.Expr]) -> list[dict[str, An
     return relations
 
 
+def deduplicate_exact_denominators(
+    physical: list[sp.Expr],
+) -> tuple[list[sp.Expr], list[int], list[list[int]]]:
+    """Collapse exactly equal denominators while retaining multiplicity mapping.
+
+    Returns ``(unique, original_to_unique, duplicate_groups)``.  Mapping values
+    are 1-based canonical physical-propagator indices.  A duplicate group is a
+    list of 1-based original D indices with the same exact expression.
+    """
+    unique: list[sp.Expr] = []
+    mapping: list[int] = []
+    groups: list[list[int]] = []
+    for original_index, expr in enumerate(physical, start=1):
+        match = next(
+            (j for j, ref in enumerate(unique) if sp.expand(expr - ref) == 0),
+            None,
+        )
+        if match is None:
+            unique.append(sp.expand(expr))
+            groups.append([original_index])
+            mapping.append(len(unique))
+        else:
+            groups[match].append(original_index)
+            mapping.append(match + 1)
+    duplicate_groups = [group for group in groups if len(group) > 1]
+    return unique, mapping, duplicate_groups
+
+
 def _quadratic_auxiliary_candidates() -> list[tuple[str, dict[str, sp.Expr], sp.Expr]]:
-    """Return stable quadratic auxiliary candidates in a deterministic order."""
+    """Return stable quadratic auxiliary candidates in deterministic order."""
     specs = [
         ("(k-l)^2", _vec(k=1, l=-1)),
         ("(k-r)^2", _vec(k=1, r=-1)),
@@ -161,7 +183,9 @@ def complete_with_quadratic_auxiliaries(
     return selected_names, selected_vecs, selected_exprs
 
 
-def _topology_loop_maps(candidate: dict[str, Any], reference: dict[str, Any]) -> Iterable[tuple[bool, dict[str, tuple[str, int]]]]:
+def _topology_loop_maps(
+    candidate: dict[str, Any], reference: dict[str, Any]
+) -> Iterable[tuple[bool, dict[str, tuple[str, int]]]]:
     n = int(candidate["open_vertices"])
     if n != int(reference["open_vertices"]):
         return
@@ -189,7 +213,9 @@ def _topology_loop_maps(candidate: dict[str, Any], reference: dict[str, Any]) ->
                 yield reflected, {src: (relabel[src], signs[i]) for i, src in enumerate(LOOPS)}
 
 
-def _transform_denominators(row: dict[str, Any], loop_map: dict[str, tuple[str, int]], reflected: bool) -> list[sp.Expr]:
+def _transform_denominators(
+    row: dict[str, Any], loop_map: dict[str, tuple[str, int]], reflected: bool
+) -> list[sp.Expr]:
     m2 = sp.Symbol("m2")
     result: list[sp.Expr] = []
     for vec in _electron_momenta(row):
@@ -203,6 +229,7 @@ def _transform_denominators(row: dict[str, Any], loop_map: dict[str, tuple[str, 
 
 
 def _exact_permutation(source: list[sp.Expr], target: list[sp.Expr]) -> list[int] | None:
+    """Require a one-to-one exact mapping; used for Q01's nine unique lines."""
     used: set[int] = set()
     mapping: list[int] = []
     for expr in source:
@@ -212,6 +239,21 @@ def _exact_permutation(source: list[sp.Expr], target: list[sp.Expr]) -> list[int
         used.add(matches[0])
         mapping.append(matches[0] + 1)
     return mapping if len(used) == len(target) else None
+
+
+def _exact_mapping_allow_duplicates(source: list[sp.Expr], target_unique: list[sp.Expr]) -> list[int] | None:
+    """Map each source denominator to one exact unique target, allowing repeats."""
+    mapping: list[int] = []
+    used_targets: set[int] = set()
+    for expr in source:
+        matches = [j for j, ref in enumerate(target_unique) if sp.expand(expr - ref) == 0]
+        if len(matches) != 1:
+            return None
+        mapping.append(matches[0] + 1)
+        used_targets.add(matches[0])
+    if used_targets != set(range(len(target_unique))):
+        return None
+    return mapping
 
 
 def q01_reuse_witness(candidate: dict[str, Any], q01: dict[str, Any]) -> dict[str, Any] | None:
@@ -236,7 +278,11 @@ def q01_reuse_witness(candidate: dict[str, Any], q01: dict[str, Any]) -> dict[st
     return None
 
 
-def _pullback_aux_vector(canonical_vec: dict[str, sp.Expr], loop_map: dict[str, tuple[str, int]], reflected: bool) -> dict[str, sp.Expr]:
+def _pullback_aux_vector(
+    canonical_vec: dict[str, sp.Expr],
+    loop_map: dict[str, tuple[str, int]],
+    reflected: bool,
+) -> dict[str, sp.Expr]:
     inverse = {target: (source, sign) for source, (target, sign) in loop_map.items()}
     out = _vec()
     for canonical in LOOPS:
@@ -258,16 +304,16 @@ def _pullback_aux_vector(canonical_vec: dict[str, sp.Expr], loop_map: dict[str, 
 def find_family_witness(
     candidate: dict[str, Any],
     reference: dict[str, Any],
-    reference_physical: list[sp.Expr],
+    reference_unique_physical: list[sp.Expr],
     auxiliary_vecs: list[dict[str, sp.Expr]],
     auxiliary_exprs: list[sp.Expr],
 ) -> FamilyWitness | None:
     for reflected, loop_map in _topology_loop_maps(candidate, reference):
         transformed_physical = _transform_denominators(candidate, loop_map, reflected)
-        permutation = _exact_permutation(transformed_physical, reference_physical)
-        if permutation is None:
+        mapping = _exact_mapping_allow_duplicates(transformed_physical, reference_unique_physical)
+        if mapping is None:
             continue
-        exact = [True] * len(reference_physical)
+        exact = [True] * len(reference_unique_physical)
         for vec, target in zip(auxiliary_vecs, auxiliary_exprs):
             pulled = _pullback_aux_vector(vec, loop_map, reflected)
             transformed = _transform_vector(pulled, loop_map=loop_map, reflected=reflected)
@@ -285,7 +331,7 @@ def find_family_witness(
             reflection=reflected,
             loop_momentum_transform=loops,
             external_momentum_transform=external,
-            physical_propagator_permutation=permutation,
+            physical_to_canonical_mapping=mapping,
             propagator_exact_match=exact,
         )
     return None
@@ -305,7 +351,9 @@ def choose_next_unresolved_quenched_class(rows: list[dict[str, Any]], confirmed_
     return min(groups, key=lambda ids: int(ids[0][1:]))
 
 
-def audit_next_quenched_family(rows: list[dict[str, Any]], confirmed_ids: set[str] | None = None) -> dict[str, Any]:
+def audit_next_quenched_family(
+    rows: list[dict[str, Any]], confirmed_ids: set[str] | None = None
+) -> dict[str, Any]:
     confirmed_ids = set(confirmed_ids or {"Q01", "Q41"})
     by_id = {str(row["id"]): row for row in rows}
     class_ids = choose_next_unresolved_quenched_class(rows, confirmed_ids)
@@ -315,17 +363,15 @@ def audit_next_quenched_family(rows: list[dict[str, Any]], confirmed_ids: set[st
     q01_witness = q01_reuse_witness(representative, q01)
 
     physical = topology_physical_denominators(representative)
-    physical_rank = _rank(physical)
+    raw_physical_rank = _rank(physical)
     relations = physical_denominator_relations(physical)
-    aux_names, aux_vecs, aux_exprs = complete_with_quadratic_auxiliaries(physical)
-    full_rank = _rank(physical + aux_exprs)
-    generated_count = len(physical) + len(aux_exprs)
-    overcomplete = generated_count > len(SP_BASIS)
-    family_id = (
-        "Q01_full"
-        if q01_witness is not None
-        else (f"{representative_id}_overcomplete_candidate" if overcomplete else f"{representative_id}_full")
-    )
+    unique_physical, raw_to_unique, duplicate_groups = deduplicate_exact_denominators(physical)
+    unique_physical_rank = _rank(unique_physical)
+    aux_names, aux_vecs, aux_exprs = complete_with_quadratic_auxiliaries(unique_physical)
+    canonical = unique_physical + aux_exprs
+    full_rank = _rank(canonical)
+    generated_count = len(canonical)
+    family_id = "Q01_full" if q01_witness is not None else f"{representative_id}_full"
 
     records: list[dict[str, Any]] = []
     errors: list[str] = []
@@ -337,7 +383,9 @@ def audit_next_quenched_family(rows: list[dict[str, Any]], confirmed_ids: set[st
 
     for diagram_id in class_ids:
         try:
-            witness = find_family_witness(by_id[diagram_id], representative, physical, aux_vecs, aux_exprs)
+            witness = find_family_witness(
+                by_id[diagram_id], representative, unique_physical, aux_vecs, aux_exprs
+            )
         except Exception as exc:
             witness = None
             errors.append(f"{diagram_id}: {exc}")
@@ -347,21 +395,34 @@ def audit_next_quenched_family(rows: list[dict[str, Any]], confirmed_ids: set[st
             "witness": witness.to_dict() if witness is not None else None,
         })
         if witness is None:
-            errors.append(f"{diagram_id}: no exact generated-denominator witness to {representative_id}")
+            errors.append(f"{diagram_id}: no exact canonical-family witness to {representative_id}")
 
     if len(physical) != 9:
-        errors.append(f"{representative_id}: expected 9 physical propagators, got {len(physical)}")
-    if full_rank != 12:
-        errors.append(f"{representative_id}: generated denominator rank {full_rank}/12")
-    if physical_rank < len(physical) and not relations:
-        errors.append(f"{representative_id}: rank deficiency detected but no left-null relation was recovered")
+        errors.append(f"{representative_id}: expected 9 topology-level physical denominators, got {len(physical)}")
+    if len(unique_physical) != unique_physical_rank:
+        errors.append(
+            f"{representative_id}: non-duplicate linear dependence remains after deduplication "
+            f"({len(unique_physical)} denominators, rank {unique_physical_rank})"
+        )
+    if full_rank != 12 or generated_count != 12:
+        errors.append(
+            f"{representative_id}: canonical family is not a 12-entry full-rank basis "
+            f"(count={generated_count}, rank={full_rank})"
+        )
 
+    exact_zero_relations = [rel for rel in relations if rel["exact_zero_relation"]]
+    duplicate_only_deficiency = (
+        raw_physical_rank < len(physical)
+        and len(unique_physical) == raw_physical_rank
+        and bool(duplicate_groups)
+        and len(exact_zero_relations) >= len(physical) - raw_physical_rank
+    )
     kira_ready = (
         not errors
         and q01_witness is None
-        and not overcomplete
-        and physical_rank == len(physical)
-        and generated_count == len(SP_BASIS)
+        and generated_count == 12
+        and full_rank == 12
+        and len(unique_physical) == unique_physical_rank
     )
 
     return {
@@ -370,26 +431,30 @@ def audit_next_quenched_family(rows: list[dict[str, Any]], confirmed_ids: set[st
         "candidate_ids": class_ids,
         "q01_reuse_under_current_scope": q01_witness,
         "new_family_required_under_current_scope": q01_witness is None,
-        "physical_propagator_count": len(physical),
-        "physical_scalar_product_rank": physical_rank,
-        "physical_rank_deficiency": len(physical) - physical_rank,
+        "raw_physical_propagator_count": len(physical),
+        "raw_physical_scalar_product_rank": raw_physical_rank,
+        "physical_rank_deficiency": len(physical) - raw_physical_rank,
         "physical_denominator_relations": relations,
+        "duplicate_physical_groups": duplicate_groups,
+        "raw_physical_to_unique_mapping": raw_to_unique,
+        "unique_physical_propagator_count": len(unique_physical),
+        "unique_physical_scalar_product_rank": unique_physical_rank,
+        "duplicate_only_rank_deficiency": duplicate_only_deficiency,
         "selected_auxiliary_count": len(aux_names),
         "auxiliary_names": aux_names,
-        "generated_denominator_count": generated_count,
-        "generated_scalar_product_rank": full_rank,
-        "overcomplete_generated_set": overcomplete,
+        "canonical_denominator_count": generated_count,
+        "canonical_scalar_product_rank": full_rank,
         "kira_ready": kira_ready,
-        "requires_partial_fraction_or_family_split": overcomplete or physical_rank < len(physical),
-        "generated_propagators": [str(expr) for expr in physical + aux_exprs],
+        "requires_partial_fraction_or_family_split": (
+            not duplicate_only_deficiency and raw_physical_rank < len(physical)
+        ),
+        "canonical_propagators": [str(expr) for expr in canonical],
         "records": records,
         "errors": errors,
         "audit_pass": not errors,
         "interpretation": (
-            "PASS proves the topology-derived class is algebraically self-consistent under the recorded "
-            "reflection/signed-loop maps and that the generated denominator set spans all 12 loop scalar "
-            "products. If the physical rank is below the physical denominator count, the generated set is "
-            "overcomplete and must be partial-fractioned or split into Kira-ready independent families before "
-            "a canonical Kira family/master basis is registered."
+            "Exact duplicate physical denominators are collapsed before canonical-family construction. "
+            "Their powers must be added when converting a native integral to canonical indices. "
+            "Only a residual non-duplicate linear dependence would require partial fractions or a family split."
         ),
     }
