@@ -1,6 +1,6 @@
 """Automatic canonical-family discovery for the 12 one-loop vacuum-polarization insertions.
 
-This is the first non-quenched family builder.  A VP1 diagram contains
+This is the first non-quenched family builder. A VP1 diagram contains
 
 * the open-line electron propagators,
 * the two open-line photon propagators, and
@@ -8,8 +8,8 @@ This is the first non-quenched family builder.  A VP1 diagram contains
 
 The bubble loop is routed with the remaining loop momentum ``r`` and, for an
 insertion on photon momentum ``a``, contributes denominators based on ``r`` and
-``r+a``.  Exact family equivalence is searched under open-line reflection plus
-signed permutations of the three loop momenta.  Every promotion is verified by
+``r+a``. Exact family equivalence is searched under open-line reflection plus
+signed permutations of the three loop momenta. Every promotion is verified by
 exact SymPy equality and a full-rank 12-denominator canonical basis.
 """
 from __future__ import annotations
@@ -23,7 +23,6 @@ import sympy as sp
 from three_loop.canonical_family_bootstrap import (
     LOOPS,
     _pullback_aux_vector,
-    complete_with_quadratic_auxiliaries,
     deduplicate_exact_denominators,
     physical_denominator_relations,
 )
@@ -49,7 +48,6 @@ class VP1Witness:
 
 def _rank(expressions: list[sp.Expr]) -> int:
     from three_loop.canonical_family_bootstrap import _rank as bootstrap_rank
-
     return int(bootstrap_rank(expressions))
 
 
@@ -70,10 +68,6 @@ def _vp1_denominator_specs(row: dict[str, Any]) -> list[tuple[bool, dict[str, sp
     for label in edge_labels:
         specs.append((False, _vec(**{label: 1})))
 
-    # The VP bubble loop is assigned to r.  The second line differs by the
-    # momentum of the photon carrying the insertion.  Overall sign conventions
-    # of the loop routing are immaterial because signed loop permutations are
-    # searched explicitly.
     specs.append((True, _vec(r=1)))
     bubble_shift = _vec(r=1)
     bubble_shift[insert_on] += 1
@@ -104,16 +98,61 @@ def _transform_specs(
     return out
 
 
+def _vp1_auxiliary_candidates() -> list[tuple[str, dict[str, sp.Expr], sp.Expr]]:
+    """Quadratic auxiliary candidates spanning the full VP1 scalar-product space.
+
+    The quenched candidate set is insufficient for VP insertions because the
+    explicit bubble can leave an independent loop.p scalar product. Include
+    loop+p as well as loop+q and loop-loop combinations in deterministic order.
+    """
+    specs = [
+        ("(k-l)^2", _vec(k=1, l=-1)),
+        ("(k-r)^2", _vec(k=1, r=-1)),
+        ("(l-r)^2", _vec(l=1, r=-1)),
+        ("(k+p)^2", _vec(k=1, p=1)),
+        ("(l+p)^2", _vec(l=1, p=1)),
+        ("(r+p)^2", _vec(r=1, p=1)),
+        ("(k+q)^2", _vec(k=1, q=1)),
+        ("(l+q)^2", _vec(l=1, q=1)),
+        ("(r+q)^2", _vec(r=1, q=1)),
+        ("(k+l)^2", _vec(k=1, l=1)),
+        ("(k+r)^2", _vec(k=1, r=1)),
+        ("(l+r)^2", _vec(l=1, r=1)),
+    ]
+    return [(name, vec, sp.expand(_square(vec))) for name, vec in specs]
+
+
+def _complete_vp1_auxiliaries(
+    physical: list[sp.Expr],
+) -> tuple[list[str], list[dict[str, sp.Expr]], list[sp.Expr]]:
+    selected_names: list[str] = []
+    selected_vecs: list[dict[str, sp.Expr]] = []
+    selected_exprs: list[sp.Expr] = []
+    rank = _rank(physical)
+    for name, vec, expr in _vp1_auxiliary_candidates():
+        new_rank = _rank(physical + selected_exprs + [expr])
+        if new_rank > rank:
+            selected_names.append(name)
+            selected_vecs.append(vec)
+            selected_exprs.append(expr)
+            rank = new_rank
+        if rank == 12:
+            break
+    if rank != 12:
+        raise ValueError(
+            f"failed to span VP1 scalar-product space: physical_rank={_rank(physical)}, "
+            f"final_rank={rank}, auxiliaries={selected_names}"
+        )
+    return selected_names, selected_vecs, selected_exprs
+
+
 def _exact_mapping_allow_duplicates(
     source: list[sp.Expr], target_unique: list[sp.Expr]
 ) -> list[int] | None:
     mapping: list[int] = []
     used: set[int] = set()
     for expr in source:
-        matches = [
-            j for j, target in enumerate(target_unique)
-            if sp.expand(expr - target) == 0
-        ]
+        matches = [j for j, target in enumerate(target_unique) if sp.expand(expr - target) == 0]
         if len(matches) != 1:
             return None
         mapping.append(matches[0] + 1)
@@ -124,52 +163,35 @@ def _exact_mapping_allow_duplicates(
 
 
 def find_vp1_family_witness(
-    candidate: dict[str, Any],
-    reference: dict[str, Any],
+    candidate: dict[str, Any], reference: dict[str, Any],
     reference_unique_physical: list[sp.Expr],
-    auxiliary_vecs: list[dict[str, sp.Expr]],
-    auxiliary_exprs: list[sp.Expr],
+    auxiliary_vecs: list[dict[str, sp.Expr]], auxiliary_exprs: list[sp.Expr],
 ) -> VP1Witness | None:
     """Find an exact VP1 family map within the conservative transform scope."""
     for reflected in (False, True):
         for perm in permutations(LOOPS):
             relabel = dict(zip(LOOPS, perm))
             for signs in product((-1, 1), repeat=3):
-                loop_map = {
-                    src: (relabel[src], signs[i])
-                    for i, src in enumerate(LOOPS)
-                }
+                loop_map = {src: (relabel[src], signs[i]) for i, src in enumerate(LOOPS)}
                 transformed = _transform_specs(candidate, loop_map, reflected)
-                mapping = _exact_mapping_allow_duplicates(
-                    transformed, reference_unique_physical
-                )
+                mapping = _exact_mapping_allow_duplicates(transformed, reference_unique_physical)
                 if mapping is None:
                     continue
-
                 exact = [True] * len(reference_unique_physical)
                 for vec, target in zip(auxiliary_vecs, auxiliary_exprs):
                     pulled = _pullback_aux_vector(vec, loop_map, reflected)
-                    check = _transform_vector(
-                        pulled, loop_map=loop_map, reflected=reflected
-                    )
+                    check = _transform_vector(pulled, loop_map=loop_map, reflected=reflected)
                     exact.append(sp.expand(_square(check) - target) == 0)
                 if not all(exact):
                     continue
-
                 loops = {
                     src: (("-" if sign < 0 else "") + dst)
                     for src, (dst, sign) in loop_map.items()
                 }
-                external = (
-                    {"p": "p+q", "q": "-q"}
-                    if reflected
-                    else {"p": "p", "q": "q"}
-                )
+                external = {"p": "p+q", "q": "-q"} if reflected else {"p": "p", "q": "q"}
                 return VP1Witness(
-                    diagram_id=str(candidate["id"]),
-                    representative=str(reference["id"]),
-                    reflection=reflected,
-                    loop_momentum_transform=loops,
+                    diagram_id=str(candidate["id"]), representative=str(reference["id"]),
+                    reflection=reflected, loop_momentum_transform=loops,
                     external_momentum_transform=external,
                     physical_to_canonical_mapping=mapping,
                     propagator_exact_match=exact,
@@ -187,12 +209,10 @@ def _vp1_structural_groups(rows: list[dict[str, Any]]) -> list[list[str]]:
     return sorted(groups, key=lambda ids: int(ids[0][2:]))
 
 
-def _basis_for_reference(
-    reference: dict[str, Any],
-) -> tuple[list[sp.Expr], list[dict[str, sp.Expr]], list[sp.Expr], dict[str, Any]]:
+def _basis_for_reference(reference: dict[str, Any]):
     physical = vp1_physical_denominators(reference)
     unique, mapping, duplicates = deduplicate_exact_denominators(physical)
-    aux_names, aux_vecs, aux_exprs = complete_with_quadratic_auxiliaries(unique)
+    aux_names, aux_vecs, aux_exprs = _complete_vp1_auxiliaries(unique)
     canonical = unique + aux_exprs
     info = {
         "raw_physical_propagator_count": len(physical),
@@ -211,19 +231,15 @@ def _basis_for_reference(
 
 
 def audit_vp1_family_autodiscovery(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Discover canonical families for all 12 VP1 insertion diagrams."""
     by_id = {str(row["id"]): row for row in rows}
     groups = _vp1_structural_groups(rows)
-    expected_ids = {
-        str(row["id"]) for row in rows if row.get("family") == "vp1_insert"
-    }
+    expected_ids = {str(row["id"]) for row in rows if row.get("family") == "vp1_insert"}
     errors: list[str] = []
     confirmed: set[str] = set()
     representatives: list[str] = []
     registry: dict[str, dict[str, Any]] = {}
     records: dict[str, dict[str, Any]] = {}
     steps: list[dict[str, Any]] = []
-
     if len(expected_ids) != 12:
         errors.append(f"expected 12 vp1_insert diagrams, found {len(expected_ids)}")
 
@@ -234,12 +250,9 @@ def audit_vp1_family_autodiscovery(rows: list[dict[str, Any]]) -> dict[str, Any]
             continue
         rep_id = group[0]
         rep = by_id[rep_id]
-
         unique, aux_vecs, aux_exprs, basis = _basis_for_reference(rep)
         if basis["unique_physical_propagator_count"] != basis["unique_physical_scalar_product_rank"]:
-            errors.append(
-                f"{rep_id}: residual non-duplicate dependence in physical denominators"
-            )
+            errors.append(f"{rep_id}: residual non-duplicate dependence in physical denominators")
             break
         if basis["canonical_denominator_count"] != 12 or basis["canonical_scalar_product_rank"] != 12:
             errors.append(
@@ -248,40 +261,25 @@ def audit_vp1_family_autodiscovery(rows: list[dict[str, Any]]) -> dict[str, Any]
             )
             break
 
-        # First ask whether this representative reuses an already discovered VP1 family.
         reuse_hits: list[tuple[str, VP1Witness]] = []
         for old_rep in representatives:
-            old_entry = registry[f"{old_rep}_full"]
             old_unique, old_aux_vecs, old_aux_exprs, _ = _basis_for_reference(by_id[old_rep])
-            witness = find_vp1_family_witness(
-                rep, by_id[old_rep], old_unique, old_aux_vecs, old_aux_exprs
-            )
+            witness = find_vp1_family_witness(rep, by_id[old_rep], old_unique, old_aux_vecs, old_aux_exprs)
             if witness is not None:
                 reuse_hits.append((f"{old_rep}_full", witness))
-
         if len(reuse_hits) > 1:
-            errors.append(
-                f"{rep_id}: ambiguous reuse under current scope: "
-                f"{[family for family, _ in reuse_hits]}"
-            )
+            errors.append(f"{rep_id}: ambiguous reuse under current scope: {[f for f, _ in reuse_hits]}")
             break
 
         if reuse_hits:
             family_id, _ = reuse_hits[0]
             reference_id = str(registry[family_id]["representative"])
-            ref_unique, ref_aux_vecs, ref_aux_exprs, _ = _basis_for_reference(
-                by_id[reference_id]
-            )
+            ref_unique, ref_aux_vecs, ref_aux_exprs, _ = _basis_for_reference(by_id[reference_id])
             witnesses: dict[str, VP1Witness] = {}
             for did in group:
-                witness = find_vp1_family_witness(
-                    by_id[did], by_id[reference_id],
-                    ref_unique, ref_aux_vecs, ref_aux_exprs,
-                )
+                witness = find_vp1_family_witness(by_id[did], by_id[reference_id], ref_unique, ref_aux_vecs, ref_aux_exprs)
                 if witness is None:
-                    errors.append(
-                        f"{did}: class representative reuses {family_id}, but member has no exact witness"
-                    )
+                    errors.append(f"{did}: class representative reuses {family_id}, but member has no exact witness")
                     break
                 witnesses[did] = witness
             if errors:
@@ -293,9 +291,7 @@ def audit_vp1_family_autodiscovery(rows: list[dict[str, Any]]) -> dict[str, Any]
             representatives.append(rep_id)
             witnesses = {}
             for did in group:
-                witness = find_vp1_family_witness(
-                    by_id[did], rep, unique, aux_vecs, aux_exprs
-                )
+                witness = find_vp1_family_witness(by_id[did], rep, unique, aux_vecs, aux_exprs)
                 if witness is None:
                     errors.append(f"{did}: no exact VP1 witness to {rep_id}")
                     break
@@ -346,7 +342,6 @@ def audit_vp1_family_autodiscovery(rows: list[dict[str, Any]]) -> dict[str, Any]
     missing = sorted(expected_ids - confirmed, key=lambda x: int(x[2:]))
     if missing:
         errors.append(f"unclassified vp1_insert diagrams remain: {missing}")
-
     return {
         "transform_scope": TRANSFORM_SCOPE,
         "vp1_diagram_count": len(expected_ids),
@@ -360,6 +355,7 @@ def audit_vp1_family_autodiscovery(rows: list[dict[str, Any]]) -> dict[str, Any]
         "audit_pass": not errors,
         "interpretation": (
             "VP1 physical denominators include the explicit two-line massive fermion bubble. "
+            "The VP1-specific auxiliary search spans loop-loop, loop.p, and loop.q scalar products. "
             "Family equivalence is proven only within reflection plus signed loop-permutation scope."
         ),
     }
