@@ -1,16 +1,14 @@
 """Audit the 72-diagram topology inventory against canonical IBP-family evidence.
 
-This first global pass is deliberately conservative.  It creates reproducible
-structural candidate classes for all 72 diagrams and reports which diagrams
-already have enough explicit evidence to be called confirmed canonical Kira
-families.  Topology similarity is never silently promoted to an IBP-family
-identity.
+Structural candidate classes are only scheduling hints.  Confirmed canonical
+families are overlaid from executable algebraic witnesses, so topology
+similarity is never silently promoted to an IBP/Kira-family identity.
 """
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
+from three_loop.canonical_family_registry import apply_confirmed_family_registry
 from three_loop.integral_family_classification import (
     ROOT,
     build_global_classification,
@@ -26,7 +24,10 @@ OUTPUT_TXT = OUTPUT_DIR / "three_loop_72_integral_family_global_audit.txt"
 def main() -> None:
     rows = load_topologies()
     audit = build_global_classification(rows)
+
+    registry_errors = apply_confirmed_family_registry(rows, audit)
     errors = validate_global_audit(audit)
+    errors.extend(registry_errors)
     audit["audit_errors"] = errors
     audit["audit_pass"] = not errors
 
@@ -45,8 +46,15 @@ def main() -> None:
         f"classification complete: {audit['classification_complete']}",
         f"internal audit errors: {len(errors)}",
         "",
-        "Candidate classes (topology scheduling hints; NOT yet canonical IBP proofs):",
+        "Confirmed canonical registries:",
     ]
+    for family_id, entry in audit.get("canonical_registry", {}).items():
+        lines.append(
+            f"  {family_id}: representative={entry['representative']} "
+            f"confirmed={entry['confirmed_diagrams']} master_basis={entry['master_basis_id']}"
+        )
+
+    lines.extend(["", "Candidate classes (topology scheduling hints; NOT canonical proofs by themselves):"])
     for cid, ids in audit["structural_candidate_classes"].items():
         lines.append(f"  {cid}: {', '.join(ids)}")
 
@@ -63,15 +71,27 @@ def main() -> None:
                 master=rec["master_basis_id"],
             )
         )
+        witness = rec.get("canonical_equivalence_witness")
+        if witness is not None:
+            lines.append(
+                "    witness: reflection={reflection} loops={loops} external={external} "
+                "physical_perm={perm}".format(
+                    reflection=witness["reflection"],
+                    loops=witness["loop_momentum_transform"],
+                    external=witness["external_momentum_transform"],
+                    perm=witness["physical_propagator_permutation"],
+                )
+            )
 
     lines.extend(
         [
             "",
             "Interpretation:",
-            "  audit_pass checks the 72-diagram inventory and candidate-class partition.",
+            "  audit_pass checks the 72-diagram inventory, candidate partition,",
+            "  and every executable canonical-family witness used for promotion.",
             "  classification_complete is stricter: it becomes true only when every diagram",
-            "  has an explicit canonical propagator basis and proven loop-momentum map.",
-            "  A candidate topology class must not be treated as a proven Kira family.",
+            "  has an explicit canonical propagator basis and proven momentum map.",
+            "  Q01-family members are promoted only after exact P1..P12 and ISP-bridge checks.",
             "",
             f"audit JSON: {OUTPUT_JSON}",
             f"audit TXT: {OUTPUT_TXT}",
@@ -89,6 +109,7 @@ def main() -> None:
     print("classification status counts:", status)
     print("confirmed canonical mappings:", audit["confirmed_canonical_mapping_count"])
     print("classification complete:", audit["classification_complete"])
+    print("canonical registry:", audit.get("canonical_registry", {}))
     print("internal audit errors:", len(errors))
     print("audit JSON:", OUTPUT_JSON)
     print("audit TXT:", OUTPUT_TXT)
