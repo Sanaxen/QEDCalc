@@ -93,7 +93,7 @@ r_plus_1: r=10 s=3 d=0 solver=Kira/Fermat masters.final=117 PASS=True
 s_plus_1: r=9 s=4 d=0 solver=Kira/FireFly masters.final=125 PASS=True
 d_plus_1: r=9 s=3 d=1 solver=Kira/FireFly masters.final=60 PASS=True
 all three axes stable: True
-Q01 exact944 seed-boundary complete audit PASS
+QEDCalc Q01 exact944 seed-boundary complete audit PASS
 ```
 
 Conclusion: Q01 master-basis identification is considered complete for the current target set. The finalized 60 master forms are not artifacts of the baseline seed cutoff.
@@ -120,41 +120,90 @@ Do not regress this behavior.
 - `examples/three_loop_q01_kira_exact944_r9s4d0_firefly_boundary_test.py`
 - `examples/three_loop_q01_kira_exact944_r9s3d1_firefly_boundary_test.py`
 
+## Q01 coefficient synthesis: COMPLETE
+
+The exact projected-amplitude coefficient synthesis has now passed using the validated d+1 `(r,s,d)=(9,3,1)` FireFly reduction and Fermat as the exact rational-function backend.
+
+Final user-reported result:
+
+```text
+nonzero master forms after cancellation: 60
+nonzero final60 coefficients: 60
+nonzero extra master coefficients: 0
+audit JSON: ...\q01_projected_amplitude_final60_coefficients.json
+audit TXT: ...\q01_projected_amplitude_final60_coefficients.txt
+Q01 projected-amplitude final60 coefficient synthesis PASS
+Q01 d+1 Fermat coefficient synthesis PASS
+```
+
+This completes the Q01 stage
+
+```text
+saved projected amplitude (910 native terms)
+ -> exact ISP bridge (944 Kira targets)
+ -> validated d+1 Kira/FireFly reduction
+ -> finalized 60-master basis
+ -> exact Fermat coefficient synthesis
+```
+
+with all 60 final masters carrying nonzero exact coefficients and no nonzero coefficient outside `final60`.
+
+### Important coefficient-synthesis lessons
+
+1. Do not use SymPy `cancel/together` as the primary backend for large three-loop coefficient aggregation. It reached roughly 10-12 GB RAM and stalled on a master with 2163 contributions.
+2. Fermat 7.9b through WSL canonicalizes the same large coefficient essentially instantly and is now the preferred exact rational-function backend.
+3. The `r9s4d0` solve has `masters.final = 125`; its 65 non-final60 masters are genuine masters in that solve and must not be expected to cancel at amplitude level. A diagnostic coefficient synthesis correctly found all 65 nonzero.
+4. The d+1 `r9s3d1` solve is the appropriate completed Q01 reduction for final60 coefficient synthesis because `masters.final = 60` and exactly matches the finalized basis.
+5. Direct Fermat stdin/stdout is reliable in the user's environment. Internal Fermat redirection caused a stall, and the first stdout parser also had to strip timing/prompt noise such as `Elapsed CPU time: ... >`.
+
+Relevant files include:
+
+- `examples/three_loop_q01_projected_amplitude_master_coefficients_fermat_d1.py`
+- `run_three_loop_q01_projected_amplitude_master_coefficients_fermat_d1.bat`
+- `q01_projected_amplitude_final60_coefficients.json` (local output artifact)
+- `q01_projected_amplitude_final60_coefficients.txt` (local output artifact)
+
+## Reusable coefficient-synthesis API
+
+Immediately after the Q01 PASS, the common coefficient stage was moved into:
+
+- `three_loop/master_coefficient_api.py`
+
+The reusable API separates diagram-specific artifact preparation from the common machinery:
+
+- native projected-amplitude terms;
+- native-to-Kira bridge expansion;
+- Kira FORM reduction loading and recursive resolution;
+- master contribution collection;
+- exact Fermat rational-function canonicalization;
+- final-basis closure audit.
+
+It deliberately does **not** launch a projected trace or a Kira/FireFly solve. Those remain artifact-producing stages selected per canonical integral family.
+
+Before using this API for Q02-Q72, Q01 must reproduce the already-PASS d+1 result through the API. Validation runner:
+
+```text
+run_three_loop_q01_master_coefficient_api_validation.bat
+```
+
+The validation compares all 60 API-produced coefficients algebraically against the existing PASS Q01 coefficient artifact using Fermat, not just by textual formatting. Required result: 60 reduction masters, 60 nonzero final coefficients, zero extra masters, zero coefficient mismatches.
+
 ## Current next step
 
-The agreed direction is:
+The agreed sequence is now:
 
-1. Complete **Q01 coefficient synthesis onto the finalized 60 masters**.
-2. Once Q01 coefficient synthesis is validated, build a **72-diagram integral-family global classification audit**.
-3. Then extend the validated coefficient-synthesis pipeline across the remaining 71 diagrams by canonical integral family, rather than evaluating Q01 masters to final constants first.
-4. Only after the 72-diagram/global-master picture is known, prioritize master evaluation/epsilon expansion and final `F2(0)` assembly.
+1. Q01 coefficient synthesis onto final60: **COMPLETE / PASS**.
+2. Re-run Q01 through `three_loop/master_coefficient_api.py` and require exact equality with the existing PASS artifact.
+3. Build the **72-diagram integral-family global classification audit**.
+4. Extend the validated common pipeline across the remaining 71 diagrams by canonical integral family.
+5. Build a mapping/audit between QEDCalc canonical masters and known published three-loop `g-2` master integrals (including the Laporta master basis where applicable) as an external cross-check.
+6. Only after the 72-diagram/global-master picture is known, prioritize master evaluation/epsilon expansion and final `F2(0)` assembly.
 
 This ordering is deliberate: avoid evaluating Q01 masters in isolation before knowing which masters/families are shared by the full 72-diagram problem.
 
-## Immediate Q01 coefficient-synthesis target
-
-Desired form:
-
-```text
-F2_Q01^(3)(0) = sum_i C_i(D) * M_i(D)
-```
-
-with coefficients collected exactly onto the finalized 60 Q01 master integrals.
-
-Requirements for considering Q01 coefficient synthesis complete:
-
-- consume the actual projected-amplitude reduction output, not a proxy count;
-- map every surviving reduced term to one of the finalized 60 master forms;
-- combine duplicate master contributions symbolically;
-- retain exact rational functions of `D` / epsilon as appropriate;
-- prove there are no unresolved/non-master RHS integrals;
-- emit machine-readable JSON plus a readable TXT/MD summary;
-- include an audit that reconstructs/checks the total from the pre-combination terms;
-- avoid numerical master evaluation at this stage.
-
 ## Planned 72-diagram integral-family global classification audit
 
-After Q01 coefficient synthesis passes, create an audit that records for every one of the 72 diagrams:
+After Q01 API validation passes, create an audit that records for every one of the 72 diagrams:
 
 - diagram ID and physical/topological family;
 - canonical integral-family ID;
