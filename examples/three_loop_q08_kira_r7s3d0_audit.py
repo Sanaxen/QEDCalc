@@ -72,7 +72,10 @@ def prepare() -> None:
 
     PROJECT.mkdir(parents=True, exist_ok=True)
     removed = _clean_runtime_outputs()
-    export_q08_kira_project(PROJECT, limits=LIMITS, back_substitution=False)
+    # The finalize audit requires Kira's masters.final artifact.  That artifact
+    # belongs to the back-substitution stage, so the baseline must not stop
+    # after sectorwise triangular reduction.
+    export_q08_kira_project(PROJECT, limits=LIMITS, back_substitution=True)
 
     print("QEDCalc Q08 r7s3d0 baseline prepare")
     print(f"canonical family: {Q08_KIRA_NAME}")
@@ -81,6 +84,7 @@ def prepare() -> None:
     print("seed: r7s3d0")
     print(f"project: {PROJECT}")
     print(f"stale runtime entries removed: {len(removed)}")
+    print("back substitution: enabled (required for masters.final audit)")
     print("QEDCalc Q08 r7s3d0 baseline prepare PASS")
 
 
