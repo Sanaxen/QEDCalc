@@ -1,4 +1,4 @@
-"""Bootstrap a canonical 12-propagator family for an unresolved quenched class.
+"""Bootstrap the next unresolved quenched integral-family candidate.
 
 This module is intentionally algebraic and conservative. It does not claim a
 new Kira family merely from graph topology. For a chosen representative it
@@ -6,18 +6,24 @@ new Kira family merely from graph topology. For a chosen representative it
 1. derives the nine physical scalar denominators from the topology inventory;
 2. checks whether those lines already map to Q01 under the currently allowed
    reflection + signed loop-relabel transform class;
-3. if not, greedily selects three quadratic auxiliaries that complete the
-   12-dimensional loop scalar-product basis;
-4. proves every member of the same structural candidate class against the new
-   P1..P12 basis by exact SymPy equality.
+3. measures the physical scalar-product rank and records any left-null
+   relations among the physical denominators;
+4. greedily selects as many quadratic auxiliaries as are actually required to
+   span the 12-dimensional loop scalar-product space;
+5. proves every member of the same structural candidate class against the full
+   generated denominator set by exact SymPy equality.
 
-The resulting family is a canonical algebraic family candidate. A Kira project
-and master basis are deliberately left for the next stage.
+A rank-deficient physical set is deliberately *not* forced into a fake
+"9 physical + 3 auxiliary = 12" Kira family.  Such a case is reported as an
+overcomplete algebraic candidate that requires a partial-fraction/family-split
+step before a Kira-ready canonical family is registered.
 """
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from itertools import permutations, product
+from math import gcd
+from functools import reduce
 from typing import Any, Iterable
 
 import sympy as sp
@@ -61,12 +67,57 @@ def topology_physical_denominators(row: dict[str, Any]) -> list[sp.Expr]:
     return electron + photon
 
 
-def _rank(expressions: list[sp.Expr]) -> int:
-    matrix = sp.Matrix([
+def _sp_matrix(expressions: list[sp.Expr]) -> sp.Matrix:
+    return sp.Matrix([
         [sp.expand(expr).coeff(atom) for atom in SP_BASIS]
         for expr in expressions
     ])
-    return int(matrix.rank())
+
+
+def _rank(expressions: list[sp.Expr]) -> int:
+    return int(_sp_matrix(expressions).rank())
+
+
+def _normalize_null_vector(vec: sp.Matrix) -> list[sp.Expr]:
+    vals = [sp.Rational(v) for v in list(vec)]
+    denoms = [int(v.q) for v in vals]
+    lcm = 1
+    for d in denoms:
+        lcm = sp.ilcm(lcm, d)
+    ints = [int(v * lcm) for v in vals]
+    nonzero = [abs(v) for v in ints if v]
+    if nonzero:
+        common = reduce(gcd, nonzero)
+        ints = [v // common for v in ints]
+    first = next((v for v in ints if v), 1)
+    if first < 0:
+        ints = [-v for v in ints]
+    return [sp.Integer(v) for v in ints]
+
+
+def physical_denominator_relations(physical: list[sp.Expr]) -> list[dict[str, Any]]:
+    """Return left-null SP relations, including their affine residuals.
+
+    A coefficient vector c satisfies sum_i c_i * coeff_SP(D_i) = 0.  The full
+    denominator combination may leave a scalar residual depending on m2 and z;
+    that residual is retained because it determines the later partial-fraction
+    identity rather than being silently discarded.
+    """
+    relations: list[dict[str, Any]] = []
+    for raw in _sp_matrix(physical).T.nullspace():
+        coeffs = _normalize_null_vector(raw)
+        residual = sp.expand(sum(c * d for c, d in zip(coeffs, physical)))
+        relations.append({
+            "coefficients": [int(c) for c in coeffs],
+            "relation": " + ".join(
+                f"({int(c)})*D{i}"
+                for i, c in enumerate(coeffs, start=1)
+                if c != 0
+            ),
+            "affine_residual": str(residual),
+            "exact_zero_relation": residual == 0,
+        })
+    return relations
 
 
 def _quadratic_auxiliary_candidates() -> list[tuple[str, dict[str, sp.Expr], sp.Expr]]:
@@ -85,8 +136,10 @@ def _quadratic_auxiliary_candidates() -> list[tuple[str, dict[str, sp.Expr], sp.
     return [(name, vec, sp.expand(_square(vec))) for name, vec in specs]
 
 
-def complete_with_quadratic_auxiliaries(physical: list[sp.Expr]) -> tuple[list[str], list[dict[str, sp.Expr]], list[sp.Expr]]:
-    """Greedily add three quadratic auxiliaries until the SP rank reaches 12."""
+def complete_with_quadratic_auxiliaries(
+    physical: list[sp.Expr],
+) -> tuple[list[str], list[dict[str, sp.Expr]], list[sp.Expr]]:
+    """Add exactly as many quadratic auxiliaries as needed to reach SP rank 12."""
     selected_names: list[str] = []
     selected_vecs: list[dict[str, sp.Expr]] = []
     selected_exprs: list[sp.Expr] = []
@@ -100,9 +153,9 @@ def complete_with_quadratic_auxiliaries(physical: list[sp.Expr]) -> tuple[list[s
             rank = new_rank
         if rank == len(SP_BASIS):
             break
-    if rank != len(SP_BASIS) or len(selected_exprs) != 3:
+    if rank != len(SP_BASIS):
         raise ValueError(
-            f"failed to complete canonical basis: physical_rank={_rank(physical)}, "
+            f"failed to span scalar-product space: physical_rank={_rank(physical)}, "
             f"final_rank={rank}, auxiliaries={selected_names}"
         )
     return selected_names, selected_vecs, selected_exprs
@@ -262,8 +315,17 @@ def audit_next_quenched_family(rows: list[dict[str, Any]], confirmed_ids: set[st
     q01_witness = q01_reuse_witness(representative, q01)
 
     physical = topology_physical_denominators(representative)
+    physical_rank = _rank(physical)
+    relations = physical_denominator_relations(physical)
     aux_names, aux_vecs, aux_exprs = complete_with_quadratic_auxiliaries(physical)
-    family_id = "Q01_full" if q01_witness is not None else f"{representative_id}_full"
+    full_rank = _rank(physical + aux_exprs)
+    generated_count = len(physical) + len(aux_exprs)
+    overcomplete = generated_count > len(SP_BASIS)
+    family_id = (
+        "Q01_full"
+        if q01_witness is not None
+        else (f"{representative_id}_overcomplete_candidate" if overcomplete else f"{representative_id}_full")
+    )
 
     records: list[dict[str, Any]] = []
     errors: list[str] = []
@@ -281,36 +343,53 @@ def audit_next_quenched_family(rows: list[dict[str, Any]], confirmed_ids: set[st
             errors.append(f"{diagram_id}: {exc}")
         records.append({
             "diagram_id": diagram_id,
-            "status": "confirmed" if witness is not None else "candidate_only",
+            "status": "confirmed_algebraic_equivalence" if witness is not None else "candidate_only",
             "witness": witness.to_dict() if witness is not None else None,
         })
         if witness is None:
-            errors.append(f"{diagram_id}: no exact P1..P12 witness to {representative_id}")
+            errors.append(f"{diagram_id}: no exact generated-denominator witness to {representative_id}")
 
-    physical_rank = _rank(physical)
-    full_rank = _rank(physical + aux_exprs)
     if len(physical) != 9:
         errors.append(f"{representative_id}: expected 9 physical propagators, got {len(physical)}")
     if full_rank != 12:
-        errors.append(f"{representative_id}: canonical basis rank {full_rank}/12")
+        errors.append(f"{representative_id}: generated denominator rank {full_rank}/12")
+    if physical_rank < len(physical) and not relations:
+        errors.append(f"{representative_id}: rank deficiency detected but no left-null relation was recovered")
+
+    kira_ready = (
+        not errors
+        and q01_witness is None
+        and not overcomplete
+        and physical_rank == len(physical)
+        and generated_count == len(SP_BASIS)
+    )
 
     return {
         "representative": representative_id,
-        "canonical_family_id": family_id,
+        "family_candidate_id": family_id,
         "candidate_ids": class_ids,
         "q01_reuse_under_current_scope": q01_witness,
         "new_family_required_under_current_scope": q01_witness is None,
         "physical_propagator_count": len(physical),
         "physical_scalar_product_rank": physical_rank,
+        "physical_rank_deficiency": len(physical) - physical_rank,
+        "physical_denominator_relations": relations,
+        "selected_auxiliary_count": len(aux_names),
         "auxiliary_names": aux_names,
-        "canonical_basis_rank": full_rank,
-        "canonical_propagators": [str(expr) for expr in physical + aux_exprs],
+        "generated_denominator_count": generated_count,
+        "generated_scalar_product_rank": full_rank,
+        "overcomplete_generated_set": overcomplete,
+        "kira_ready": kira_ready,
+        "requires_partial_fraction_or_family_split": overcomplete or physical_rank < len(physical),
+        "generated_propagators": [str(expr) for expr in physical + aux_exprs],
         "records": records,
         "errors": errors,
         "audit_pass": not errors,
         "interpretation": (
-            "This proves a canonical algebraic P1..P12 family under reflection + signed loop relabeling. "
-            "A missing Q01 witness means only that Q01 reuse is absent within that explicit transform scope. "
-            "It does not yet mean that a Kira reduction/master basis for the new family has been computed."
+            "PASS proves the topology-derived class is algebraically self-consistent under the recorded "
+            "reflection/signed-loop maps and that the generated denominator set spans all 12 loop scalar "
+            "products. If the physical rank is below the physical denominator count, the generated set is "
+            "overcomplete and must be partial-fractioned or split into Kira-ready independent families before "
+            "a canonical Kira family/master basis is registered."
         ),
     }
