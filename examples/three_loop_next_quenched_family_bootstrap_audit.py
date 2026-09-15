@@ -12,7 +12,12 @@ OUTPUT_TXT = OUTPUT_DIR / "three_loop_next_quenched_family_bootstrap_audit.txt"
 
 # Canonical-family members already confirmed by the executable global registry.
 # Keep this explicit until the bootstrap runner is wired directly to registry output.
-CONFIRMED_QUENCHED_IDS = {"Q01", "Q41", "Q02", "Q45", "Q03", "Q43"}
+CONFIRMED_QUENCHED_IDS = {
+    "Q01", "Q41",
+    "Q02", "Q45",
+    "Q03", "Q43",
+    "Q04", "Q46",
+}
 
 
 def _relation_lines(audit: dict) -> list[str]:
