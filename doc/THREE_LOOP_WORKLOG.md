@@ -136,8 +136,6 @@ A canonical mapping is called `confirmed` only when both are present:
 1. an explicit canonical propagator basis;
 2. a proven loop-momentum transformation to that basis.
 
-Current Q01 evidence records the validated `Q01_full` Kira family, target counts, and `Q01_final60`, but the explicit denominator-basis/routing map has not yet been committed as canonical registry data. Therefore its status is deliberately `pipeline_validated_mapping_incomplete`, not `confirmed`.
-
 The audit emits JSON and TXT under:
 
 ```text
@@ -155,9 +153,9 @@ Do not treat `audit_pass=true` as meaning all canonical Kira families are alread
 
 1. Q01 final60 coefficient synthesis: **COMPLETE / PASS**.
 2. Q01 reusable API equivalence validation: **COMPLETE / PASS**.
-3. Run the 72-diagram integral-family global audit and inspect its candidate-class inventory.
-4. Promote candidate classes to proven canonical Kira families by deriving/recording explicit denominator bases and loop-momentum transforms, starting with Q01 and then family representatives.
-5. Reuse each proven family mapping for symmetry-equivalent diagrams where the transformation is explicitly verified.
+3. Q01/Q41 canonical family `Q01_full`: **COMPLETE / PASS**.
+4. Q02/Q45 canonical family `Q02_full`: **ALGEBRAIC FAMILY COMPLETE / PASS**; Kira reduction/master basis not yet run.
+5. Continue unresolved quenched structural classes with the same executable canonical-family proof discipline.
 6. Extend projected-amplitude -> Kira -> master coefficients across Q02-Q72 through the reusable API.
 7. Build a mapping/audit between QEDCalc global masters and published three-loop `g-2` master integrals (Laporta basis where applicable) as an external cross-check.
 8. Only after the global family/master picture is stable, evaluate masters / epsilon-expand / assemble total `F2(0)`.
@@ -196,31 +194,7 @@ Q01 canonical family confirmed
   PASS
 ```
 
-Q01 is now registered as canonical family `Q01_full` with the exact 12-propagator Kira basis, identity loop routing, the physical-sign/permutation relation to native QEDCalc denominators, and the exact native-ISP bridge. This closes the previous `pipeline_validated_mapping_incomplete` state for Q01.
-
-## 2026-09-15 Q01-family equivalence mapper / audit: IMPLEMENTED
-
-The next horizontal-family step has been implemented in:
-
-- `three_loop/q01_family_equivalence.py`
-- `examples/three_loop_q01_family_equivalence_audit.py`
-- `run_three_loop_q01_family_equivalence_audit.bat`
-
-The mapper takes only diagrams in Q01's structural candidate class and performs:
-
-```text
-diagram topology
- -> reflection / signed loop-momentum relabel candidate generation
- -> physical propagator bijection to Q01
- -> exact SymPy equality against Q01 Kira P1..P12
- -> sign / propagator permutation audit
- -> exact ISP bridge audit
- -> confirmed Q01_full reuse only if every check passes
-```
-
-Important: topology similarity alone never promotes a diagram. The open-line reflection also carries the external transformation `p -> p+q`, `q -> -q`; signed loop permutations are enumerated explicitly. The three Kira auxiliaries are pulled back through the candidate transformation and then checked against Q01 P10-P12, while the native ISP scalar products are checked independently.
-
-The Q01 structural skeleton has a reflected Q41 candidate. An independent algebra sanity check of that candidate gives the expected reflection map `k -> r`, `l -> l`, `r -> k`, `p -> p+q`, `q -> -q`, with the nine physical denominator permutation `[6,5,4,3,2,1,9,8,7]`; the committed BAT is the authoritative repository audit and should be run in the normal Windows `.venv` environment before the global classification registry is promoted beyond Q01.
+Q01 is now registered as canonical family `Q01_full` with the exact 12-propagator Kira basis, identity loop routing, the physical-sign/permutation relation to native QEDCalc denominators, and the exact native-ISP bridge.
 
 ## 2026-09-15 Q41 -> Q01_full equivalence: COMPLETE / PASS
 
@@ -241,7 +215,65 @@ PASS
 
 This is a full algebraic equivalence proof at the integral-family level, not a topology-only inference. Q41 therefore reuses `Q01_full` and `Q01_final60`; no new Kira family or auxiliary basis is needed.
 
-A new executable registry overlay is committed in `three_loop/canonical_family_registry.py`. The 72-diagram global audit now reruns the equivalence mapper during promotion and records the exact witness in each confirmed diagram record. The global audit must now show two confirmed mappings, Q01 and Q41, while the remaining diagrams stay candidate-only until similarly proven.
+## 2026-09-15 72-diagram global registry after Q01/Q41: COMPLETE / PASS
+
+User-local global audit passed:
+
+```text
+classification status counts: {'candidate_only': 70, 'confirmed': 2}
+confirmed canonical mappings: 2
+canonical registry:
+  Q01_full -> Q01, Q41
+internal audit errors: 0
+PASS
+```
+
+## 2026-09-15 Q02/Q45 canonical family bootstrap: COMPLETE / PASS
+
+The next unresolved quenched structural class was Q02/Q45. The first bootstrap exposed an important distinction: the nine topology-level physical denominators have scalar-product rank 8 because D4 and D6 are not merely linearly related but exactly identical.
+
+The final deduplicating audit passed:
+
+```text
+representative: Q02
+family candidate: Q02_full
+candidate IDs: ['Q02', 'Q45']
+Q01 reuse under current scope: False
+new family required under current scope: True
+raw physical propagators: 9
+raw physical SP rank: 8
+physical rank deficiency: 1
+duplicate physical groups: [[4, 6]]
+raw physical -> unique mapping: [1, 2, 3, 4, 5, 4, 6, 7, 8]
+unique physical propagators: 8
+unique physical SP rank: 8
+duplicate-only rank deficiency: True
+selected auxiliary count: 4
+selected auxiliaries: ['(k-r)^2', '(l-r)^2', '(l+q)^2', '(r+q)^2']
+canonical denominator count: 12
+canonical SP rank: 12/12
+Kira ready: True
+requires partial fraction / family split: False
+physical relation: D4 - D6 = 0
+Q02 confirmed_algebraic_equivalence
+Q45 confirmed_algebraic_equivalence
+internal audit errors: 0
+PASS
+```
+
+Q02 therefore defines a new Kira-ready 12-denominator canonical family `Q02_full` made from eight unique physical denominators plus four quadratic auxiliaries. No partial fraction or family split is required. Native physical powers that map to the same canonical denominator must be added; in particular D4 and D6 both map to canonical physical denominator 4.
+
+The reflected Q45 witness is:
+
+```text
+reflection: True
+loop transform: {'k': 'l', 'l': 'r', 'r': 'k'}
+external transform: {'p': 'p+q', 'q': '-q'}
+physical -> canonical: [4, 5, 4, 3, 2, 1, 7, 8, 6]
+P1..P12 exact: True
+```
+
+`three_loop/canonical_family_registry.py` now reruns this bootstrap audit before promoting Q02/Q45 into the global registry. `Q02_full` is Kira-ready but does not yet have a computed master basis; `master_basis_id` remains null until the Q02 Kira reduction is actually run and audited.
 
 Next command:
 
@@ -250,4 +282,12 @@ git pull
 .\run_three_loop_72_integral_family_global_audit.bat
 ```
 
-After that PASS, continue horizontally by selecting the next structural candidate class representative and applying the same exact canonical-family mapping discipline.
+Expected global status after this promotion:
+
+```text
+candidate_only = 68
+confirmed = 4
+canonical registry:
+  Q01_full -> Q01, Q41
+  Q02_full -> Q02, Q45
+```
