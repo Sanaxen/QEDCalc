@@ -1,8 +1,8 @@
 """Executable canonical-family registry overlay.
 
-Quenched, VP1, VP2 and VP22 three-loop families are discovered and re-proven
-automatically from exact algebraic witnesses. Q01 keeps its dedicated stronger
-mapper checks.
+Quenched, VP1, VP2/VP22 and external LBL three-loop families are discovered and
+re-proven automatically from exact algebraic witnesses. Q01 keeps its dedicated
+stronger mapper checks.
 """
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from collections import Counter
 from typing import Any
 
 from three_loop.integral_family_classification import Q01_CANONICAL_PROPAGATORS
+from three_loop.lbl_family_autodiscovery import audit_lbl_family_autodiscovery
 from three_loop.quenched_family_autodiscovery import audit_quenched_family_autodiscovery
 from three_loop.vp1_family_autodiscovery import audit_vp1_family_autodiscovery
 from three_loop.vp2_double_family_autodiscovery import audit_vp2_double_family_autodiscovery
@@ -123,7 +124,7 @@ def _apply_auto_records(
 
 
 def apply_confirmed_family_registry(rows: list[dict[str, Any]], audit: dict[str, Any]) -> list[str]:
-    """Overlay all automatically proven quenched, VP1, VP2 and VP22 mappings."""
+    """Overlay every automatically proven three-loop canonical-family mapping."""
     errors: list[str] = []
     records = audit.get("records", [])
 
@@ -151,6 +152,14 @@ def apply_confirmed_family_registry(rows: list[dict[str, Any]], audit: dict[str,
         audit["canonical_registry"] = {}
         return errors
 
+    lbl = audit_lbl_family_autodiscovery(rows)
+    if not lbl.get("audit_pass"):
+        errors.extend(str(item) for item in lbl.get("errors", []))
+        if not lbl.get("errors"):
+            errors.append("LBL canonical-family autodiscovery failed")
+        audit["canonical_registry"] = {}
+        return errors
+
     quenched_registry = _apply_auto_records(
         auto=quenched, records=records, errors=errors, q01_special=True
     )
@@ -159,6 +168,9 @@ def apply_confirmed_family_registry(rows: list[dict[str, Any]], audit: dict[str,
     )
     vp2_double_registry = _apply_auto_records(
         auto=vp2_double, records=records, errors=errors, q01_special=False
+    )
+    lbl_registry = _apply_auto_records(
+        auto=lbl, records=records, errors=errors, q01_special=False
     )
 
     counts = Counter(str(rec.get("classification_status")) for rec in records)
@@ -171,7 +183,7 @@ def apply_confirmed_family_registry(rows: list[dict[str, Any]], audit: dict[str,
         entry = dict(quenched_registry[family_id])
         entry.pop("canonical_propagators", None)
         out_registry[family_id] = entry
-    for raw_registry in (vp1_registry, vp2_double_registry):
+    for raw_registry in (vp1_registry, vp2_double_registry, lbl_registry):
         for family_id, raw in raw_registry.items():
             entry = dict(raw)
             entry.pop("canonical_propagators", None)
@@ -203,5 +215,14 @@ def apply_confirmed_family_registry(rows: list[dict[str, Any]], audit: dict[str,
         "unresolved_count": vp2_double.get("unresolved_count"),
         "canonical_family_count": vp2_double.get("canonical_family_count"),
         "formula_source": vp2_double.get("formula_source"),
+    }
+    audit["lbl_autodiscovery"] = {
+        "audit_pass": bool(lbl.get("audit_pass")),
+        "transform_scope": lbl.get("transform_scope"),
+        "diagram_count": lbl.get("diagram_count"),
+        "confirmed_count": lbl.get("confirmed_count"),
+        "unresolved_count": lbl.get("unresolved_count"),
+        "canonical_family_count": lbl.get("canonical_family_count"),
+        "formula_source": lbl.get("formula_source"),
     }
     return errors
