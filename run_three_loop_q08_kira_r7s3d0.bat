@@ -11,17 +11,16 @@ if not exist ".venv\Scripts\python.exe" (
 if errorlevel 1 exit /b %ERRORLEVEL%
 
 set "WIN_PROJECT=%CD%\output\kira_q08_full_r7s3d0"
-set "WSL_PROJECT="
-for /f "usebackq delims=" %%I in (`wsl wslpath -u "%WIN_PROJECT%"`) do set "WSL_PROJECT=%%I"
-if not defined WSL_PROJECT (
-  echo ERROR: failed to translate Q08 project path into WSL path.
-  exit /b 1
+if not exist "%WIN_PROJECT%" (
+  echo ERROR: Q08 Kira project was not found.
+  echo Expected: %WIN_PROJECT%
+  exit /b 2
 )
 
 echo QEDCalc Q08 r7s3d0 Kira run
-echo WSL project: %WSL_PROJECT%
+echo Windows project: %WIN_PROJECT%
 
-wsl bash -lc "set -o pipefail; command -v kira >/dev/null 2>&1 || { echo 'ERROR: kira not found in WSL PATH'; exit 127; }; export FERMATPATH=$HOME/fermat/Ferl7/fer64; [ -x \"$FERMATPATH\" ] || { echo \"ERROR: Fermat executable not found or not executable: $FERMATPATH\"; exit 126; }; echo \"FERMATPATH=$FERMATPATH\"; cd '%WSL_PROJECT%' || exit 2; kira jobs.yaml 2>&1 | tee kira_r7s3d0.log"
+wsl.exe --cd "%WIN_PROJECT%" bash -lc "set -o pipefail; command -v kira >/dev/null 2>&1 || { echo 'ERROR: kira not found in WSL PATH'; exit 127; }; export FERMATPATH=$HOME/fermat/Ferl7/fer64; echo FERMATPATH=$FERMATPATH; kira jobs.yaml 2>&1 | tee kira_r7s3d0.log"
 set "KIRA_ERR=%ERRORLEVEL%"
 if not "%KIRA_ERR%"=="0" (
   echo ERROR: Kira exited with code %KIRA_ERR%.
