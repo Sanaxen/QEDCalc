@@ -1,6 +1,6 @@
 """Audit the 72-diagram topology inventory against canonical IBP-family evidence.
 
-Structural candidate classes are only scheduling hints.  Confirmed canonical
+Structural candidate classes are only scheduling hints. Confirmed canonical
 families are overlaid from executable algebraic witnesses, so topology
 similarity is never silently promoted to an IBP/Kira-family identity.
 """
@@ -19,6 +19,15 @@ from three_loop.integral_family_classification import (
 OUTPUT_DIR = ROOT / "output" / "three_loop_integral_family_audit"
 OUTPUT_JSON = OUTPUT_DIR / "three_loop_72_integral_family_global_audit.json"
 OUTPUT_TXT = OUTPUT_DIR / "three_loop_72_integral_family_global_audit.txt"
+
+
+def _witness_mapping(witness: dict) -> tuple[str, object]:
+    """Return a stable label/value for either Q01- or Q02-style witnesses."""
+    if "physical_propagator_permutation" in witness:
+        return "physical_perm", witness["physical_propagator_permutation"]
+    if "physical_to_canonical_mapping" in witness:
+        return "physical_to_canonical", witness["physical_to_canonical_mapping"]
+    return "physical_mapping", "<missing>"
 
 
 def main() -> None:
@@ -73,13 +82,15 @@ def main() -> None:
         )
         witness = rec.get("canonical_equivalence_witness")
         if witness is not None:
+            mapping_label, mapping = _witness_mapping(witness)
             lines.append(
                 "    witness: reflection={reflection} loops={loops} external={external} "
-                "physical_perm={perm}".format(
+                "{mapping_label}={mapping}".format(
                     reflection=witness["reflection"],
                     loops=witness["loop_momentum_transform"],
                     external=witness["external_momentum_transform"],
-                    perm=witness["physical_propagator_permutation"],
+                    mapping_label=mapping_label,
+                    mapping=mapping,
                 )
             )
 
@@ -91,7 +102,8 @@ def main() -> None:
             "  and every executable canonical-family witness used for promotion.",
             "  classification_complete is stricter: it becomes true only when every diagram",
             "  has an explicit canonical propagator basis and proven momentum map.",
-            "  Q01-family members are promoted only after exact P1..P12 and ISP-bridge checks.",
+            "  Q01-family members require exact P1..P12 and ISP-bridge checks.",
+            "  Q02-family members use the deduplicated physical-to-canonical map and exact P1..P12 checks.",
             "",
             f"audit JSON: {OUTPUT_JSON}",
             f"audit TXT: {OUTPUT_TXT}",
