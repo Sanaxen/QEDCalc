@@ -1,17 +1,17 @@
 """Bootstrap a canonical 12-propagator family for an unresolved quenched class.
 
-This module is intentionally algebraic and conservative.  It does not claim a
-new Kira family merely from graph topology.  For a chosen representative it
+This module is intentionally algebraic and conservative. It does not claim a
+new Kira family merely from graph topology. For a chosen representative it
 
 1. derives the nine physical scalar denominators from the topology inventory;
-2. verifies that the physical lines do not already match a registered family
-   under the currently allowed reflection + signed loop-relabel transform class;
-3. greedily selects three quadratic auxiliaries that complete the 12-dimensional
-   loop scalar-product basis;
+2. checks whether those lines already map to Q01 under the currently allowed
+   reflection + signed loop-relabel transform class;
+3. if not, greedily selects three quadratic auxiliaries that complete the
+   12-dimensional loop scalar-product basis;
 4. proves every member of the same structural candidate class against the new
    P1..P12 basis by exact SymPy equality.
 
-The resulting family is a canonical algebraic family candidate.  A Kira project
+The resulting family is a canonical algebraic family candidate. A Kira project
 and master basis are deliberately left for the next stage.
 """
 from __future__ import annotations
@@ -23,7 +23,8 @@ from typing import Any, Iterable
 import sympy as sp
 
 from qedcalc.operations.ibp import sp_atom
-from three_loop.integral_family_classification import candidate_classes, structural_candidate_key
+from three_loop.integral_family import q01_denominator_expressions
+from three_loop.integral_family_classification import candidate_classes
 from three_loop.q01_family_equivalence import _electron_momenta, _vec, _square, _transform_vector
 
 LOOPS = ("k", "l", "r")
@@ -70,7 +71,6 @@ def _rank(expressions: list[sp.Expr]) -> int:
 
 def _quadratic_auxiliary_candidates() -> list[tuple[str, dict[str, sp.Expr], sp.Expr]]:
     """Return stable quadratic auxiliary candidates in a deterministic order."""
-    m2, z = sp.symbols("m2 z")
     specs = [
         ("(k-l)^2", _vec(k=1, l=-1)),
         ("(k-r)^2", _vec(k=1, r=-1)),
@@ -161,6 +161,28 @@ def _exact_permutation(source: list[sp.Expr], target: list[sp.Expr]) -> list[int
     return mapping if len(used) == len(target) else None
 
 
+def q01_reuse_witness(candidate: dict[str, Any], q01: dict[str, Any]) -> dict[str, Any] | None:
+    """Check exact physical Q01 reuse within the current transform scope."""
+    q01_physical = list(q01_denominator_expressions()[:9])
+    for reflected, loop_map in _topology_loop_maps(candidate, q01):
+        transformed = _transform_denominators(candidate, loop_map, reflected)
+        permutation = _exact_permutation(transformed, q01_physical)
+        if permutation is None:
+            continue
+        return {
+            "reflection": reflected,
+            "loop_momentum_transform": {
+                src: (("-" if sign < 0 else "") + target)
+                for src, (target, sign) in loop_map.items()
+            },
+            "external_momentum_transform": (
+                {"p": "p+q", "q": "-q"} if reflected else {"p": "p", "q": "q"}
+            ),
+            "physical_propagator_permutation": permutation,
+        }
+    return None
+
+
 def _pullback_aux_vector(canonical_vec: dict[str, sp.Expr], loop_map: dict[str, tuple[str, int]], reflected: bool) -> dict[str, sp.Expr]:
     inverse = {target: (source, sign) for source, (target, sign) in loop_map.items()}
     out = _vec()
@@ -174,8 +196,6 @@ def _pullback_aux_vector(canonical_vec: dict[str, sp.Expr], loop_map: dict[str, 
         out["q"] += -qcoeff if reflected else qcoeff
     pcoeff = canonical_vec.get("p", 0)
     if pcoeff:
-        # None of the current auxiliary candidates uses p, but keep the rule
-        # explicit for future extensions.
         out["p"] += pcoeff
         if reflected:
             out["q"] += pcoeff
@@ -198,8 +218,7 @@ def find_family_witness(
         for vec, target in zip(auxiliary_vecs, auxiliary_exprs):
             pulled = _pullback_aux_vector(vec, loop_map, reflected)
             transformed = _transform_vector(pulled, loop_map=loop_map, reflected=reflected)
-            ok = sp.expand(_square(transformed) - target) == 0
-            exact.append(ok)
+            exact.append(sp.expand(_square(transformed) - target) == 0)
         if not all(exact):
             continue
         loops = {
@@ -239,12 +258,21 @@ def audit_next_quenched_family(rows: list[dict[str, Any]], confirmed_ids: set[st
     class_ids = choose_next_unresolved_quenched_class(rows, confirmed_ids)
     representative_id = class_ids[0]
     representative = by_id[representative_id]
+    q01 = by_id["Q01"]
+    q01_witness = q01_reuse_witness(representative, q01)
+
     physical = topology_physical_denominators(representative)
     aux_names, aux_vecs, aux_exprs = complete_with_quadratic_auxiliaries(physical)
-    family_id = f"{representative_id}_full"
+    family_id = "Q01_full" if q01_witness is not None else f"{representative_id}_full"
 
     records: list[dict[str, Any]] = []
     errors: list[str] = []
+    if q01_witness is not None:
+        errors.append(
+            f"{representative_id}: unexpectedly maps to Q01_full under the current transform scope; "
+            "do not bootstrap a new family"
+        )
+
     for diagram_id in class_ids:
         try:
             witness = find_family_witness(by_id[diagram_id], representative, physical, aux_vecs, aux_exprs)
@@ -270,6 +298,8 @@ def audit_next_quenched_family(rows: list[dict[str, Any]], confirmed_ids: set[st
         "representative": representative_id,
         "canonical_family_id": family_id,
         "candidate_ids": class_ids,
+        "q01_reuse_under_current_scope": q01_witness,
+        "new_family_required_under_current_scope": q01_witness is None,
         "physical_propagator_count": len(physical),
         "physical_scalar_product_rank": physical_rank,
         "auxiliary_names": aux_names,
@@ -280,6 +310,7 @@ def audit_next_quenched_family(rows: list[dict[str, Any]], confirmed_ids: set[st
         "audit_pass": not errors,
         "interpretation": (
             "This proves a canonical algebraic P1..P12 family under reflection + signed loop relabeling. "
-            "It does not yet mean that a Kira reduction/master basis for this family has been computed."
+            "A missing Q01 witness means only that Q01 reuse is absent within that explicit transform scope. "
+            "It does not yet mean that a Kira reduction/master basis for the new family has been computed."
         ),
     }
