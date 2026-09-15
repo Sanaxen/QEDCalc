@@ -222,11 +222,32 @@ Important: topology similarity alone never promotes a diagram. The open-line ref
 
 The Q01 structural skeleton has a reflected Q41 candidate. An independent algebra sanity check of that candidate gives the expected reflection map `k -> r`, `l -> l`, `r -> k`, `p -> p+q`, `q -> -q`, with the nine physical denominator permutation `[6,5,4,3,2,1,9,8,7]`; the committed BAT is the authoritative repository audit and should be run in the normal Windows `.venv` environment before the global classification registry is promoted beyond Q01.
 
+## 2026-09-15 Q41 -> Q01_full equivalence: COMPLETE / PASS
+
+User-local authoritative audit passed:
+
+```text
+candidate IDs: ['Q01', 'Q41']
+confirmed Q01_full reuse: ['Q01', 'Q41']
+Q41 reflection: True
+Q41 loop transform: {'k': 'r', 'l': 'l', 'r': 'k'}
+Q41 external transform: {'p': 'p+q', 'q': '-q'}
+Q41 physical permutation: [6, 5, 4, 3, 2, 1, 9, 8, 7]
+Q41 P1..P12 exact: True
+Q41 ISP bridge exact: True
+internal audit errors: 0
+PASS
+```
+
+This is a full algebraic equivalence proof at the integral-family level, not a topology-only inference. Q41 therefore reuses `Q01_full` and `Q01_final60`; no new Kira family or auxiliary basis is needed.
+
+A new executable registry overlay is committed in `three_loop/canonical_family_registry.py`. The 72-diagram global audit now reruns the equivalence mapper during promotion and records the exact witness in each confirmed diagram record. The global audit must now show two confirmed mappings, Q01 and Q41, while the remaining diagrams stay candidate-only until similarly proven.
+
 Next command:
 
 ```powershell
 git pull
-.\run_three_loop_q01_family_equivalence_audit.bat
+.\run_three_loop_72_integral_family_global_audit.bat
 ```
 
-After that PASS output is available, register every mapper-confirmed non-Q01 diagram as `Q01_full` reuse in the 72-diagram global classification and rerun the global audit.
+After that PASS, continue horizontally by selecting the next structural candidate class representative and applying the same exact canonical-family mapping discipline.
