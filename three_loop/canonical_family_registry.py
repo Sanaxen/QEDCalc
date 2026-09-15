@@ -2,9 +2,8 @@
 
 The structural classifier remains conservative. A diagram is promoted only
 from executable algebraic witnesses. Q01/Q41 are re-proven through the Q01
-family mapper; Q02/Q45 and Q03/Q43 are re-proven from the generic quenched
-bootstrap, with Q03 additionally required to pass the explicit existing-family
-reuse audit against Q01_full and Q02_full.
+family mapper. Later quenched families are re-proven from the generic bootstrap
+and, where required, an explicit existing-family reuse audit.
 """
 from __future__ import annotations
 
@@ -13,6 +12,7 @@ from typing import Any
 
 from examples.three_loop_q03_existing_family_reuse_audit import audit_q03_existing_family_reuse
 from three_loop.canonical_family_bootstrap import audit_next_quenched_family
+from three_loop.existing_family_reuse import audit_existing_family_reuse
 from three_loop.integral_family_classification import Q01_CANONICAL_PROPAGATORS
 from three_loop.q01_family_equivalence import audit_q01_family_equivalence
 
@@ -20,6 +20,7 @@ Q01_MASTER_BASIS = "Q01_final60"
 Q01_CANONICAL_FAMILY = "Q01_full"
 Q02_CANONICAL_FAMILY = "Q02_full"
 Q03_CANONICAL_FAMILY = "Q03_full"
+Q04_CANONICAL_FAMILY = "Q04_full"
 
 
 def _q01_witness_text(witness: dict[str, Any]) -> str:
@@ -98,7 +99,8 @@ def _promote_bootstrap_family(
     expected_representative: str,
     family_id: str,
     expected_duplicates: list[list[int]],
-    require_existing_family_reuse_audit: bool = False,
+    reuse_representatives: list[str] | None = None,
+    q03_legacy_reuse_audit: bool = False,
 ) -> dict[str, Any] | None:
     boot = audit_next_quenched_family(rows, confirmed_ids)
     if not boot.get("audit_pass"):
@@ -131,8 +133,19 @@ def _promote_bootstrap_family(
         )
         return None
 
-    if require_existing_family_reuse_audit:
+    if q03_legacy_reuse_audit:
         reuse = audit_q03_existing_family_reuse(rows)
+        if not reuse.get("audit_pass") or not reuse.get("new_family_required_under_current_scope"):
+            errors.extend(str(item) for item in reuse.get("errors", []))
+            if not reuse.get("errors"):
+                errors.append(f"{family_id} existing-family reuse audit did not prove a new family")
+            return None
+    elif reuse_representatives:
+        reuse = audit_existing_family_reuse(
+            rows,
+            list(boot.get("candidate_ids", [])),
+            reuse_representatives,
+        )
         if not reuse.get("audit_pass") or not reuse.get("new_family_required_under_current_scope"):
             errors.extend(str(item) for item in reuse.get("errors", []))
             if not reuse.get("errors"):
@@ -186,7 +199,13 @@ def apply_confirmed_family_registry(rows: list[dict[str, Any]], audit: dict[str,
     q03 = _promote_bootstrap_family(
         rows, record_by_id, errors,
         {"Q01", "Q02", "Q41", "Q45"}, "Q03", Q03_CANONICAL_FAMILY, [],
-        require_existing_family_reuse_audit=True,
+        q03_legacy_reuse_audit=True,
+    )
+    q04 = _promote_bootstrap_family(
+        rows, record_by_id, errors,
+        {"Q01", "Q02", "Q03", "Q41", "Q43", "Q45"},
+        "Q04", Q04_CANONICAL_FAMILY, [],
+        reuse_representatives=["Q01", "Q02", "Q03"],
     )
 
     counts = Counter(str(rec.get("classification_status")) for rec in records)
@@ -204,7 +223,11 @@ def apply_confirmed_family_registry(rows: list[dict[str, Any]], audit: dict[str,
             "kira_reusable": True,
             "equivalence_audit_pass": True,
         }
-    for family_id, boot in ((Q02_CANONICAL_FAMILY, q02), (Q03_CANONICAL_FAMILY, q03)):
+    for family_id, boot in (
+        (Q02_CANONICAL_FAMILY, q02),
+        (Q03_CANONICAL_FAMILY, q03),
+        (Q04_CANONICAL_FAMILY, q04),
+    ):
         if boot is None:
             continue
         confirmed = [
