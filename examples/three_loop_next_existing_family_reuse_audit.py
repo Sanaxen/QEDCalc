@@ -21,9 +21,10 @@ CONFIRMED_QUENCHED_IDS = {
     "Q06", "Q44",
     "Q07", "Q47",
     "Q08", "Q48",
+    "Q09", "Q49",
 }
 CONFIRMED_FAMILY_REPRESENTATIVES = [
-    "Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07", "Q08"
+    "Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07", "Q08", "Q09"
 ]
 
 
