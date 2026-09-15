@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from three_loop.canonical_family_bootstrap import audit_next_quenched_family
 from three_loop.integral_family_classification import ROOT, load_topologies
@@ -23,6 +22,8 @@ def main() -> None:
         f"representative: {audit['representative']}",
         f"canonical family: {audit['canonical_family_id']}",
         f"candidate IDs: {audit['candidate_ids']}",
+        f"Q01 reuse under current scope: {audit['q01_reuse_under_current_scope'] is not None}",
+        f"new family required under current scope: {audit['new_family_required_under_current_scope']}",
         f"physical propagators: {audit['physical_propagator_count']}",
         f"physical SP rank: {audit['physical_scalar_product_rank']}",
         f"selected auxiliaries: {audit['auxiliary_names']}",
@@ -51,6 +52,8 @@ def main() -> None:
     print("representative:", audit["representative"])
     print("canonical family:", audit["canonical_family_id"])
     print("candidate IDs:", audit["candidate_ids"])
+    print("Q01 reuse under current scope:", audit["q01_reuse_under_current_scope"] is not None)
+    print("new family required under current scope:", audit["new_family_required_under_current_scope"])
     print("physical propagators:", audit["physical_propagator_count"])
     print("physical SP rank:", audit["physical_scalar_product_rank"])
     print("selected auxiliaries:", audit["auxiliary_names"])
