@@ -22,7 +22,7 @@ OUTPUT_TXT = OUTPUT_DIR / "three_loop_72_integral_family_global_audit.txt"
 
 
 def _witness_mapping(witness: dict) -> tuple[str, object]:
-    """Return a stable label/value for either Q01- or Q02-style witnesses."""
+    """Return a stable label/value for Q01-special or generic witnesses."""
     if "physical_propagator_permutation" in witness:
         return "physical_perm", witness["physical_propagator_permutation"]
     if "physical_to_canonical_mapping" in witness:
@@ -102,8 +102,8 @@ def main() -> None:
             "  and every executable canonical-family witness used for promotion.",
             "  classification_complete is stricter: it becomes true only when every diagram",
             "  has an explicit canonical propagator basis and proven momentum map.",
-            "  Q01-family members require exact P1..P12 and ISP-bridge checks.",
-            "  Q02-family members use the deduplicated physical-to-canonical map and exact P1..P12 checks.",
+            "  Q01-family members use the dedicated exact P1..P12 + ISP-bridge mapper.",
+            "  Other confirmed families use deduplicated physical-to-canonical maps and exact P1..P12 witnesses.",
             "",
             f"audit JSON: {OUTPUT_JSON}",
             f"audit TXT: {OUTPUT_TXT}",
