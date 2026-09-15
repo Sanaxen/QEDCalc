@@ -33,14 +33,18 @@ def main() -> None:
         f"candidate IDs: {audit['candidate_ids']}",
         f"Q01 reuse under current scope: {audit['q01_reuse_under_current_scope'] is not None}",
         f"new family required under current scope: {audit['new_family_required_under_current_scope']}",
-        f"physical propagators: {audit['physical_propagator_count']}",
-        f"physical SP rank: {audit['physical_scalar_product_rank']}",
+        f"raw physical propagators: {audit['raw_physical_propagator_count']}",
+        f"raw physical SP rank: {audit['raw_physical_scalar_product_rank']}",
         f"physical rank deficiency: {audit['physical_rank_deficiency']}",
+        f"duplicate physical groups: {audit['duplicate_physical_groups']}",
+        f"raw physical -> unique mapping: {audit['raw_physical_to_unique_mapping']}",
+        f"unique physical propagators: {audit['unique_physical_propagator_count']}",
+        f"unique physical SP rank: {audit['unique_physical_scalar_product_rank']}",
+        f"duplicate-only rank deficiency: {audit['duplicate_only_rank_deficiency']}",
         f"selected auxiliary count: {audit['selected_auxiliary_count']}",
         f"selected auxiliaries: {audit['auxiliary_names']}",
-        f"generated denominator count: {audit['generated_denominator_count']}",
-        f"generated SP rank: {audit['generated_scalar_product_rank']}/12",
-        f"overcomplete generated set: {audit['overcomplete_generated_set']}",
+        f"canonical denominator count: {audit['canonical_denominator_count']}",
+        f"canonical SP rank: {audit['canonical_scalar_product_rank']}/12",
         f"Kira ready: {audit['kira_ready']}",
         f"requires partial fraction / family split: {audit['requires_partial_fraction_or_family_split']}",
         "",
@@ -56,8 +60,8 @@ def main() -> None:
             lines.append(f"  reflection: {witness['reflection']}")
             lines.append(f"  loop transform: {witness['loop_momentum_transform']}")
             lines.append(f"  external transform: {witness['external_momentum_transform']}")
-            lines.append(f"  physical permutation: {witness['physical_propagator_permutation']}")
-            lines.append(f"  all generated denominators exact: {all(witness['propagator_exact_match'])}")
+            lines.append(f"  physical -> canonical: {witness['physical_to_canonical_mapping']}")
+            lines.append(f"  P1..P12 exact: {all(witness['propagator_exact_match'])}")
     lines.extend([
         "",
         f"internal audit errors: {len(audit['errors'])}",
@@ -73,14 +77,18 @@ def main() -> None:
     print("candidate IDs:", audit["candidate_ids"])
     print("Q01 reuse under current scope:", audit["q01_reuse_under_current_scope"] is not None)
     print("new family required under current scope:", audit["new_family_required_under_current_scope"])
-    print("physical propagators:", audit["physical_propagator_count"])
-    print("physical SP rank:", audit["physical_scalar_product_rank"])
+    print("raw physical propagators:", audit["raw_physical_propagator_count"])
+    print("raw physical SP rank:", audit["raw_physical_scalar_product_rank"])
     print("physical rank deficiency:", audit["physical_rank_deficiency"])
+    print("duplicate physical groups:", audit["duplicate_physical_groups"])
+    print("raw physical -> unique mapping:", audit["raw_physical_to_unique_mapping"])
+    print("unique physical propagators:", audit["unique_physical_propagator_count"])
+    print("unique physical SP rank:", audit["unique_physical_scalar_product_rank"])
+    print("duplicate-only rank deficiency:", audit["duplicate_only_rank_deficiency"])
     print("selected auxiliary count:", audit["selected_auxiliary_count"])
     print("selected auxiliaries:", audit["auxiliary_names"])
-    print("generated denominator count:", audit["generated_denominator_count"])
-    print("generated SP rank:", f"{audit['generated_scalar_product_rank']}/12")
-    print("overcomplete generated set:", audit["overcomplete_generated_set"])
+    print("canonical denominator count:", audit["canonical_denominator_count"])
+    print("canonical SP rank:", f"{audit['canonical_scalar_product_rank']}/12")
     print("Kira ready:", audit["kira_ready"])
     print("requires partial fraction / family split:", audit["requires_partial_fraction_or_family_split"])
     for line in _relation_lines(audit):
@@ -92,8 +100,8 @@ def main() -> None:
             print("  reflection:", witness["reflection"])
             print("  loop transform:", witness["loop_momentum_transform"])
             print("  external transform:", witness["external_momentum_transform"])
-            print("  physical permutation:", witness["physical_propagator_permutation"])
-            print("  all generated denominators exact:", all(witness["propagator_exact_match"]))
+            print("  physical -> canonical:", witness["physical_to_canonical_mapping"])
+            print("  P1..P12 exact:", all(witness["propagator_exact_match"]))
     print("internal audit errors:", len(audit["errors"]))
     print("audit JSON:", OUTPUT_JSON)
     print("audit TXT:", OUTPUT_TXT)
