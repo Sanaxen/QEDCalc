@@ -291,3 +291,26 @@ canonical registry:
   Q01_full -> Q01, Q41
   Q02_full -> Q02, Q45
 ```
+
+## 2026-09-16 Q08 baseline master audit: PIPELINE CONTRACT FIXED; LOCAL RERUN PENDING
+
+The first user-local Q08/Q48 baseline run at seed `r7s3d0` reached sectorwise triangular reduction in about 116.2 s, but the finalize audit failed because no `masters.final` artifact existed.
+
+This failure must **not** be interpreted as a Q08 reduction failure or a bad canonical family. The prepare step had exported `run_back_substitution: false` while the finalize step explicitly required Kira's `masters.final`. The pipeline therefore stopped one stage earlier than its own audit contract required.
+
+The baseline prepare path now exports with back substitution enabled. Q08 runtime cleanup already removes stale `results`, `sectormappings`, `tmp`, `firefly_saves`, and `pyred` state before a fresh run, so the Q01 stale-FireFly lesson is preserved for Q08 as well.
+
+Current Q08 status:
+
+```text
+canonical family: Q08_full
+covered diagrams: Q08, Q48
+baseline seed: r7s3d0
+baseline master audit: rerun pending after back-substitution fix
+r+1 boundary r8s3d0: NOT YET VERIFIED
+s+1 boundary r7s4d0: NOT YET VERIFIED
+d+1 boundary r7s3d1: NOT YET VERIFIED
+master-basis stability: NOT YET CLAIMED
+```
+
+For the follow-up boundary work, prefer the proven Q01 strategy: use FireFly for the expensive boundary reductions where appropriate, clean stale FireFly save state before each run, and only promote a Q08 master basis after the baseline and all three one-axis boundary audits have been compared successfully.
