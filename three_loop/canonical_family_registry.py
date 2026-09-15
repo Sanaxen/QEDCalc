@@ -1,8 +1,7 @@
 """Executable canonical-family registry overlay.
 
-Quenched three-loop families are discovered and re-proven automatically from
-exact algebraic witnesses.  This removes the former Q02/Q03/... hard-coded
-promotion chain while preserving the dedicated stronger Q01 mapper checks.
+Quenched and VP1 three-loop families are discovered and re-proven automatically
+from exact algebraic witnesses. Q01 keeps its dedicated stronger mapper checks.
 """
 from __future__ import annotations
 
@@ -11,6 +10,7 @@ from typing import Any
 
 from three_loop.integral_family_classification import Q01_CANONICAL_PROPAGATORS
 from three_loop.quenched_family_autodiscovery import audit_quenched_family_autodiscovery
+from three_loop.vp1_family_autodiscovery import audit_vp1_family_autodiscovery
 
 Q01_MASTER_BASIS = "Q01_final60"
 Q01_CANONICAL_FAMILY = "Q01_full"
@@ -36,18 +36,13 @@ def _evidence(family_id: str, witness: dict[str, Any], mode: str) -> str:
     )
 
 
-def apply_confirmed_family_registry(rows: list[dict[str, Any]], audit: dict[str, Any]) -> list[str]:
-    """Overlay all automatically proven quenched canonical-family mappings."""
-    errors: list[str] = []
-    auto = audit_quenched_family_autodiscovery(rows)
-    if not auto.get("audit_pass"):
-        errors.extend(str(item) for item in auto.get("errors", []))
-        if not auto.get("errors"):
-            errors.append("quenched canonical-family autodiscovery failed")
-        audit["canonical_registry"] = {}
-        return errors
-
-    records = audit.get("records", [])
+def _apply_auto_records(
+    *,
+    auto: dict[str, Any],
+    records: list[dict[str, Any]],
+    errors: list[str],
+    q01_special: bool,
+) -> dict[str, Any]:
     record_by_id = {str(rec.get("diagram_id")): rec for rec in records}
     registry = auto.get("canonical_registry", {})
 
@@ -70,7 +65,7 @@ def apply_confirmed_family_registry(rows: list[dict[str, Any]], audit: dict[str,
             errors.append(f"{diagram_id}: missing autodiscovery witness")
             continue
 
-        if family_id == Q01_CANONICAL_FAMILY:
+        if q01_special and family_id == Q01_CANONICAL_FAMILY:
             if not all(witness.get("propagator_exact_match", [])):
                 errors.append(f"{diagram_id}: Q01 P1..P12 witness is not exact")
                 continue
@@ -122,24 +117,68 @@ def apply_confirmed_family_registry(rows: list[dict[str, Any]], audit: dict[str,
             update["physical_to_canonical_mapping"] = physical_mapping
         rec.update(update)
 
+    return registry
+
+
+def apply_confirmed_family_registry(rows: list[dict[str, Any]], audit: dict[str, Any]) -> list[str]:
+    """Overlay all automatically proven quenched and VP1 canonical-family mappings."""
+    errors: list[str] = []
+    records = audit.get("records", [])
+
+    quenched = audit_quenched_family_autodiscovery(rows)
+    if not quenched.get("audit_pass"):
+        errors.extend(str(item) for item in quenched.get("errors", []))
+        if not quenched.get("errors"):
+            errors.append("quenched canonical-family autodiscovery failed")
+        audit["canonical_registry"] = {}
+        return errors
+
+    vp1 = audit_vp1_family_autodiscovery(rows)
+    if not vp1.get("audit_pass"):
+        errors.extend(str(item) for item in vp1.get("errors", []))
+        if not vp1.get("errors"):
+            errors.append("VP1 canonical-family autodiscovery failed")
+        audit["canonical_registry"] = {}
+        return errors
+
+    quenched_registry = _apply_auto_records(
+        auto=quenched, records=records, errors=errors, q01_special=True
+    )
+    vp1_registry = _apply_auto_records(
+        auto=vp1, records=records, errors=errors, q01_special=False
+    )
+
     counts = Counter(str(rec.get("classification_status")) for rec in records)
     audit["classification_status_counts"] = dict(sorted(counts.items()))
     audit["confirmed_canonical_mapping_count"] = counts.get("confirmed", 0)
     audit["classification_complete"] = counts.get("confirmed", 0) == len(records)
 
     out_registry: dict[str, Any] = {}
-    for family_id in auto.get("family_order", []):
-        entry = dict(registry[family_id])
+    for family_id in quenched.get("family_order", []):
+        entry = dict(quenched_registry[family_id])
+        entry.pop("canonical_propagators", None)
+        out_registry[family_id] = entry
+    for family_id, raw in vp1_registry.items():
+        entry = dict(raw)
         entry.pop("canonical_propagators", None)
         out_registry[family_id] = entry
     audit["canonical_registry"] = out_registry
+
     audit["quenched_autodiscovery"] = {
-        "audit_pass": bool(auto.get("audit_pass")),
-        "transform_scope": auto.get("transform_scope"),
-        "quenched_diagram_count": auto.get("quenched_diagram_count"),
-        "confirmed_quenched_count": auto.get("confirmed_quenched_count"),
-        "unresolved_quenched_count": auto.get("unresolved_quenched_count"),
-        "canonical_family_count": auto.get("canonical_family_count"),
-        "family_order": list(auto.get("family_order", [])),
+        "audit_pass": bool(quenched.get("audit_pass")),
+        "transform_scope": quenched.get("transform_scope"),
+        "quenched_diagram_count": quenched.get("quenched_diagram_count"),
+        "confirmed_quenched_count": quenched.get("confirmed_quenched_count"),
+        "unresolved_quenched_count": quenched.get("unresolved_quenched_count"),
+        "canonical_family_count": quenched.get("canonical_family_count"),
+        "family_order": list(quenched.get("family_order", [])),
+    }
+    audit["vp1_autodiscovery"] = {
+        "audit_pass": bool(vp1.get("audit_pass")),
+        "transform_scope": vp1.get("transform_scope"),
+        "vp1_diagram_count": vp1.get("vp1_diagram_count"),
+        "confirmed_vp1_count": vp1.get("confirmed_vp1_count"),
+        "unresolved_vp1_count": vp1.get("unresolved_vp1_count"),
+        "canonical_family_count": vp1.get("canonical_family_count"),
     }
     return errors
