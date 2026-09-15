@@ -17,8 +17,9 @@ CONFIRMED_QUENCHED_IDS = {
     "Q02", "Q45",
     "Q03", "Q43",
     "Q04", "Q46",
+    "Q05", "Q42",
 }
-CONFIRMED_FAMILY_REPRESENTATIVES = ["Q01", "Q02", "Q03", "Q04"]
+CONFIRMED_FAMILY_REPRESENTATIVES = ["Q01", "Q02", "Q03", "Q04", "Q05"]
 
 
 def main() -> None:
