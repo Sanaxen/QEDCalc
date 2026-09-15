@@ -22,6 +22,7 @@ CONFIRMED_QUENCHED_IDS = {
     "Q07", "Q47",
     "Q08", "Q48",
     "Q09", "Q49",
+    "Q10", "Q50",
 }
 
 
