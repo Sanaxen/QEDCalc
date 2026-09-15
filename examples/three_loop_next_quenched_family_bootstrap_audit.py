@@ -10,6 +10,10 @@ OUTPUT_DIR = ROOT / "output" / "three_loop_integral_family_audit"
 OUTPUT_JSON = OUTPUT_DIR / "three_loop_next_quenched_family_bootstrap_audit.json"
 OUTPUT_TXT = OUTPUT_DIR / "three_loop_next_quenched_family_bootstrap_audit.txt"
 
+# Canonical-family members already confirmed by the executable global registry.
+# Keep this explicit until the bootstrap runner is wired directly to registry output.
+CONFIRMED_QUENCHED_IDS = {"Q01", "Q41", "Q02", "Q45"}
+
 
 def _relation_lines(audit: dict) -> list[str]:
     lines: list[str] = []
@@ -22,12 +26,13 @@ def _relation_lines(audit: dict) -> list[str]:
 
 def main() -> None:
     rows = load_topologies()
-    audit = audit_next_quenched_family(rows, {"Q01", "Q41"})
+    audit = audit_next_quenched_family(rows, CONFIRMED_QUENCHED_IDS)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     OUTPUT_JSON.write_text(json.dumps(audit, indent=2, ensure_ascii=False), encoding="utf-8")
 
     lines = [
         "QEDCalc next quenched family bootstrap audit",
+        f"confirmed quenched IDs skipped: {sorted(CONFIRMED_QUENCHED_IDS)}",
         f"representative: {audit['representative']}",
         f"family candidate: {audit['family_candidate_id']}",
         f"candidate IDs: {audit['candidate_ids']}",
@@ -72,6 +77,7 @@ def main() -> None:
     OUTPUT_TXT.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     print("QEDCalc next quenched family bootstrap audit")
+    print("confirmed quenched IDs skipped:", sorted(CONFIRMED_QUENCHED_IDS))
     print("representative:", audit["representative"])
     print("family candidate:", audit["family_candidate_id"])
     print("candidate IDs:", audit["candidate_ids"])
