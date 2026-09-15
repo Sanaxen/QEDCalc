@@ -24,6 +24,7 @@ Q04_CANONICAL_FAMILY = "Q04_full"
 Q05_CANONICAL_FAMILY = "Q05_full"
 Q06_CANONICAL_FAMILY = "Q06_full"
 Q07_CANONICAL_FAMILY = "Q07_full"
+Q08_CANONICAL_FAMILY = "Q08_full"
 
 
 def _q01_witness_text(witness: dict[str, Any]) -> str:
@@ -195,10 +196,7 @@ def apply_confirmed_family_registry(rows: list[dict[str, Any]], audit: dict[str,
     record_by_id = {str(rec.get("diagram_id")): rec for rec in records}
 
     q01 = _promote_q01(rows, record_by_id, errors)
-    q02 = _promote_bootstrap_family(
-        rows, record_by_id, errors,
-        {"Q01", "Q41"}, "Q02", Q02_CANONICAL_FAMILY, [[4, 6]],
-    )
+    q02 = _promote_bootstrap_family(rows, record_by_id, errors, {"Q01", "Q41"}, "Q02", Q02_CANONICAL_FAMILY, [[4, 6]])
     q03 = _promote_bootstrap_family(
         rows, record_by_id, errors,
         {"Q01", "Q02", "Q41", "Q45"}, "Q03", Q03_CANONICAL_FAMILY, [],
@@ -206,27 +204,29 @@ def apply_confirmed_family_registry(rows: list[dict[str, Any]], audit: dict[str,
     )
     q04 = _promote_bootstrap_family(
         rows, record_by_id, errors,
-        {"Q01", "Q02", "Q03", "Q41", "Q43", "Q45"},
-        "Q04", Q04_CANONICAL_FAMILY, [],
+        {"Q01", "Q02", "Q03", "Q41", "Q43", "Q45"}, "Q04", Q04_CANONICAL_FAMILY, [],
         reuse_representatives=["Q01", "Q02", "Q03"],
     )
     q05 = _promote_bootstrap_family(
         rows, record_by_id, errors,
-        {"Q01", "Q02", "Q03", "Q04", "Q41", "Q43", "Q45", "Q46"},
-        "Q05", Q05_CANONICAL_FAMILY, [[2, 4]],
+        {"Q01", "Q02", "Q03", "Q04", "Q41", "Q43", "Q45", "Q46"}, "Q05", Q05_CANONICAL_FAMILY, [[2, 4]],
         reuse_representatives=["Q01", "Q02", "Q03", "Q04"],
     )
     q06 = _promote_bootstrap_family(
         rows, record_by_id, errors,
-        {"Q01", "Q02", "Q03", "Q04", "Q05", "Q41", "Q42", "Q43", "Q45", "Q46"},
-        "Q06", Q06_CANONICAL_FAMILY, [],
+        {"Q01", "Q02", "Q03", "Q04", "Q05", "Q41", "Q42", "Q43", "Q45", "Q46"}, "Q06", Q06_CANONICAL_FAMILY, [],
         reuse_representatives=["Q01", "Q02", "Q03", "Q04", "Q05"],
     )
     q07 = _promote_bootstrap_family(
         rows, record_by_id, errors,
-        {"Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q41", "Q42", "Q43", "Q44", "Q45", "Q46"},
-        "Q07", Q07_CANONICAL_FAMILY, [[3, 5]],
+        {"Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q41", "Q42", "Q43", "Q44", "Q45", "Q46"}, "Q07", Q07_CANONICAL_FAMILY, [[3, 5]],
         reuse_representatives=["Q01", "Q02", "Q03", "Q04", "Q05", "Q06"],
+    )
+    q08 = _promote_bootstrap_family(
+        rows, record_by_id, errors,
+        {"Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07", "Q41", "Q42", "Q43", "Q44", "Q45", "Q46", "Q47"},
+        "Q08", Q08_CANONICAL_FAMILY, [[2, 4, 6]],
+        reuse_representatives=["Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07"],
     )
 
     counts = Counter(str(rec.get("classification_status")) for rec in records)
@@ -251,6 +251,7 @@ def apply_confirmed_family_registry(rows: list[dict[str, Any]], audit: dict[str,
         (Q05_CANONICAL_FAMILY, q05),
         (Q06_CANONICAL_FAMILY, q06),
         (Q07_CANONICAL_FAMILY, q07),
+        (Q08_CANONICAL_FAMILY, q08),
     ):
         if boot is None:
             continue
