@@ -182,3 +182,51 @@ For every diagram retain:
 ## Continuity rule
 
 At the start of a new chat/session, read this file before proposing the next step, then cross-check the branch and the newest user-provided local logs. Update this worklog after meaningful milestones, design changes, important failures/fixes, or likely session handoffs.
+
+## 2026-09-15 Q01 canonical-family promotion: COMPLETE / PASS
+
+The explicit Q01 denominator basis / routing evidence was committed and the global 72-diagram audit was rerun successfully.
+
+```text
+Q01 canonical family confirmed
+72図 audit:
+  candidate_only = 71
+  confirmed = 1
+  internal audit errors = 0
+  PASS
+```
+
+Q01 is now registered as canonical family `Q01_full` with the exact 12-propagator Kira basis, identity loop routing, the physical-sign/permutation relation to native QEDCalc denominators, and the exact native-ISP bridge. This closes the previous `pipeline_validated_mapping_incomplete` state for Q01.
+
+## 2026-09-15 Q01-family equivalence mapper / audit: IMPLEMENTED
+
+The next horizontal-family step has been implemented in:
+
+- `three_loop/q01_family_equivalence.py`
+- `examples/three_loop_q01_family_equivalence_audit.py`
+- `run_three_loop_q01_family_equivalence_audit.bat`
+
+The mapper takes only diagrams in Q01's structural candidate class and performs:
+
+```text
+diagram topology
+ -> reflection / signed loop-momentum relabel candidate generation
+ -> physical propagator bijection to Q01
+ -> exact SymPy equality against Q01 Kira P1..P12
+ -> sign / propagator permutation audit
+ -> exact ISP bridge audit
+ -> confirmed Q01_full reuse only if every check passes
+```
+
+Important: topology similarity alone never promotes a diagram. The open-line reflection also carries the external transformation `p -> p+q`, `q -> -q`; signed loop permutations are enumerated explicitly. The three Kira auxiliaries are pulled back through the candidate transformation and then checked against Q01 P10-P12, while the native ISP scalar products are checked independently.
+
+The Q01 structural skeleton has a reflected Q41 candidate. An independent algebra sanity check of that candidate gives the expected reflection map `k -> r`, `l -> l`, `r -> k`, `p -> p+q`, `q -> -q`, with the nine physical denominator permutation `[6,5,4,3,2,1,9,8,7]`; the committed BAT is the authoritative repository audit and should be run in the normal Windows `.venv` environment before the global classification registry is promoted beyond Q01.
+
+Next command:
+
+```powershell
+git pull
+.\run_three_loop_q01_family_equivalence_audit.bat
+```
+
+After that PASS output is available, register every mapper-confirmed non-Q01 diagram as `Q01_full` reuse in the 72-diagram global classification and rerun the global audit.
