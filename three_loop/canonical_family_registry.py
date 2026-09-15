@@ -1,262 +1,145 @@
-"""Executable registry overlay for proven three-loop canonical integral families.
+"""Executable canonical-family registry overlay.
 
-The structural classifier remains conservative. A diagram is promoted only
-from executable algebraic witnesses. Q01/Q41 are re-proven through the Q01
-family mapper. Later quenched families are re-proven from the generic bootstrap
-and, where required, an explicit existing-family reuse audit.
+Quenched three-loop families are discovered and re-proven automatically from
+exact algebraic witnesses.  This removes the former Q02/Q03/... hard-coded
+promotion chain while preserving the dedicated stronger Q01 mapper checks.
 """
 from __future__ import annotations
 
 from collections import Counter
 from typing import Any
 
-from examples.three_loop_q03_existing_family_reuse_audit import audit_q03_existing_family_reuse
-from three_loop.canonical_family_bootstrap import audit_next_quenched_family
-from three_loop.existing_family_reuse import audit_existing_family_reuse
 from three_loop.integral_family_classification import Q01_CANONICAL_PROPAGATORS
-from three_loop.q01_family_equivalence import audit_q01_family_equivalence
+from three_loop.quenched_family_autodiscovery import audit_quenched_family_autodiscovery
 
 Q01_MASTER_BASIS = "Q01_final60"
 Q01_CANONICAL_FAMILY = "Q01_full"
-Q02_CANONICAL_FAMILY = "Q02_full"
-Q03_CANONICAL_FAMILY = "Q03_full"
-Q04_CANONICAL_FAMILY = "Q04_full"
-Q05_CANONICAL_FAMILY = "Q05_full"
-Q06_CANONICAL_FAMILY = "Q06_full"
-Q07_CANONICAL_FAMILY = "Q07_full"
-Q08_CANONICAL_FAMILY = "Q08_full"
-Q09_CANONICAL_FAMILY = "Q09_full"
-Q10_CANONICAL_FAMILY = "Q10_full"
-Q11_CANONICAL_FAMILY = "Q11_full"
 
 
-def _q01_witness_text(witness: dict[str, Any]) -> str:
+def _evidence(family_id: str, witness: dict[str, Any], mode: str) -> str:
+    if family_id == Q01_CANONICAL_FAMILY:
+        return (
+            "Exact Q01-family mapper witness: "
+            f"reflection={witness['reflection']}; "
+            f"loops={witness['loop_momentum_transform']}; "
+            f"external={witness['external_momentum_transform']}; "
+            f"physical permutation={witness['physical_propagator_permutation']}; "
+            "P1..P12 exact and native ISP bridge exact."
+        )
     return (
-        "Exact Q01-family mapper witness: "
-        f"reflection={witness['reflection']}; "
-        f"loops={witness['loop_momentum_transform']}; "
-        f"external={witness['external_momentum_transform']}; "
-        f"physical permutation={witness['physical_propagator_permutation']}; "
-        "P1..P12 exact and native ISP bridge exact."
-    )
-
-
-def _generic_witness_text(family_id: str, witness: dict[str, Any]) -> str:
-    return (
-        f"Exact {family_id} witness: "
+        f"Exact autodiscovery witness ({mode}) for {family_id}: "
         f"reflection={witness['reflection']}; "
         f"loops={witness['loop_momentum_transform']}; "
         f"external={witness['external_momentum_transform']}; "
         f"physical->canonical={witness['physical_to_canonical_mapping']}; "
-        "all canonical P1..P12 exact."
+        "canonical P1..P12 exact."
     )
 
 
-def _promote_q01(rows: list[dict[str, Any]], record_by_id: dict[str, dict[str, Any]], errors: list[str]) -> dict[str, Any] | None:
-    eq = audit_q01_family_equivalence(rows)
-    if not eq.get("audit_pass"):
-        errors.extend(str(item) for item in eq.get("errors", []))
-        if not eq.get("errors"):
-            errors.append("Q01-family equivalence mapper did not pass")
-        return None
-
-    witness_by_id = {
-        str(rec["diagram_id"]): rec.get("witness")
-        for rec in eq.get("records", [])
-        if rec.get("status") == "confirmed" and rec.get("witness") is not None
-    }
-    for diagram_id in eq.get("confirmed_ids", []):
-        diagram_id = str(diagram_id)
-        witness = witness_by_id.get(diagram_id)
-        rec = record_by_id.get(diagram_id)
-        if witness is None or rec is None:
-            errors.append(f"{diagram_id}: missing Q01 registry witness or global record")
-            continue
-        if not all(witness.get("propagator_exact_match", [])):
-            errors.append(f"{diagram_id}: Q01 P1..P12 witness is not exact")
-            continue
-        if not all(witness.get("isp_bridge_exact_match", [])):
-            errors.append(f"{diagram_id}: Q01 ISP bridge witness is not exact")
-            continue
-        rec.update({
-            "classification_status": "confirmed",
-            "canonical_integral_family_id": Q01_CANONICAL_FAMILY,
-            "canonical_propagator_basis": list(Q01_CANONICAL_PROPAGATORS),
-            "loop_momentum_transform": dict(witness["loop_momentum_transform"]),
-            "external_momentum_transform": dict(witness["external_momentum_transform"]),
-            "sign_normalization_transform": (
-                "Exact denominator equality after the recorded reflection/momentum map; "
-                "Q01 Kira physical sign convention and ISP bridge are inherited unchanged."
-            ),
-            "symmetry_representative": "Q01",
-            "existing_kira_family_reusable": True,
-            "requires_new_auxiliary_basis": False,
-            "master_basis_id": Q01_MASTER_BASIS,
-            "canonical_equivalence_witness": witness,
-            "evidence": _q01_witness_text(witness),
-        })
-    return eq
-
-
-def _promote_bootstrap_family(
-    rows: list[dict[str, Any]],
-    record_by_id: dict[str, dict[str, Any]],
-    errors: list[str],
-    confirmed_ids: set[str],
-    expected_representative: str,
-    family_id: str,
-    expected_duplicates: list[list[int]],
-    reuse_representatives: list[str] | None = None,
-    q03_legacy_reuse_audit: bool = False,
-) -> dict[str, Any] | None:
-    boot = audit_next_quenched_family(rows, confirmed_ids)
-    if not boot.get("audit_pass"):
-        errors.extend(str(item) for item in boot.get("errors", []))
-        if not boot.get("errors"):
-            errors.append(f"{family_id} bootstrap audit did not pass")
-        return None
-    if boot.get("representative") != expected_representative or boot.get("family_candidate_id") != family_id:
-        errors.append(
-            f"unexpected canonical family bootstrap for {family_id}: "
-            f"{boot.get('representative')} / {boot.get('family_candidate_id')}"
-        )
-        return None
-    if not boot.get("kira_ready"):
-        errors.append(f"{family_id} bootstrap is not Kira-ready")
-        return None
-    if boot.get("requires_partial_fraction_or_family_split"):
-        errors.append(f"{family_id} unexpectedly requires partial fraction/family split")
-        return None
-    if boot.get("canonical_denominator_count") != 12 or boot.get("canonical_scalar_product_rank") != 12:
-        errors.append(
-            f"{family_id} canonical basis is not 12-entry full rank: "
-            f"count={boot.get('canonical_denominator_count')} rank={boot.get('canonical_scalar_product_rank')}"
-        )
-        return None
-    if boot.get("duplicate_physical_groups") != expected_duplicates:
-        errors.append(
-            f"{family_id} duplicate physical structure changed: "
-            f"{boot.get('duplicate_physical_groups')}"
-        )
-        return None
-
-    if q03_legacy_reuse_audit:
-        reuse = audit_q03_existing_family_reuse(rows)
-        if not reuse.get("audit_pass") or not reuse.get("new_family_required_under_current_scope"):
-            errors.extend(str(item) for item in reuse.get("errors", []))
-            if not reuse.get("errors"):
-                errors.append(f"{family_id} existing-family reuse audit did not prove a new family")
-            return None
-    elif reuse_representatives:
-        reuse = audit_existing_family_reuse(
-            rows,
-            list(boot.get("candidate_ids", [])),
-            reuse_representatives,
-        )
-        if not reuse.get("audit_pass") or not reuse.get("new_family_required_under_current_scope"):
-            errors.extend(str(item) for item in reuse.get("errors", []))
-            if not reuse.get("errors"):
-                errors.append(f"{family_id} existing-family reuse audit did not prove a new family")
-            return None
-
-    for item in boot.get("records", []):
-        if item.get("status") != "confirmed_algebraic_equivalence":
-            continue
-        diagram_id = str(item["diagram_id"])
-        witness = item.get("witness")
-        rec = record_by_id.get(diagram_id)
-        if witness is None or rec is None:
-            errors.append(f"{diagram_id}: missing {family_id} registry witness or global record")
-            continue
-        if not all(witness.get("propagator_exact_match", [])):
-            errors.append(f"{diagram_id}: {family_id} P1..P12 witness is not exact")
-            continue
-        rec.update({
-            "classification_status": "confirmed",
-            "canonical_integral_family_id": family_id,
-            "canonical_propagator_basis": list(boot["canonical_propagators"]),
-            "loop_momentum_transform": dict(witness["loop_momentum_transform"]),
-            "external_momentum_transform": dict(witness["external_momentum_transform"]),
-            "physical_to_canonical_mapping": list(witness["physical_to_canonical_mapping"]),
-            "sign_normalization_transform": (
-                "Topology physical denominators map exactly to the canonical basis; "
-                "duplicate physical powers are aggregated only when the recorded mapping repeats an index."
-            ),
-            "symmetry_representative": expected_representative,
-            "existing_kira_family_reusable": True,
-            "requires_new_auxiliary_basis": True,
-            "master_basis_id": None,
-            "canonical_equivalence_witness": witness,
-            "evidence": _generic_witness_text(family_id, witness),
-        })
-    return boot
-
-
 def apply_confirmed_family_registry(rows: list[dict[str, Any]], audit: dict[str, Any]) -> list[str]:
-    """Promote executable, algebraically proven canonical-family mappings."""
+    """Overlay all automatically proven quenched canonical-family mappings."""
     errors: list[str] = []
+    auto = audit_quenched_family_autodiscovery(rows)
+    if not auto.get("audit_pass"):
+        errors.extend(str(item) for item in auto.get("errors", []))
+        if not auto.get("errors"):
+            errors.append("quenched canonical-family autodiscovery failed")
+        audit["canonical_registry"] = {}
+        return errors
+
     records = audit.get("records", [])
     record_by_id = {str(rec.get("diagram_id")): rec for rec in records}
+    registry = auto.get("canonical_registry", {})
 
-    q01 = _promote_q01(rows, record_by_id, errors)
-    q02 = _promote_bootstrap_family(rows, record_by_id, errors, {"Q01", "Q41"}, "Q02", Q02_CANONICAL_FAMILY, [[4, 6]])
-    q03 = _promote_bootstrap_family(rows, record_by_id, errors, {"Q01", "Q02", "Q41", "Q45"}, "Q03", Q03_CANONICAL_FAMILY, [], q03_legacy_reuse_audit=True)
-    q04 = _promote_bootstrap_family(rows, record_by_id, errors, {"Q01", "Q02", "Q03", "Q41", "Q43", "Q45"}, "Q04", Q04_CANONICAL_FAMILY, [], reuse_representatives=["Q01", "Q02", "Q03"])
-    q05 = _promote_bootstrap_family(rows, record_by_id, errors, {"Q01", "Q02", "Q03", "Q04", "Q41", "Q43", "Q45", "Q46"}, "Q05", Q05_CANONICAL_FAMILY, [[2, 4]], reuse_representatives=["Q01", "Q02", "Q03", "Q04"])
-    q06 = _promote_bootstrap_family(rows, record_by_id, errors, {"Q01", "Q02", "Q03", "Q04", "Q05", "Q41", "Q42", "Q43", "Q45", "Q46"}, "Q06", Q06_CANONICAL_FAMILY, [], reuse_representatives=["Q01", "Q02", "Q03", "Q04", "Q05"])
-    q07 = _promote_bootstrap_family(rows, record_by_id, errors, {"Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q41", "Q42", "Q43", "Q44", "Q45", "Q46"}, "Q07", Q07_CANONICAL_FAMILY, [[3, 5]], reuse_representatives=["Q01", "Q02", "Q03", "Q04", "Q05", "Q06"])
-    q08 = _promote_bootstrap_family(rows, record_by_id, errors, {"Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07", "Q41", "Q42", "Q43", "Q44", "Q45", "Q46", "Q47"}, "Q08", Q08_CANONICAL_FAMILY, [[2, 4, 6]], reuse_representatives=["Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07"])
-    q09 = _promote_bootstrap_family(rows, record_by_id, errors, {"Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07", "Q08", "Q41", "Q42", "Q43", "Q44", "Q45", "Q46", "Q47", "Q48"}, "Q09", Q09_CANONICAL_FAMILY, [[2, 6]], reuse_representatives=["Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07", "Q08"])
-    q10 = _promote_bootstrap_family(rows, record_by_id, errors, {"Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07", "Q08", "Q09", "Q41", "Q42", "Q43", "Q44", "Q45", "Q46", "Q47", "Q48", "Q49"}, "Q10", Q10_CANONICAL_FAMILY, [[2, 6], [3, 5]], reuse_representatives=["Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07", "Q08", "Q09"])
-    q11 = _promote_bootstrap_family(rows, record_by_id, errors, {"Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07", "Q08", "Q09", "Q10", "Q41", "Q42", "Q43", "Q44", "Q45", "Q46", "Q47", "Q48", "Q49", "Q50"}, "Q11", Q11_CANONICAL_FAMILY, [], reuse_representatives=["Q01", "Q02", "Q03", "Q04", "Q05", "Q06", "Q07", "Q08", "Q09", "Q10"])
+    for auto_rec in auto.get("records", []):
+        diagram_id = str(auto_rec.get("diagram_id"))
+        family_id = str(auto_rec.get("canonical_integral_family_id"))
+        representative = str(auto_rec.get("representative"))
+        mode = str(auto_rec.get("promotion_mode"))
+        witness = auto_rec.get("witness")
+        rec = record_by_id.get(diagram_id)
+        family = registry.get(family_id)
+
+        if rec is None:
+            errors.append(f"{diagram_id}: missing global classification record")
+            continue
+        if family is None:
+            errors.append(f"{diagram_id}: missing autodiscovery registry family {family_id}")
+            continue
+        if witness is None:
+            errors.append(f"{diagram_id}: missing autodiscovery witness")
+            continue
+
+        if family_id == Q01_CANONICAL_FAMILY:
+            if not all(witness.get("propagator_exact_match", [])):
+                errors.append(f"{diagram_id}: Q01 P1..P12 witness is not exact")
+                continue
+            if not all(witness.get("isp_bridge_exact_match", [])):
+                errors.append(f"{diagram_id}: Q01 ISP bridge witness is not exact")
+                continue
+            canonical_basis = list(Q01_CANONICAL_PROPAGATORS)
+            physical_mapping = None
+            requires_new_aux = False
+            master_basis = Q01_MASTER_BASIS
+            sign_text = (
+                "Exact denominator equality after the recorded reflection/momentum map; "
+                "Q01 Kira physical sign convention and ISP bridge are inherited unchanged."
+            )
+        else:
+            exact = witness.get("propagator_exact_match", [])
+            if not exact or not all(exact):
+                errors.append(f"{diagram_id}: {family_id} P1..P12 witness is not exact")
+                continue
+            canonical_basis = list(family.get("canonical_propagators", []))
+            if len(canonical_basis) != 12:
+                errors.append(
+                    f"{diagram_id}: {family_id} canonical basis has {len(canonical_basis)} entries, expected 12"
+                )
+                continue
+            physical_mapping = list(witness["physical_to_canonical_mapping"])
+            requires_new_aux = True
+            master_basis = None
+            sign_text = (
+                "Topology physical denominators map exactly to the canonical basis; "
+                "duplicate physical powers are aggregated when the recorded mapping repeats an index."
+            )
+
+        update = {
+            "classification_status": "confirmed",
+            "canonical_integral_family_id": family_id,
+            "canonical_propagator_basis": canonical_basis,
+            "loop_momentum_transform": dict(witness["loop_momentum_transform"]),
+            "external_momentum_transform": dict(witness["external_momentum_transform"]),
+            "sign_normalization_transform": sign_text,
+            "symmetry_representative": representative,
+            "existing_kira_family_reusable": True,
+            "requires_new_auxiliary_basis": requires_new_aux,
+            "master_basis_id": master_basis,
+            "canonical_equivalence_witness": witness,
+            "evidence": _evidence(family_id, witness, mode),
+        }
+        if physical_mapping is not None:
+            update["physical_to_canonical_mapping"] = physical_mapping
+        rec.update(update)
 
     counts = Counter(str(rec.get("classification_status")) for rec in records)
     audit["classification_status_counts"] = dict(sorted(counts.items()))
     audit["confirmed_canonical_mapping_count"] = counts.get("confirmed", 0)
     audit["classification_complete"] = counts.get("confirmed", 0) == len(records)
 
-    registry: dict[str, Any] = {}
-    if q01 is not None:
-        registry[Q01_CANONICAL_FAMILY] = {
-            "representative": "Q01",
-            "confirmed_diagrams": list(q01.get("confirmed_ids", [])),
-            "candidate_diagrams": list(q01.get("candidate_ids", [])),
-            "master_basis_id": Q01_MASTER_BASIS,
-            "kira_reusable": True,
-            "equivalence_audit_pass": True,
-        }
-    for family_id, boot in (
-        (Q02_CANONICAL_FAMILY, q02),
-        (Q03_CANONICAL_FAMILY, q03),
-        (Q04_CANONICAL_FAMILY, q04),
-        (Q05_CANONICAL_FAMILY, q05),
-        (Q06_CANONICAL_FAMILY, q06),
-        (Q07_CANONICAL_FAMILY, q07),
-        (Q08_CANONICAL_FAMILY, q08),
-        (Q09_CANONICAL_FAMILY, q09),
-        (Q10_CANONICAL_FAMILY, q10),
-        (Q11_CANONICAL_FAMILY, q11),
-    ):
-        if boot is None:
-            continue
-        confirmed = [
-            str(rec["diagram_id"])
-            for rec in boot.get("records", [])
-            if rec.get("status") == "confirmed_algebraic_equivalence"
-        ]
-        registry[family_id] = {
-            "representative": str(boot.get("representative")),
-            "confirmed_diagrams": confirmed,
-            "candidate_diagrams": list(boot.get("candidate_ids", [])),
-            "master_basis_id": None,
-            "kira_reusable": True,
-            "kira_ready": bool(boot.get("kira_ready")),
-            "duplicate_physical_groups": boot.get("duplicate_physical_groups"),
-            "raw_physical_to_unique_mapping": boot.get("raw_physical_to_unique_mapping"),
-            "auxiliary_names": boot.get("auxiliary_names"),
-            "canonical_denominator_count": boot.get("canonical_denominator_count"),
-            "canonical_scalar_product_rank": boot.get("canonical_scalar_product_rank"),
-            "equivalence_audit_pass": bool(boot.get("audit_pass")),
-        }
-    audit["canonical_registry"] = registry
+    out_registry: dict[str, Any] = {}
+    for family_id in auto.get("family_order", []):
+        entry = dict(registry[family_id])
+        entry.pop("canonical_propagators", None)
+        out_registry[family_id] = entry
+    audit["canonical_registry"] = out_registry
+    audit["quenched_autodiscovery"] = {
+        "audit_pass": bool(auto.get("audit_pass")),
+        "transform_scope": auto.get("transform_scope"),
+        "quenched_diagram_count": auto.get("quenched_diagram_count"),
+        "confirmed_quenched_count": auto.get("confirmed_quenched_count"),
+        "unresolved_quenched_count": auto.get("unresolved_quenched_count"),
+        "canonical_family_count": auto.get("canonical_family_count"),
+        "family_order": list(auto.get("family_order", [])),
+    }
     return errors
