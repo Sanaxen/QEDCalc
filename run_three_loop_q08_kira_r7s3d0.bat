@@ -21,7 +21,7 @@ if not defined WSL_PROJECT (
 echo QEDCalc Q08 r7s3d0 Kira run
 echo WSL project: %WSL_PROJECT%
 
-wsl bash -lc "set -o pipefail; command -v kira >/dev/null 2>&1 || { echo 'ERROR: kira not found in WSL PATH'; exit 127; }; cd '%WSL_PROJECT%' || exit 2; kira jobs.yaml 2>&1 | tee kira_r7s3d0.log"
+wsl bash -lc "set -o pipefail; command -v kira >/dev/null 2>&1 || { echo 'ERROR: kira not found in WSL PATH'; exit 127; }; export FERMATPATH=$HOME/fermat/Ferl7/fer64; [ -x \"$FERMATPATH\" ] || { echo \"ERROR: Fermat executable not found or not executable: $FERMATPATH\"; exit 126; }; echo \"FERMATPATH=$FERMATPATH\"; cd '%WSL_PROJECT%' || exit 2; kira jobs.yaml 2>&1 | tee kira_r7s3d0.log"
 set "KIRA_ERR=%ERRORLEVEL%"
 if not "%KIRA_ERR%"=="0" (
   echo ERROR: Kira exited with code %KIRA_ERR%.
