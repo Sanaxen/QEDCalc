@@ -11,8 +11,14 @@ OUTPUT_DIR = ROOT / "output" / "three_loop_integral_family_audit"
 OUTPUT_JSON = OUTPUT_DIR / "three_loop_next_existing_family_reuse_audit.json"
 OUTPUT_TXT = OUTPUT_DIR / "three_loop_next_existing_family_reuse_audit.txt"
 
-CONFIRMED_QUENCHED_IDS = {"Q01", "Q41", "Q02", "Q45", "Q03", "Q43"}
-CONFIRMED_FAMILY_REPRESENTATIVES = ["Q01", "Q02", "Q03"]
+# Canonical-family members already confirmed by the executable global registry.
+CONFIRMED_QUENCHED_IDS = {
+    "Q01", "Q41",
+    "Q02", "Q45",
+    "Q03", "Q43",
+    "Q04", "Q46",
+}
+CONFIRMED_FAMILY_REPRESENTATIVES = ["Q01", "Q02", "Q03", "Q04"]
 
 
 def main() -> None:
