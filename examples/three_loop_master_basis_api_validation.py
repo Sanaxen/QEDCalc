@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 
 from three_loop.integral_family_classification import ROOT, load_topologies
+import three_loop.master_basis_api as master_basis_api
 from three_loop.master_basis_api import (
     Seed,
     build_family_spec,
@@ -39,6 +40,16 @@ def main() -> None:
     errors: list[str] = []
     dedicated_rows: list[dict[str, object]] = []
 
+    # The exact 72-diagram canonical registry is relatively expensive to build.
+    # Build it once for this validation process and reuse the immutable snapshot
+    # for every FamilySpec instead of repeating autodiscovery ~50 times.
+    print("QEDCalc reusable master-basis API validation", flush=True)
+    print("building canonical registry once ...", flush=True)
+    cached_registry = master_basis_api._global_registry()
+    master_basis_api._global_registry = lambda: cached_registry
+    print("canonical registry ready", flush=True)
+
+    print("validating known reference families ...", flush=True)
     q02 = build_family_spec("Q02_full")
     q05 = build_family_spec("Q05_full")
     q08 = build_family_spec("Q08_full")
@@ -106,7 +117,15 @@ def main() -> None:
             }
         )
         errors.extend(f"{spec.family_id}: {item}" for item in local_errors)
+        print(
+            f"dedicated regression {spec.family_id}: "
+            f"{'PASS' if not local_errors else 'FAIL'}",
+            flush=True,
+        )
 
+    # The schedule itself is separately audited elsewhere; it is used here only
+    # to obtain the canonical 45-family execution order.
+    print("building master-basis schedule ...", flush=True)
     schedule = build_master_basis_schedule(load_topologies())
     family_ids = [
         str(item["canonical_family_id"])
@@ -115,8 +134,10 @@ def main() -> None:
     if len(family_ids) != 45:
         errors.append(f"expected 45 canonical families, found {len(family_ids)}")
 
+    print(f"validating all canonical FamilySpec objects: {len(family_ids)} families", flush=True)
     all_family_rows: list[dict[str, object]] = []
-    for family_id in family_ids:
+    for index, family_id in enumerate(family_ids, start=1):
+        print(f"  [{index:02d}/{len(family_ids):02d}] {family_id} ...", end="", flush=True)
         local_errors: list[str] = []
         try:
             spec = build_family_spec(family_id)
@@ -150,10 +171,12 @@ def main() -> None:
                 {"family": family_id, "pass": False, "errors": local_errors}
             )
         errors.extend(f"{family_id}: {item}" for item in local_errors)
+        print(" PASS" if not local_errors else " FAIL", flush=True)
 
     audit = {
-        "schema_version": 2,
+        "schema_version": 3,
         "api": "three_loop.master_basis_api",
+        "registry_reused_within_validation": True,
         "known_completed_master_bases": expected_master_ids,
         "dedicated_backend_regressions": dedicated_rows,
         "all_family_spec_count": len(all_family_rows),
