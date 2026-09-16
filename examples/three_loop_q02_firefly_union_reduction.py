@@ -4,6 +4,10 @@ The target list is produced by three_loop_q02_firefly_master_union_audit.py.
 This stage asks Kira to reduce all candidates from the four tested seed master
 sets together, so a single final basis can be selected without assuming that
 one seed's masters must literally survive in another seed's masters.final.
+
+The reduction seed envelope is derived from the union targets themselves.
+This is important because masters returned by a boundary solve can carry dots
+beyond the nominal one-axis seed extension that produced them.
 """
 from __future__ import annotations
 
@@ -24,7 +28,7 @@ AUDIT_JSON = AUDIT_DIR / "three_loop_q02_firefly_master_union_reduction_audit.js
 AUDIT_TXT = AUDIT_DIR / "three_loop_q02_firefly_master_union_reduction_audit.txt"
 MASTER_COPY = AUDIT_DIR / "q02_firefly_master_union_masters.txt"
 PATTERN = re.compile(r"Q02_full\s*\[[^\]]+\]")
-R_BOUND, S_BOUND, D_BOUND = 9, 4, 1
+MIN_R_BOUND, MIN_S_BOUND, MIN_D_BOUND = 9, 4, 1
 
 
 def _targets() -> list[str]:
@@ -60,11 +64,25 @@ def _bounds(values: tuple[int, ...]) -> tuple[int, int, int]:
     return r, s, d
 
 
-def _render_jobs() -> str:
+def _required_envelope(targets: list[str]) -> tuple[int, int, int]:
+    measured = [_bounds(_indices(item)) for item in targets]
+    max_r = max(r for r, _, _ in measured)
+    max_s = max(s for _, s, _ in measured)
+    max_d = max(d for _, _, d in measured)
+    # Preserve the intended combined one-axis test scope as a floor while
+    # automatically enlarging it when an actual union target requires more.
+    return (
+        max(MIN_R_BOUND, max_r),
+        max(MIN_S_BOUND, max_s),
+        max(MIN_D_BOUND, max_d),
+    )
+
+
+def _render_jobs(r_bound: int, s_bound: int, d_bound: int) -> str:
     return f"""jobs:
   - reduce_sectors:
       reduce:
-        - {{topologies: [Q02_full], sectors: [255], r: {R_BOUND}, s: {S_BOUND}, d: {D_BOUND}}}
+        - {{topologies: [Q02_full], sectors: [255], r: {r_bound}, s: {s_bound}, d: {d_bound}}}
       select_integrals:
         select_mandatory_list:
           - [Q02_full,{PROJECT_TARGET_FILE.name}]
@@ -90,28 +108,56 @@ def _clean() -> None:
 
 def prepare() -> None:
     targets = _targets()
+    r_bound, s_bound, d_bound = _required_envelope(targets)
+
+    # The dynamically derived envelope must contain every mandatory target.
     violating: list[tuple[str, int, int, int]] = []
     for item in targets:
         r, s, d = _bounds(_indices(item))
-        if r > R_BOUND or s > S_BOUND or d > D_BOUND:
+        if r > r_bound or s > s_bound or d > d_bound:
             violating.append((item, r, s, d))
     if violating:
         item, r, s, d = violating[0]
         raise SystemExit(
-            "ERROR: union target lies outside r9s4d1 envelope: "
-            f"{item} has r={r} s={s} d={d}"
+            "ERROR: union target lies outside automatically derived envelope: "
+            f"{item} has r={r} s={s} d={d}; "
+            f"envelope is r={r_bound} s={s_bound} d={d_bound}"
         )
 
     PROJECT.mkdir(parents=True, exist_ok=True)
     _clean()
-    export_q02_kira_project(PROJECT, limits=Q02SeedLimits(R_BOUND, S_BOUND, D_BOUND), back_substitution=False)
+    export_q02_kira_project(
+        PROJECT,
+        limits=Q02SeedLimits(r_bound, s_bound, d_bound),
+        back_substitution=False,
+    )
     PROJECT_TARGET_FILE.write_text("\n".join(targets) + "\n", encoding="utf-8", newline="\n")
-    (PROJECT / "jobs.yaml").write_text(_render_jobs(), encoding="utf-8", newline="\n")
+    (PROJECT / "jobs.yaml").write_text(
+        _render_jobs(r_bound, s_bound, d_bound), encoding="utf-8", newline="\n"
+    )
+    envelope_path = PROJECT / "q02_firefly_master_union_envelope.json"
+    envelope_path.write_text(
+        json.dumps(
+            {
+                "mandatory_union_target_count": len(targets),
+                "minimum_requested_envelope": {
+                    "r": MIN_R_BOUND,
+                    "s": MIN_S_BOUND,
+                    "d": MIN_D_BOUND,
+                },
+                "derived_envelope": {"r": r_bound, "s": s_bound, "d": d_bound},
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
     print("QEDCalc Q02 FireFly mandatory-union reduction prepare")
     print(f"union mandatory targets: {len(targets)}")
-    print("envelope seed bounds: r9s4d1")
+    print(f"derived envelope seed bounds: r{r_bound}s{s_bound}d{d_bound}")
     print(f"project: {PROJECT}")
     print(f"project target file: {PROJECT_TARGET_FILE}")
+    print(f"envelope manifest: {envelope_path}")
     print("solver: FireFly")
     print("QEDCalc Q02 FireFly mandatory-union reduction prepare PASS")
 
@@ -127,8 +173,18 @@ def _parse(path: Path) -> list[str]:
     return out
 
 
+def _load_saved_envelope() -> tuple[int, int, int]:
+    path = PROJECT / "q02_firefly_master_union_envelope.json"
+    if not path.is_file():
+        raise FileNotFoundError(f"union envelope manifest not found: {path}")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    env = data.get("derived_envelope") or {}
+    return int(env["r"]), int(env["s"]), int(env["d"])
+
+
 def finalize() -> None:
     targets = _targets()
+    r_bound, s_bound, d_bound = _load_saved_envelope()
     candidates = sorted(PROJECT.rglob("masters.final"), key=lambda p: str(p))
     errors: list[str] = []
     if len(candidates) != 1:
@@ -146,7 +202,7 @@ def finalize() -> None:
         "canonical_family": Q02_KIRA_NAME,
         "solver_backend": "firefly",
         "top_sector": Q02_KIRA_TOP_SECTOR,
-        "envelope_seed": {"r": R_BOUND, "s": S_BOUND, "d": D_BOUND},
+        "envelope_seed": {"r": r_bound, "s": s_bound, "d": d_bound},
         "mandatory_union_target_count": len(targets),
         "masters_final": str(masters_path) if masters_path else None,
         "master_count": len(masters),
@@ -159,7 +215,7 @@ def finalize() -> None:
     lines = [
         "QEDCalc Q02 FireFly mandatory-union reduction audit",
         f"mandatory union targets: {len(targets)}",
-        "envelope seed: r9s4d1",
+        f"envelope seed: r{r_bound}s{s_bound}d{d_bound}",
         f"masters.final: {result['masters_final']}",
         f"master count: {len(masters)}",
         f"internal audit errors: {len(errors)}",
