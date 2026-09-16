@@ -11,7 +11,7 @@ This module centralizes the routine parts of the 45-family master-basis stage:
 - compare master sets and construct their union/intersection;
 - derive the minimum seed envelope required by an explicit target set.
 
-The API deliberately does not launch WSL/Kira itself.  Windows/WSL execution
+The API deliberately does not launch WSL/Kira itself. Windows/WSL execution
 remains in the thin BAT/CLI layer so long calculations are restartable and easy
 to inspect.
 """
@@ -92,7 +92,19 @@ class FamilySpec:
         return out
 
 
+def _normalize_vector_sign(momentum: dict[str, sp.Expr]) -> dict[str, sp.Expr]:
+    for name in ("k", "l", "r"):
+        value = sp.expand(momentum.get(name, 0))
+        if value == 0:
+            continue
+        if value.could_extract_minus_sign():
+            return {key: sp.expand(-val) for key, val in momentum.items()}
+        break
+    return {key: sp.expand(val) for key, val in momentum.items()}
+
+
 def _vector_to_kira(momentum: dict[str, sp.Expr]) -> str:
+    momentum = _normalize_vector_sign(momentum)
     order = ("k", "l", "r", "p", "q")
     terms: list[str] = []
     for name in order:
@@ -123,8 +135,6 @@ def _aux_name_to_momentum(name: str) -> str:
 
 
 def _baseline_seed(unique_physical_count: int) -> Seed:
-    # Current proven convention: start at the physical top-sector line count,
-    # with enough numerator allowance to expose nontrivial masters.
     return Seed(r=unique_physical_count, s=3, d=0)
 
 
@@ -154,9 +164,6 @@ def build_family_spec(family_id: str) -> FamilySpec:
     unique_exprs, raw_to_unique, duplicate_groups = deduplicate_exact_denominators(raw_exprs)
     aux_names, _, _ = complete_with_quadratic_auxiliaries(unique_exprs)
 
-    # Reconstruct the Kira momentum/mass pairs in the same order as the exact
-    # denominator construction: open-line electron segments first, then unique
-    # photon lines, then the selected quadratic auxiliaries.
     raw_pairs: list[PropagatorSpec] = []
     for vec in _electron_momenta(row):
         raw_pairs.append(PropagatorSpec(_vector_to_kira(vec), "m2"))
@@ -205,7 +212,8 @@ def render_integralfamilies_yaml(spec: FamilySpec) -> str:
         "    propagators:",
     ]
     for prop in spec.propagators:
-        lines.append(f'      - ["{prop.momentum}", {json.dumps(prop.mass)}]')
+        mass = "0" if prop.mass == "0" else json.dumps(prop.mass)
+        lines.append(f'      - ["{prop.momentum}", {mass}]')
     return "\n".join(lines) + "\n"
 
 
@@ -381,8 +389,6 @@ def compare_master_sets(named_sets: dict[str, Iterable[str]]) -> dict[str, Any]:
 
 
 def integral_complexity(indices: Sequence[int]) -> Seed:
-    # Kira's r is the sum of positive powers, s the absolute sum of negative
-    # powers, and d the total excess power above one on positive denominators.
     r = sum(max(int(a), 0) for a in indices)
     s = sum(max(-int(a), 0) for a in indices)
     d = sum(max(int(a) - 1, 0) for a in indices)
