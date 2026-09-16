@@ -13,6 +13,7 @@ EXPECTED_FAMILY_COUNT = 45
 EXPECTED_COMPLETE = {
     "Q01_full": "Q01_final60",
     "Q08_full": "Q08_final12",
+    "Q10_full": "Q10_final13",
 }
 
 
@@ -51,11 +52,16 @@ def main() -> None:
                 f"{family_id}: master_basis_id={item.get('master_basis_id')}, expected={master_basis_id}"
             )
 
-    q08 = completed.get("Q08_full")
-    if q08 is not None and q08.get("confirmed_diagrams") != ["Q08", "Q48"]:
-        errors.append(
-            f"Q08_full diagrams={q08.get('confirmed_diagrams')}, expected=['Q08', 'Q48']"
-        )
+    expected_diagrams = {
+        "Q08_full": ["Q08", "Q48"],
+        "Q10_full": ["Q10", "Q50"],
+    }
+    for family_id, diagrams in expected_diagrams.items():
+        item = completed.get(family_id)
+        if item is not None and item.get("confirmed_diagrams") != diagrams:
+            errors.append(
+                f"{family_id} diagrams={item.get('confirmed_diagrams')}, expected={diagrams}"
+            )
 
     schedule = list(audit.get("schedule", []))
     next_pending = schedule[0] if schedule else None
