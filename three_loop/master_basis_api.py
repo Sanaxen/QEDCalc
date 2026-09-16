@@ -37,7 +37,7 @@ from three_loop.integral_family_classification import (
     load_topologies,
     validate_global_audit,
 )
-from three_loop.q01_family_equivalence import _electron_momenta
+from three_loop.q01_family_equivalence import _electron_momenta, _vec
 
 
 @dataclass(frozen=True, order=True)
@@ -73,6 +73,7 @@ class FamilySpec:
     family_id: str
     representative: str
     diagrams: tuple[str, ...]
+    topology_family: str
     propagators: tuple[PropagatorSpec, ...]
     top_sector: int
     unique_physical_count: int
@@ -150,6 +151,71 @@ def _global_registry() -> tuple[list[dict[str, Any]], dict[str, Any]]:
     return rows, audit
 
 
+def _raw_specs_and_auxiliaries(
+    row: dict[str, Any],
+) -> tuple[list[tuple[bool, dict[str, sp.Expr]]], list[sp.Expr], list[str]]:
+    """Return raw physical specs/expressions and selected auxiliary names.
+
+    The existing autodiscovery modules remain the source of truth for the
+    non-quenched denominator formulae. This keeps stage-2 Kira generation
+    algebraically aligned with the already-proven canonical registry.
+    """
+    topology = str(row.get("family"))
+    representative = str(row.get("id"))
+
+    if topology == "quenched":
+        specs: list[tuple[bool, dict[str, sp.Expr]]] = []
+        for vec in _electron_momenta(row):
+            specs.append((True, vec))
+        for edge in row.get("photon_edges", []):
+            specs.append((False, _vec(**{str(edge["label"]): 1})))
+        raw_exprs = topology_physical_denominators(row)
+        unique, _, _ = deduplicate_exact_denominators(raw_exprs)
+        aux_names, _, _ = complete_with_quadratic_auxiliaries(unique)
+        return specs, raw_exprs, aux_names
+
+    if topology == "vp1_insert":
+        from three_loop.vp1_family_autodiscovery import (
+            _complete_vp1_auxiliaries,
+            _vp1_denominator_specs,
+            vp1_physical_denominators,
+        )
+
+        specs = list(_vp1_denominator_specs(row))
+        raw_exprs = vp1_physical_denominators(row)
+        unique, _, _ = deduplicate_exact_denominators(raw_exprs)
+        aux_names, _, _ = _complete_vp1_auxiliaries(unique)
+        return specs, raw_exprs, aux_names
+
+    if topology in {"vp2_insert", "vp1_double"}:
+        from three_loop.vp2_double_family_autodiscovery import (
+            _complete_auxiliaries,
+            _formula_denominator_specs,
+            physical_denominators,
+        )
+
+        specs = list(_formula_denominator_specs(representative))
+        raw_exprs = physical_denominators(representative)
+        unique, _, _ = deduplicate_exact_denominators(raw_exprs)
+        aux_names, _, _ = _complete_auxiliaries(unique)
+        return specs, raw_exprs, aux_names
+
+    if topology == "external_lbl":
+        from three_loop.lbl_family_autodiscovery import (
+            _formula_denominator_specs,
+            physical_denominators,
+        )
+        from three_loop.vp1_family_autodiscovery import _complete_vp1_auxiliaries
+
+        specs = list(_formula_denominator_specs(representative))
+        raw_exprs = physical_denominators(representative)
+        unique, _, _ = deduplicate_exact_denominators(raw_exprs)
+        aux_names, _, _ = _complete_vp1_auxiliaries(unique)
+        return specs, raw_exprs, aux_names
+
+    raise ValueError(f"{representative}: unsupported topology family {topology!r}")
+
+
 def build_family_spec(family_id: str) -> FamilySpec:
     """Build a Kira-ready family spec from the exact canonical registry."""
     rows, audit = _global_registry()
@@ -160,15 +226,19 @@ def build_family_spec(family_id: str) -> FamilySpec:
 
     representative = str(family["representative"])
     row = by_id[representative]
-    raw_exprs = topology_physical_denominators(row)
+    topology = str(row.get("family"))
+    raw_specs, raw_exprs, aux_names = _raw_specs_and_auxiliaries(row)
     unique_exprs, raw_to_unique, duplicate_groups = deduplicate_exact_denominators(raw_exprs)
-    aux_names, _, _ = complete_with_quadratic_auxiliaries(unique_exprs)
 
-    raw_pairs: list[PropagatorSpec] = []
-    for vec in _electron_momenta(row):
-        raw_pairs.append(PropagatorSpec(_vector_to_kira(vec), "m2"))
-    for edge in row.get("photon_edges", []):
-        raw_pairs.append(PropagatorSpec(str(edge["label"]), "0"))
+    raw_pairs = [
+        PropagatorSpec(_vector_to_kira(vec), "m2" if massive else "0")
+        for massive, vec in raw_specs
+    ]
+    if len(raw_pairs) != len(raw_exprs):
+        raise ValueError(
+            f"{family_id}: raw pair/expression count mismatch "
+            f"pairs={len(raw_pairs)} expressions={len(raw_exprs)}"
+        )
 
     unique_pairs: list[PropagatorSpec] = []
     for original_index, unique_index in enumerate(raw_to_unique):
@@ -192,6 +262,7 @@ def build_family_spec(family_id: str) -> FamilySpec:
         family_id=family_id,
         representative=representative,
         diagrams=tuple(str(x) for x in family.get("confirmed_diagrams", [])),
+        topology_family=topology,
         propagators=propagators,
         top_sector=top_sector,
         unique_physical_count=physical_count,
