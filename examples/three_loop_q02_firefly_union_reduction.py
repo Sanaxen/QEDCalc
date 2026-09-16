@@ -17,20 +17,25 @@ from three_loop.integral_family_classification import ROOT
 from three_loop.q02_kira_backend import Q02_KIRA_NAME, Q02_KIRA_TOP_SECTOR, Q02SeedLimits, export_q02_kira_project
 
 AUDIT_DIR = ROOT / "output" / "three_loop_integral_family_audit"
-TARGET_FILE = AUDIT_DIR / "q02_firefly_master_union_targets.txt"
+SOURCE_TARGET_FILE = AUDIT_DIR / "q02_firefly_master_union_targets.txt"
 PROJECT = ROOT / "output" / "kira_q02_full_firefly_master_union"
+PROJECT_TARGET_FILE = PROJECT / "q02_firefly_master_union_targets"
 AUDIT_JSON = AUDIT_DIR / "three_loop_q02_firefly_master_union_reduction_audit.json"
 AUDIT_TXT = AUDIT_DIR / "three_loop_q02_firefly_master_union_reduction_audit.txt"
 MASTER_COPY = AUDIT_DIR / "q02_firefly_master_union_masters.txt"
 PATTERN = re.compile(r"Q02_full\s*\[[^\]]+\]")
+R_BOUND, S_BOUND, D_BOUND = 9, 4, 1
 
 
 def _targets() -> list[str]:
-    if not TARGET_FILE.is_file():
-        raise FileNotFoundError(f"union target file not found: {TARGET_FILE}; run run_three_loop_q02_firefly_master_union_audit.bat first")
+    if not SOURCE_TARGET_FILE.is_file():
+        raise FileNotFoundError(
+            f"union target file not found: {SOURCE_TARGET_FILE}; "
+            "run run_three_loop_q02_firefly_master_union_audit.bat first"
+        )
     out: list[str] = []
     seen: set[str] = set()
-    for item in PATTERN.findall(TARGET_FILE.read_text(encoding="utf-8", errors="replace")):
+    for item in PATTERN.findall(SOURCE_TARGET_FILE.read_text(encoding="utf-8", errors="replace")):
         item = re.sub(r"\s+", "", item)
         if item not in seen:
             seen.add(item)
@@ -40,23 +45,29 @@ def _targets() -> list[str]:
     return out
 
 
-def _indices(item: str) -> str:
+def _indices(item: str) -> tuple[int, ...]:
     inside = item[item.index("[") + 1:item.rindex("]")]
-    parts = [x.strip() for x in inside.split(",")]
-    if len(parts) != 12:
+    values = tuple(int(x.strip()) for x in inside.split(","))
+    if len(values) != 12:
         raise ValueError(f"expected 12 indices: {item}")
-    return ",".join(parts)
+    return values
 
 
-def _render_jobs(targets: list[str]) -> str:
-    integrals = "\n".join(f"          - [Q02_full, [{_indices(item)}]]" for item in targets)
+def _bounds(values: tuple[int, ...]) -> tuple[int, int, int]:
+    r = sum(x for x in values if x > 0)
+    s = sum(-x for x in values if x < 0)
+    d = sum(max(x - 1, 0) for x in values if x > 0)
+    return r, s, d
+
+
+def _render_jobs() -> str:
     return f"""jobs:
   - reduce_sectors:
       reduce:
-        - {{topologies: [Q02_full], sectors: [255], r: 9, s: 4, d: 1}}
+        - {{topologies: [Q02_full], sectors: [255], r: {R_BOUND}, s: {S_BOUND}, d: {D_BOUND}}}
       select_integrals:
         select_mandatory_list:
-{integrals}
+          - [Q02_full,{PROJECT_TARGET_FILE.name}]
       run_symmetries: true
       run_initiate: true
       run_triangular: false
@@ -79,15 +90,28 @@ def _clean() -> None:
 
 def prepare() -> None:
     targets = _targets()
+    violating: list[tuple[str, int, int, int]] = []
+    for item in targets:
+        r, s, d = _bounds(_indices(item))
+        if r > R_BOUND or s > S_BOUND or d > D_BOUND:
+            violating.append((item, r, s, d))
+    if violating:
+        item, r, s, d = violating[0]
+        raise SystemExit(
+            "ERROR: union target lies outside r9s4d1 envelope: "
+            f"{item} has r={r} s={s} d={d}"
+        )
+
     PROJECT.mkdir(parents=True, exist_ok=True)
     _clean()
-    # r9s4d1 bounds cover all three tested one-axis extensions simultaneously.
-    export_q02_kira_project(PROJECT, limits=Q02SeedLimits(9, 4, 1), back_substitution=False)
-    (PROJECT / "jobs.yaml").write_text(_render_jobs(targets), encoding="utf-8", newline="\n")
+    export_q02_kira_project(PROJECT, limits=Q02SeedLimits(R_BOUND, S_BOUND, D_BOUND), back_substitution=False)
+    PROJECT_TARGET_FILE.write_text("\n".join(targets) + "\n", encoding="utf-8", newline="\n")
+    (PROJECT / "jobs.yaml").write_text(_render_jobs(), encoding="utf-8", newline="\n")
     print("QEDCalc Q02 FireFly mandatory-union reduction prepare")
     print(f"union mandatory targets: {len(targets)}")
     print("envelope seed bounds: r9s4d1")
     print(f"project: {PROJECT}")
+    print(f"project target file: {PROJECT_TARGET_FILE}")
     print("solver: FireFly")
     print("QEDCalc Q02 FireFly mandatory-union reduction prepare PASS")
 
@@ -122,7 +146,7 @@ def finalize() -> None:
         "canonical_family": Q02_KIRA_NAME,
         "solver_backend": "firefly",
         "top_sector": Q02_KIRA_TOP_SECTOR,
-        "envelope_seed": {"r": 9, "s": 4, "d": 1},
+        "envelope_seed": {"r": R_BOUND, "s": S_BOUND, "d": D_BOUND},
         "mandatory_union_target_count": len(targets),
         "masters_final": str(masters_path) if masters_path else None,
         "master_count": len(masters),
