@@ -1,8 +1,10 @@
 """Build a deterministic master-basis identification schedule for all 3-loop families.
 
 The schedule is derived from the executable global canonical registry rather
-than maintained by hand.  Q01 is marked complete.  Pending families are ranked
-by practical payoff and expected pipeline reuse:
+than maintained by hand.  Any family carrying a ``master_basis_id`` in that
+registry is marked complete; currently Q01_full/Q01_final60 and
+Q08_full/Q08_final12 are the promoted reference families. Pending families are
+ranked by practical payoff and expected pipeline reuse:
 
 1. multi-diagram quenched families;
 2. multi-diagram VP1 families;
