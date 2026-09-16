@@ -1,10 +1,10 @@
 """Build a deterministic master-basis identification schedule for all 3-loop families.
 
 The schedule is derived from the executable global canonical registry rather
-than maintained by hand.  Any family carrying a ``master_basis_id`` in that
-registry is marked complete; currently Q01_full/Q01_final60 and
-Q08_full/Q08_final12 are the promoted reference families. Pending families are
-ranked by practical payoff and expected pipeline reuse:
+than maintained by hand. Any family carrying a ``master_basis_id`` in that
+registry is marked complete; currently Q01_full/Q01_final60,
+Q08_full/Q08_final12, and Q10_full/Q10_final13 are promoted reference families.
+Pending families are ranked by practical payoff and expected pipeline reuse:
 
 1. multi-diagram quenched families;
 2. multi-diagram VP1 families;
@@ -14,7 +14,7 @@ ranked by practical payoff and expected pipeline reuse:
 6. external LBL families.
 
 Within a tier, families with fewer unique physical denominators are placed first
-as a conservative complexity heuristic.  This is a scheduling heuristic only;
+as a conservative complexity heuristic. This is a scheduling heuristic only;
 it is not a mathematical claim about actual Kira runtime.
 """
 from __future__ import annotations
