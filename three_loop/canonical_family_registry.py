@@ -17,6 +17,16 @@ from three_loop.vp2_double_family_autodiscovery import audit_vp2_double_family_a
 
 Q01_MASTER_BASIS = "Q01_final60"
 Q01_CANONICAL_FAMILY = "Q01_full"
+Q08_MASTER_BASIS = "Q08_final12"
+Q08_CANONICAL_FAMILY = "Q08_full"
+
+
+def _master_basis_id(family_id: str) -> str | None:
+    if family_id == Q01_CANONICAL_FAMILY:
+        return Q01_MASTER_BASIS
+    if family_id == Q08_CANONICAL_FAMILY:
+        return Q08_MASTER_BASIS
+    return None
 
 
 def _evidence(family_id: str, witness: dict[str, Any], mode: str) -> str:
@@ -78,7 +88,6 @@ def _apply_auto_records(
             canonical_basis = list(Q01_CANONICAL_PROPAGATORS)
             physical_mapping = None
             requires_new_aux = False
-            master_basis = Q01_MASTER_BASIS
             sign_text = (
                 "Exact denominator equality after the recorded reflection/momentum map; "
                 "Q01 Kira physical sign convention and ISP bridge are inherited unchanged."
@@ -96,12 +105,12 @@ def _apply_auto_records(
                 continue
             physical_mapping = list(witness["physical_to_canonical_mapping"])
             requires_new_aux = True
-            master_basis = None
             sign_text = (
                 "Topology physical denominators map exactly to the canonical basis; "
                 "duplicate physical powers are aggregated when the recorded mapping repeats an index."
             )
 
+        master_basis = _master_basis_id(family_id)
         update = {
             "classification_status": "confirmed",
             "canonical_integral_family_id": family_id,
@@ -182,11 +191,13 @@ def apply_confirmed_family_registry(rows: list[dict[str, Any]], audit: dict[str,
     for family_id in quenched.get("family_order", []):
         entry = dict(quenched_registry[family_id])
         entry.pop("canonical_propagators", None)
+        entry["master_basis_id"] = _master_basis_id(family_id)
         out_registry[family_id] = entry
     for raw_registry in (vp1_registry, vp2_double_registry, lbl_registry):
         for family_id, raw in raw_registry.items():
             entry = dict(raw)
             entry.pop("canonical_propagators", None)
+            entry["master_basis_id"] = _master_basis_id(family_id)
             out_registry[family_id] = entry
     audit["canonical_registry"] = out_registry
 
