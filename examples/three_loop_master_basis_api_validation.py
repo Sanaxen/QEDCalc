@@ -2,15 +2,15 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
-from three_loop.integral_family_classification import ROOT
+from three_loop.integral_family_classification import ROOT, load_topologies
 from three_loop.master_basis_api import (
     Seed,
     build_family_spec,
     render_integralfamilies_yaml,
     render_kinematics_yaml,
 )
+from three_loop.master_basis_schedule import build_master_basis_schedule
 from three_loop.q02_kira_backend import (
     Q02_AUXILIARY_NAMES,
     Q02_DUPLICATE_GROUPS,
@@ -37,7 +37,7 @@ def _norm(text: str) -> str:
 
 def main() -> None:
     errors: list[str] = []
-    rows: list[dict[str, object]] = []
+    dedicated_rows: list[dict[str, object]] = []
 
     q02 = build_family_spec("Q02_full")
     q05 = build_family_spec("Q05_full")
@@ -93,7 +93,7 @@ def main() -> None:
             local_errors.append("integralfamilies.yaml differs from dedicated backend")
         if _norm(render_kinematics_yaml()) != _norm(old_kin_yaml):
             local_errors.append("kinematics.yaml differs from dedicated backend")
-        rows.append(
+        dedicated_rows.append(
             {
                 "family": spec.family_id,
                 "diagrams": list(spec.diagrams),
@@ -107,17 +107,64 @@ def main() -> None:
         )
         errors.extend(f"{spec.family_id}: {item}" for item in local_errors)
 
+    schedule = build_master_basis_schedule(load_topologies())
+    family_ids = [
+        str(item["canonical_family_id"])
+        for item in (list(schedule.get("completed", [])) + list(schedule.get("schedule", [])))
+    ]
+    if len(family_ids) != 45:
+        errors.append(f"expected 45 canonical families, found {len(family_ids)}")
+
+    all_family_rows: list[dict[str, object]] = []
+    for family_id in family_ids:
+        local_errors: list[str] = []
+        try:
+            spec = build_family_spec(family_id)
+            if len(spec.propagators) != 12:
+                local_errors.append(f"propagator_count={len(spec.propagators)}")
+            if spec.unique_physical_count + spec.auxiliary_count != 12:
+                local_errors.append(
+                    f"physical+aux={spec.unique_physical_count}+{spec.auxiliary_count}"
+                )
+            if spec.top_sector != (1 << spec.unique_physical_count) - 1:
+                local_errors.append(f"top_sector={spec.top_sector}")
+            if spec.baseline_seed.r != spec.unique_physical_count:
+                local_errors.append(f"baseline={spec.baseline_seed.tag}")
+            all_family_rows.append(
+                {
+                    "family": family_id,
+                    "topology": spec.topology_family,
+                    "representative": spec.representative,
+                    "diagrams": list(spec.diagrams),
+                    "unique_physical": spec.unique_physical_count,
+                    "auxiliary_count": spec.auxiliary_count,
+                    "top_sector": spec.top_sector,
+                    "baseline_seed": spec.baseline_seed.tag,
+                    "pass": not local_errors,
+                    "errors": local_errors,
+                }
+            )
+        except Exception as exc:
+            local_errors.append(str(exc))
+            all_family_rows.append(
+                {"family": family_id, "pass": False, "errors": local_errors}
+            )
+        errors.extend(f"{family_id}: {item}" for item in local_errors)
+
     audit = {
-        "schema_version": 1,
+        "schema_version": 2,
         "api": "three_loop.master_basis_api",
         "known_completed_master_bases": expected_master_ids,
-        "dedicated_backend_regressions": rows,
+        "dedicated_backend_regressions": dedicated_rows,
+        "all_family_spec_count": len(all_family_rows),
+        "all_family_specs": all_family_rows,
         "errors": errors,
         "audit_pass": not errors,
     }
     AUDIT_DIR.mkdir(parents=True, exist_ok=True)
     AUDIT_JSON.write_text(json.dumps(audit, indent=2, ensure_ascii=False), encoding="utf-8")
 
+    passed_all = sum(1 for row in all_family_rows if row.get("pass"))
     lines = [
         "QEDCalc reusable master-basis API validation",
         f"Q01 master: {q01.master_basis_id}",
@@ -125,13 +172,15 @@ def main() -> None:
         f"Q08 master: {q08.master_basis_id}",
         f"Q10 master: {q10.master_basis_id}",
     ]
-    for row in rows:
+    for row in dedicated_rows:
         lines.append(
-            f"{row['family']}: unique={row['unique_physical']} aux={row['auxiliary_count']} "
-            f"top_sector={row['top_sector']} baseline={row['baseline_seed']} pass={row['pass']}"
+            f"{row['family']} dedicated regression: unique={row['unique_physical']} "
+            f"aux={row['auxiliary_count']} top_sector={row['top_sector']} "
+            f"baseline={row['baseline_seed']} pass={row['pass']}"
         )
     lines.extend(
         [
+            f"all canonical family specs: {passed_all}/{len(all_family_rows)} PASS",
             f"internal audit errors: {len(errors)}",
             f"audit JSON: {AUDIT_JSON}",
             f"audit TXT: {AUDIT_TXT}",
