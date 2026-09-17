@@ -362,42 +362,63 @@ QEDCalc reusable master-basis API validation PASS
 
 This confirms all 45 canonical families can be represented by the reusable Stage-2 FamilySpec/Kira-input path.
 
-### Current local computation IN PROGRESS
+### Q05 generic boundary result — COMPLETE / PASS, UNION REQUIRED
 
-The user is currently running:
+The user completed:
 
 ```powershell
 .\run_three_loop_master_basis_boundaries.bat Q05_full r8s3d0 firefly
 ```
 
-Status at this handoff update: STILL RUNNING. No Q05 boundary result has been reported yet.
-
-This generic runner is expected to evaluate:
+Authoritative aggregate result:
 
 ```text
-r9s3d0
-r8s4d0
-r8s3d1
+family: Q05_full
+diagrams: ['Q05', 'Q42']
+baseline seed: r8s3d0
+baseline masters: 43
+boundary solver: firefly
+r9s3d0: masters=43 retained=43/43 stable=True
+r8s4d0: masters=67 retained=38/43 stable=False
+r8s3d1: masters=37 retained=31/43 stable=False
+intersection across available sets: 31
+union across available sets: 78
+stable under tested one-axis extensions: False
+union reduction needed: True
+internal audit errors: 0
+QEDCalc generic master-basis boundary aggregate audit PASS
 ```
 
-against the existing r8s3d0 / 43-master baseline and then run the aggregate comparison.
-
-Do not ask the user to start another heavy Stage-2 batch while this is running.
-
-### Interpretation rule for the Q05 boundary result
-
-If all three boundaries retain all 43 baseline forms, Q05 becomes a `Q05_final43` candidate, subject to the same scientific caution used elsewhere.
-
-If the literal master representatives drift under any one-axis extension, do NOT conclude that the family has more true masters. Follow the Q02 pattern:
+The d+1 `r8s3d1` FireFly run alone reported:
 
 ```text
-baseline + boundary master sets
- -> explicit union
- -> mandatory-union reduction in a common envelope
- -> candidate finalNN basis
- -> final r+1 / s+1 / d+1 closure tests
- -> promotion only if stable
+Total time: 16302.4 s
+master count: 37
+QEDCalc generic master-basis finalize audit PASS
 ```
+
+The generated union target file is:
+
+```text
+output/three_loop_integral_family_audit/q05_full_firefly_r8s3d0_master_union_targets.txt
+```
+
+Scientific interpretation: Q05 is another Q02-type representative-drift case. This is NOT a generic-API failure. The generic path correctly detected the instability and generated the 78-target union automatically. Do NOT promote `Q05_final43`, `Q05_final67`, or `Q05_final37`.
+
+### Immediate Q05 next step
+
+Use the Q02-proven common-context strategy, but implement it generically rather than adding Q05-only code:
+
+```text
+78 union targets
+ -> derive required common r/s/d envelope automatically
+ -> one mandatory-union Kira+FireFly reduction
+ -> obtain candidate finalNN master basis
+ -> test candidate basis under common-envelope r+1 / s+1 / d+1
+ -> promote Q05 only if all final closure tests pass
+```
+
+The exact Kira mandatory-target/job semantics must be taken from the already successful Q02 union/final17 implementation rather than guessed from a new abstraction.
 
 ### Planned rollout before unattended full-batch execution
 
@@ -405,7 +426,7 @@ The user explicitly wants unattended operation eventually, but do NOT switch to 
 
 Agreed plan:
 
-1. Finish Q05 generic boundary run and inspect results.
+1. Complete Q05 generic union/common-context rescue and final-basis closure.
 2. Run another 2-3 families through the reusable Stage-2 path, likely starting with Q07 and Q09 according to schedule.
 3. Fix any API/runtime issues found during those live trials.
 4. Only after this proving period, start unattended all-family execution.
@@ -449,13 +470,14 @@ family baseline
 
 If a later API fix affects only orchestration/audit logic, reuse expensive Kira artifacts where scientifically valid. If a fix changes FamilySpec/denominator construction or reduction inputs, determine the earliest affected family and resume/recompute from there rather than blindly trusting earlier results.
 
-Runtime estimation should use measured local history and report broad ranges rather than false precision because Kira/FireFly runtime can vary sharply by family/seed.
+Runtime estimation should use measured local history and report broad ranges rather than false precision because Kira/FireFly runtime can vary sharply by family/seed. The Q05 d+1 run of 16302.4 s is an important new runtime sample.
 
 ### Immediate next action for the next assistant/session
 
 1. Read this file first.
-2. Ask for / inspect the completed output of the CURRENT Q05 generic boundary run if it has finished.
-3. Analyze Q05 stability versus baseline43.
-4. If Q05 is stable, provide the next specific family/BAT to run; do not start the all-family unattended runner yet.
-5. If Q05 is unstable, implement/use the generic union/common-context route before proceeding.
-6. Update this worklog again immediately after the Q05 boundary result and after each important subsequent milestone because session limits are a concern.
+2. Treat the Q05 boundary run as COMPLETE and PASS at the audit level, but unstable at the master-representative level.
+3. Inspect/reuse the proven Q02 mandatory-union and final17 closure implementation.
+4. Implement the same common-context union + final-boundary path generically.
+5. Push the generic Q05 union runner before asking the user to run anything.
+6. Do not start Q07 or the unattended all-family controller until Q05 has a formally stable final basis.
+7. Update this worklog again after the union reduction result and after final closure/promotion.
