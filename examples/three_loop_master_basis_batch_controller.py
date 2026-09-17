@@ -5,7 +5,7 @@ Modes:
   --status   show checkpoint summary
   --run      execute pending baseline/boundary steps sequentially
 
-The controller stops immediately on a failed command.  If a family's boundary
+The controller stops immediately on a failed command. If a family's boundary
 audit reports that a union reduction is needed, it records that condition and
 stops cleanly so the generic union stage can be added/adjusted without losing
 previous completed work.
@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from pathlib import Path
 import subprocess
 import sys
@@ -31,7 +30,6 @@ from three_loop.master_basis_batch import (
     execution_families,
     family_steps,
     load_checkpoint,
-    save_checkpoint,
     update_checkpoint,
 )
 
@@ -62,11 +60,11 @@ def _bat() -> Path:
 
 
 def _run_step(step: BatchStep) -> int:
-    cmd = [str(_bat()), step.family, step.seed.tag, step.solver]
+    cmd = ["cmd.exe", "/d", "/c", str(_bat()), step.family, step.seed.tag, step.solver]
     print("\n=== RUN", step.key, "===", flush=True)
     start = time.perf_counter()
     update_checkpoint(step, status="running")
-    proc = subprocess.run(cmd, cwd=ROOT, shell=True)
+    proc = subprocess.run(cmd, cwd=ROOT)
     elapsed = time.perf_counter() - start
     spec = master_basis_api.build_family_spec(step.family)
     append_runtime({
