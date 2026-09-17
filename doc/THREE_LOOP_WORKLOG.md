@@ -256,3 +256,206 @@ Do not regress this cleanup behavior.
 ## Continuity rule
 
 At the start of a new chat/session, read this file first, then inspect the current branch and newest user-provided local logs. Update this worklog after meaningful milestones, design changes, important failures/fixes, or likely session handoffs.
+
+---
+
+## LATEST HANDOFF UPDATE — 2026-09-17 JST
+
+This section supersedes the older `Current next sequence` above where they conflict.
+
+### Current stage summary
+
+```text
+Stage 1: 72 diagrams -> canonical families
+  COMPLETE
+  72/72 diagrams confirmed
+  45 canonical families
+  effectively API-structured already via autodiscovery + canonical registry
+
+Stage 2: stable master-basis identification
+  4/45 families formally complete
+  Q01_final60, Q02_final17, Q08_final12, Q10_final13
+  reusable API work added and now under live validation
+
+Stage 3: exact master coefficients
+  Q01 complete
+  reusable master_coefficient_api exists and exact Q01 regression passed
+
+Stage 4: master evaluation / epsilon expansion
+  NOT STARTED
+
+Stage 5: 72-diagram assembly / total 3-loop g-2
+  NOT STARTED
+```
+
+### Q05 baseline result — PASS
+
+`Q05_full` covers Q05/Q42.
+
+Family facts:
+
+- 9 raw physical denominators
+- duplicate D2=D4
+- raw-to-unique mapping: `[1,2,3,2,4,5,6,7,8]`
+- 8 unique physical denominators
+- 4 auxiliaries: `(k-l)^2`, `(l-r)^2`, `(l+q)^2`, `(r+q)^2`
+- 12 total canonical denominators
+- top sector 255
+- baseline seed r8s3d0
+
+Authoritative local baseline result:
+
+```text
+Total time: 1246.3 s
+canonical family: Q05_full
+covered diagrams: ['Q05', 'Q42']
+seed: r8s3d0
+top sector: 255
+master count: 43
+master-basis status: baseline candidate; boundary audits pending
+internal audit errors: 0
+QEDCalc Q05 r8s3d0 baseline Kira audit PASS
+```
+
+Do NOT promote `Q05_final43` yet. Boundary audits are still required.
+
+### Reusable Stage-2 API status
+
+New reusable core:
+
+- `three_loop/master_basis_api.py`
+- `examples/three_loop_master_basis_pipeline.py`
+- generic seed runner: `run_three_loop_master_basis_seed.bat`
+- generic boundary comparison: `examples/three_loop_master_basis_boundary_audit.py`
+- generic three-boundary runner: `run_three_loop_master_basis_boundaries.bat`
+
+The API centralizes:
+
+- FamilySpec generation from canonical registry
+- quenched / VP1 / VP2-VP22 / LBL physical-propagator reconstruction
+- exact duplicate collapse
+- deterministic auxiliary completion
+- Kira `integralfamilies.yaml` generation
+- Kira `kinematics.yaml` generation
+- ordinary Kira / FireFly job generation
+- stale runtime cleanup
+- `masters.final` parsing
+- r/s/d one-axis seed generation
+- master-set comparison / intersection / union
+- target-envelope r/s/d analysis
+
+Important design rule: the canonical registry is expensive to build. Reuse one registry snapshot within long validation/batch processes; do not rebuild all 72-diagram autodiscovery for every FamilySpec.
+
+### Reusable API validation — PASS
+
+The initial validation implementation appeared hung because it rebuilt the 72-diagram registry roughly 50 times. It was fixed to build the registry once and reuse it, with live progress output.
+
+Authoritative validation result:
+
+```text
+Q02_full dedicated regression: PASS
+Q05_full dedicated regression: PASS
+all canonical family specs: 45/45 PASS
+internal audit errors: 0
+QEDCalc reusable master-basis API validation PASS
+```
+
+This confirms all 45 canonical families can be represented by the reusable Stage-2 FamilySpec/Kira-input path.
+
+### Current local computation IN PROGRESS
+
+The user is currently running:
+
+```powershell
+.\run_three_loop_master_basis_boundaries.bat Q05_full r8s3d0 firefly
+```
+
+Status at this handoff update: STILL RUNNING. No Q05 boundary result has been reported yet.
+
+This generic runner is expected to evaluate:
+
+```text
+r9s3d0
+r8s4d0
+r8s3d1
+```
+
+against the existing r8s3d0 / 43-master baseline and then run the aggregate comparison.
+
+Do not ask the user to start another heavy Stage-2 batch while this is running.
+
+### Interpretation rule for the Q05 boundary result
+
+If all three boundaries retain all 43 baseline forms, Q05 becomes a `Q05_final43` candidate, subject to the same scientific caution used elsewhere.
+
+If the literal master representatives drift under any one-axis extension, do NOT conclude that the family has more true masters. Follow the Q02 pattern:
+
+```text
+baseline + boundary master sets
+ -> explicit union
+ -> mandatory-union reduction in a common envelope
+ -> candidate finalNN basis
+ -> final r+1 / s+1 / d+1 closure tests
+ -> promotion only if stable
+```
+
+### Planned rollout before unattended full-batch execution
+
+The user explicitly wants unattended operation eventually, but do NOT switch to it yet.
+
+Agreed plan:
+
+1. Finish Q05 generic boundary run and inspect results.
+2. Run another 2-3 families through the reusable Stage-2 path, likely starting with Q07 and Q09 according to schedule.
+3. Fix any API/runtime issues found during those live trials.
+4. Only after this proving period, start unattended all-family execution.
+
+The user asked to be told explicitly which BAT to run at each appropriate time. Do not ask them to run the all-family controller prematurely.
+
+### Batch/checkpoint/runtime-estimator groundwork already added
+
+Groundwork has been implemented but is NOT yet approved for full unattended use:
+
+- `three_loop/master_basis_batch.py`
+- `examples/three_loop_master_basis_batch_controller.py`
+- `run_three_loop_master_basis_all.bat`
+
+Intended future capabilities:
+
+- execution queue from master-basis schedule
+- detect/reuse existing PASS artifacts
+- checkpoint per family/seed
+- stop on failure
+- resume from selected family
+- record measured runtimes
+- estimate remaining low/median/high wall time
+- eventually automate union/final-boundary rescue too
+
+Current safety behavior for unstable families is to checkpoint and stop cleanly when union reduction is needed. Generic fully automatic union/final-boundary rescue is not yet considered proven for unattended operation.
+
+### Future unattended-operation policy
+
+Once Q05 + about 2-3 additional families validate the generic path, the intended workflow is:
+
+```text
+family baseline
+ -> r/s/d boundaries
+ -> stable? promote candidate path
+ -> unstable? union/common-context rescue
+ -> final-basis closure
+ -> checkpoint PASS
+ -> next family
+```
+
+If a later API fix affects only orchestration/audit logic, reuse expensive Kira artifacts where scientifically valid. If a fix changes FamilySpec/denominator construction or reduction inputs, determine the earliest affected family and resume/recompute from there rather than blindly trusting earlier results.
+
+Runtime estimation should use measured local history and report broad ranges rather than false precision because Kira/FireFly runtime can vary sharply by family/seed.
+
+### Immediate next action for the next assistant/session
+
+1. Read this file first.
+2. Ask for / inspect the completed output of the CURRENT Q05 generic boundary run if it has finished.
+3. Analyze Q05 stability versus baseline43.
+4. If Q05 is stable, provide the next specific family/BAT to run; do not start the all-family unattended runner yet.
+5. If Q05 is unstable, implement/use the generic union/common-context route before proceeding.
+6. Update this worklog again immediately after the Q05 boundary result and after each important subsequent milestone because session limits are a concern.
