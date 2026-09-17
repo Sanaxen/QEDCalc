@@ -3,9 +3,9 @@
 The schedule is derived from the executable global canonical registry rather
 than maintained by hand. Any family carrying a ``master_basis_id`` in that
 registry is marked complete; currently Q01_full/Q01_final60,
-Q02_full/Q02_final17, Q08_full/Q08_final12, and Q10_full/Q10_final13 are
-promoted reference families. Pending families are ranked by practical payoff
-and expected pipeline reuse:
+Q02_full/Q02_final17, Q05_full/Q05_final13, Q08_full/Q08_final12, and
+Q10_full/Q10_final13 are promoted reference families. Pending families are
+ranked by practical payoff and expected pipeline reuse:
 
 1. multi-diagram quenched families;
 2. multi-diagram VP1 families;
