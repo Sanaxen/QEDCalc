@@ -280,50 +280,74 @@ with 78 mandatory union targets.
 
 ### Generic mandatory-union continuation
 
-The Q02 strategy has now been lifted into the common Stage-2 path rather than copied into a Q05-only script.
+The Q02 strategy has been lifted into the common Stage-2 path rather than copied into a Q05-only script.
 
-Reusable pieces already present in `three_loop/master_basis_api.py`:
-
-- `render_jobs_yaml(..., mandatory_file=...)` / Kira `select_mandatory_list`
-- `export_kira_project(..., mandatory_file=...)`
-- `integral_complexity(...)`
-- `required_envelope(targets, floor=...)`
-
-New generic runner:
+Reusable runner:
 
 ```text
 examples/three_loop_master_basis_union_reduction.py
 run_three_loop_master_basis_union_reduction.bat
 ```
 
-Its prepare phase:
+The Q05 mandatory-union reduction has now completed:
 
-1. reads the boundary-generated union target file;
-2. validates family ID and 12 indices for every target;
-3. removes duplicate targets deterministically;
-4. derives the required max r/s/d envelope automatically, with the baseline seed as a floor;
-5. exports one common Kira project using the union as `select_mandatory_list`;
-6. writes a target SHA-256 so finalize rejects a changed target set.
+```text
+family: Q05_full
+baseline seed: r8s3d0
+solver: firefly
+mandatory targets: 78
+required envelope: r8s3d2
+candidate master count: 13
+audit: PASS
+```
 
-Its finalize phase records the candidate `masters.final`, candidate master count/copy, target count/hash, required envelope, and audit JSON/TXT.
+Thus the current candidate is a 13-master basis in the common context `r8s3d2`. It is not promoted yet.
 
-The immediate next heavy computation is the Q05 78-target common-context reduction. Only after that returns a candidate `Q05_finalNN` should the generic final-boundary closure at envelope r+1/s+1/d+1 be prepared and run.
+### Generic candidate-closure continuation
+
+The Q02 final-basis stability strategy is now also available through a generic runner:
+
+```text
+examples/three_loop_master_basis_candidate_closure.py
+run_three_loop_master_basis_candidate_closure.bat
+```
+
+The runner reads the preceding union-reduction audit automatically, takes its exact union-target source and candidate-master artifact, and builds a deterministic closure target set consisting of:
+
+```text
+original mandatory union targets U candidate master forms
+```
+
+It then exports the three one-axis boundary projects of the candidate envelope. For Q05 these are:
+
+```text
+r9s3d2
+r8s4d2
+r8s3d3
+```
+
+Each project uses the identical closure mandatory list and performs FireFly stale-state cleanup before Kira. The final aggregate audit requires:
+
+- every candidate master form to remain in `masters.final`;
+- candidate/union/closure targets to be classified from completed Kira output;
+- zero unresolved closure targets;
+- all three one-axis boundaries to pass.
+
+Only an aggregate PASS permits promotion to `Q05_final13`.
 
 ## Current next sequence
 
-1. Pull the branch and run the generic Q05 mandatory-union reduction:
+1. Pull the branch and run the generic Q05 candidate closure:
 
 ```powershell
-.\run_three_loop_master_basis_union_reduction.bat Q05_full r8s3d0 firefly
+.\run_three_loop_master_basis_candidate_closure.bat Q05_full r8s3d0 firefly
 ```
 
-2. Record the automatically selected envelope and candidate master count from the final audit. Do not promote the candidate yet.
-3. Implement/use the generic candidate-closure runner to test the same 78 union targets plus the candidate basis at the envelope's r+1, s+1, and d+1 boundaries.
-4. Promote `Q05_full -> Q05_finalNN` only if all closure audits pass with no unresolved targets and the candidate basis remains stable.
-5. Then exercise the same common API on another 2-3 pending families before enabling an unattended all-family batch runner.
-6. After enough families have stable bases, demonstrate cross-family reuse of `master_coefficient_api` on Q08 or Q10 before scaling coefficient synthesis across all diagrams.
-7. Master evaluation / epsilon expansion has not started and remains a likely major research bottleneck.
-8. Only after the global family/master picture is sufficiently stable should the 72-diagram total `F2(0)` be assembled.
+2. If all `r9s3d2`, `r8s4d2`, and `r8s3d3` audits pass with candidate13 stable and unresolved=0, promote `Q05_full -> Q05_final13`, update the registry/schedule, and validate the 45-family schedule.
+3. Then exercise the same common API on another 2-3 pending families before enabling an unattended all-family batch runner.
+4. After enough families have stable bases, demonstrate cross-family reuse of `master_coefficient_api` on Q08 or Q10 before scaling coefficient synthesis across all diagrams.
+5. Master evaluation / epsilon expansion has not started and remains a likely major research bottleneck.
+6. Only after the global family/master picture is sufficiently stable should the 72-diagram total `F2(0)` be assembled.
 
 ## Continuity rule
 
