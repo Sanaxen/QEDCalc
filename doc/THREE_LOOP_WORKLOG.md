@@ -36,24 +36,25 @@ Total = 72.
 
 The exact canonical-family autodiscovery / registry work is complete for all 72 diagrams. There are 45 canonical Kira families in total. The family classification is based on explicit denominator bases and exact momentum-map witnesses, not topology similarity alone.
 
-## Master-basis schedule status after Q02 promotion
+## Master-basis schedule status after Q05 promotion
 
 Completed canonical families:
 
 - `Q01_full -> Q01_final60`, diagrams Q01/Q41
 - `Q02_full -> Q02_final17`, diagrams Q02/Q45
+- `Q05_full -> Q05_final13`, diagrams Q05/Q42
 - `Q08_full -> Q08_final12`, diagrams Q08/Q48
 - `Q10_full -> Q10_final13`, diagrams Q10/Q50
 
-Expected schedule summary after the Q02 promotion audit:
+Expected schedule summary after the Q05 promotion audit:
 
 ```text
 canonical families: 45
-master-basis complete families: 4
-master-basis pending families: 41
-complete diagram coverage: 8
-pending diagram coverage: 64
-next pending family: Q05_full
+master-basis complete families: 5
+master-basis pending families: 40
+complete diagram coverage: 10
+pending diagram coverage: 62
+next pending family: Q07_full
 ```
 
 The pending-family schedule is a practical heuristic: multi-diagram quenched first, then multi-diagram VP1, singleton quenched, singleton VP1, VP2/VP22, external LBL; within a tier, fewer unique physical denominators first. It is not a Kira-runtime prediction.
@@ -251,11 +252,11 @@ The family/seed preparation, Kira project generation, master parsing, one-axis b
 
 The generic Stage-2 validation over all 45 canonical families passed 45/45. Keep the deliberate operational restriction: do not switch to an unattended all-family batch runner until Q05 plus another 2-3 families have exercised the common API successfully in real Kira/FireFly runs.
 
-## Q05 master-basis discovery: IN PROGRESS
+## Q05 master-basis discovery: COMPLETE / PASS
 
 `Q05_full` covers Q05/Q42.
 
-The baseline r8s3d0 reduction completed with 43 masters and passed its generic finalize audit. The generic one-axis boundary batch then completed with the following result:
+The baseline r8s3d0 reduction completed with 43 masters. Its one-axis boundary comparison showed seed-dependent representatives:
 
 ```text
 baseline r8s3d0 : 43
@@ -268,86 +269,74 @@ internal errors : 0
 boundary aggregate audit: PASS
 ```
 
-Therefore the literal baseline set must NOT be promoted as `Q05_final43`. Q05 is another seed-dependent representative family like Q02.
-
-The boundary audit generated:
+Therefore the literal baseline set was not promoted. The 78-form union was reduced in a common mandatory context and produced a 13-master candidate. Final guard auditing then established the promoted basis:
 
 ```text
-output/three_loop_integral_family_audit/q05_full_firefly_r8s3d0_master_union_targets.txt
+canonical family : Q05_full
+final basis      : Q05_final13
+baseline         : r8s0d8
+guards           : r9s0d8 / r8s1d8 / r8s0d9
+all guards       : stable=True
+candidate masters: 13/13
+non-master       : 65
+unresolved       : 0
+extra masters    : 0
+mandatory mismatch: 0
+master shift violation: 0
+internal errors  : 0
 ```
 
-with 78 mandatory union targets.
+The registry and master-basis schedule already contain `Q05_full -> Q05_final13`. Q05 requires no further Kira run.
 
-### Generic mandatory-union continuation
+## Q07 master-basis discovery: NEXT
 
-The Q02 strategy has been lifted into the common Stage-2 path rather than copied into a Q05-only script.
+`Q07_full` covers Q07/Q47 and is the first pending family under the current deterministic schedule. It has 8 unique physical denominators, so the generic master-basis API gives baseline seed `r8s3d0`.
 
-Reusable runner:
+Do not reuse Q05 masters. Start Q07 from its own baseline and then run one-axis boundaries:
 
-```text
-examples/three_loop_master_basis_union_reduction.py
-run_three_loop_master_basis_union_reduction.bat
+```powershell
+.\run_three_loop_master_basis_seed.bat Q07_full r8s3d0 firefly
+.\run_three_loop_master_basis_boundaries.bat Q07_full r8s3d0 firefly
 ```
 
-The Q05 mandatory-union reduction has now completed:
-
-```text
-family: Q05_full
-baseline seed: r8s3d0
-solver: firefly
-mandatory targets: 78
-required envelope: r8s3d2
-candidate master count: 13
-audit: PASS
-```
-
-Thus the current candidate is a 13-master basis in the common context `r8s3d2`. It is not promoted yet.
-
-### Generic candidate-closure continuation
-
-The Q02 final-basis stability strategy is now also available through a generic runner:
-
-```text
-examples/three_loop_master_basis_candidate_closure.py
-run_three_loop_master_basis_candidate_closure.bat
-```
-
-The runner reads the preceding union-reduction audit automatically, takes its exact union-target source and candidate-master artifact, and builds a deterministic closure target set consisting of:
-
-```text
-original mandatory union targets U candidate master forms
-```
-
-It then exports the three one-axis boundary projects of the candidate envelope. For Q05 these are:
-
-```text
-r9s3d2
-r8s4d2
-r8s3d3
-```
-
-Each project uses the identical closure mandatory list and performs FireFly stale-state cleanup before Kira. The final aggregate audit requires:
-
-- every candidate master form to remain in `masters.final`;
-- candidate/union/closure targets to be classified from completed Kira output;
-- zero unresolved closure targets;
-- all three one-axis boundaries to pass.
-
-Only an aggregate PASS permits promotion to `Q05_final13`.
+The boundary batch evaluates `r9s3d0`, `r8s4d0`, and `r8s3d1` and writes the generic aggregate audit. If the baseline master set is not stable, continue with the generic mandatory-union reduction and candidate-closure path instead of promoting the literal baseline masters.
 
 ## Current next sequence
 
-1. Pull the branch and run the generic Q05 candidate closure:
+1. Pull the branch:
 
 ```powershell
-.\run_three_loop_master_basis_candidate_closure.bat Q05_full r8s3d0 firefly
+git pull
 ```
 
-2. If all `r9s3d2`, `r8s4d2`, and `r8s3d3` audits pass with candidate13 stable and unresolved=0, promote `Q05_full -> Q05_final13`, update the registry/schedule, and validate the 45-family schedule.
-3. Then exercise the same common API on another 2-3 pending families before enabling an unattended all-family batch runner.
-4. After enough families have stable bases, demonstrate cross-family reuse of `master_coefficient_api` on Q08 or Q10 before scaling coefficient synthesis across all diagrams.
-5. Master evaluation / epsilon expansion has not started and remains a likely major research bottleneck.
-6. Only after the global family/master picture is sufficiently stable should the 72-diagram total `F2(0)` be assembled.
+2. Run the Q07 baseline:
+
+```powershell
+.\run_three_loop_master_basis_seed.bat Q07_full r8s3d0 firefly
+```
+
+3. After the baseline PASS, run the Q07 one-axis boundary aggregate:
+
+```powershell
+.\run_three_loop_master_basis_boundaries.bat Q07_full r8s3d0 firefly
+```
+
+4. Inspect the boundary aggregate audit. If all three boundaries retain the baseline master set, prepare promotion. If any boundary is unstable, use:
+
+```powershell
+.\run_three_loop_master_basis_union_reduction.bat Q07_full r8s3d0 firefly
+```
+
+and then, after the union reduction PASS:
+
+```powershell
+.\run_three_loop_master_basis_candidate_closure.bat Q07_full r8s3d0 firefly
+```
+
+5. Do not enable the unattended all-family runner yet. Q07 is the next real-family exercise of the reusable Stage-2 API.
+6. Exact coefficient synthesis is complete only for Q01. Cross-family reuse on a promoted family such as Q08 or Q10 remains a later step.
+7. Master evaluation / epsilon expansion has not started and remains a likely major research bottleneck.
+8. Only after the global family/master picture is sufficiently stable should the 72-diagram total `F2(0)` be assembled.
 
 ## Continuity rule
 
