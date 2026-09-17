@@ -2,12 +2,13 @@
 
 The module is intentionally conservative: it discovers already completed seed
 audits, builds an execution queue from the canonical master-basis schedule,
-records per-step runtimes, and estimates remaining wall-clock time.  Actual Kira
+records per-step runtimes, and estimates remaining wall-clock time. Actual Kira
 execution remains in the thin Windows BAT layer.
 """
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from functools import lru_cache
 import json
 from pathlib import Path
 import statistics
@@ -127,14 +128,20 @@ def update_checkpoint(step: BatchStep, *, status: str, elapsed_s: float | None =
     save_checkpoint(payload)
 
 
-def execution_families() -> list[str]:
+@lru_cache(maxsize=1)
+def execution_families() -> tuple[str, ...]:
     schedule = build_master_basis_schedule(load_topologies())
-    return [str(item["canonical_family_id"]) for item in schedule.get("schedule", [])]
+    return tuple(str(item["canonical_family_id"]) for item in schedule.get("schedule", []))
+
+
+@lru_cache(maxsize=None)
+def cached_family_spec(family_id: str):
+    return build_family_spec(family_id)
 
 
 def family_steps(family_id: str, *, baseline_solver: str = "ordinary",
                  boundary_solver: str = "firefly") -> list[BatchStep]:
-    spec = build_family_spec(family_id)
+    spec = cached_family_spec(family_id)
     base = spec.baseline_seed
     r1, s1, d1 = base.one_axis_extensions()
     return [
@@ -146,7 +153,7 @@ def family_steps(family_id: str, *, baseline_solver: str = "ordinary",
 
 
 def build_queue(*, start_family: str | None = None) -> list[BatchStep]:
-    families = execution_families()
+    families = list(execution_families())
     if start_family:
         if start_family not in families:
             raise ValueError(f"start family is not pending: {start_family}")
@@ -166,7 +173,7 @@ def build_queue(*, start_family: str | None = None) -> list[BatchStep]:
 
 
 def _runtime_samples(step: BatchStep, history: Iterable[dict[str, Any]]) -> list[float]:
-    spec = build_family_spec(step.family)
+    spec = cached_family_spec(step.family)
     exact: list[float] = []
     structural: list[float] = []
     phase_class = "baseline" if step.phase == "baseline" else "boundary"
@@ -187,12 +194,7 @@ def _runtime_samples(step: BatchStep, history: Iterable[dict[str, Any]]) -> list
 
 
 def estimate_step(step: BatchStep) -> dict[str, Any]:
-    """Return a deliberately broad runtime estimate from local empirical history.
-
-    Before enough generic history exists, seed with a few authoritative timings
-    already observed in this project. The range is intentionally wide because
-    Kira/FireFly runtime can vary sharply between families.
-    """
+    """Return a deliberately broad runtime estimate from local empirical history."""
     samples = _runtime_samples(step, load_runtime_history())
     if not samples:
         if step.phase == "baseline":
