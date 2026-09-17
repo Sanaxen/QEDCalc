@@ -29,18 +29,31 @@ echo family: %FAMILY%
 echo baseline seed: %BASELINE_SEED%
 echo solver: %SOLVER%
 
+rem Avoid nested FOR /F command quoting around .venv\Scripts\python.exe.
+rem Write the three project paths to a temporary file first, then iterate it.
+set "PROJECT_LIST=%TEMP%\qedcalc_candidate_closure_%RANDOM%_%RANDOM%.txt"
+".venv\Scripts\python.exe" -m examples.three_loop_master_basis_candidate_closure --family "%FAMILY%" --baseline-seed "%BASELINE_SEED%" --solver "%SOLVER%" --print-projects > "%PROJECT_LIST%"
+set "LIST_ERR=%ERRORLEVEL%"
+if not "%LIST_ERR%"=="0" (
+  if exist "%PROJECT_LIST%" del /q "%PROJECT_LIST%" >nul 2>&1
+  echo ERROR: failed to obtain candidate-closure project list.
+  exit /b %LIST_ERR%
+)
+
 set "PROJECT_COUNT=0"
-for /f "usebackq delims=" %%P in (`".venv\Scripts\python.exe" -m examples.three_loop_master_basis_candidate_closure --family "%FAMILY%" --baseline-seed "%BASELINE_SEED%" --solver "%SOLVER%" --print-projects`) do (
+for /f "usebackq delims=" %%P in ("%PROJECT_LIST%") do (
   set /a PROJECT_COUNT+=1
   set "WIN_PROJECT=%%P"
   if not exist "!WIN_PROJECT!\jobs.yaml" (
     echo ERROR: candidate-closure Kira project was not generated.
     echo Expected: !WIN_PROJECT!
+    if exist "%PROJECT_LIST%" del /q "%PROJECT_LIST%" >nul 2>&1
     exit /b 3
   )
   if not exist "!WIN_PROJECT!\mandatory_candidate_closure_targets.txt" (
     echo ERROR: candidate-closure mandatory list was not generated.
     echo Expected: !WIN_PROJECT!\mandatory_candidate_closure_targets.txt
+    if exist "%PROJECT_LIST%" del /q "%PROJECT_LIST%" >nul 2>&1
     exit /b 4
   )
 
@@ -50,9 +63,12 @@ for /f "usebackq delims=" %%P in (`".venv\Scripts\python.exe" -m examples.three_
   set "KIRA_ERR=!ERRORLEVEL!"
   if not "!KIRA_ERR!"=="0" (
     echo ERROR: Kira exited with code !KIRA_ERR!.
+    if exist "%PROJECT_LIST%" del /q "%PROJECT_LIST%" >nul 2>&1
     exit /b !KIRA_ERR!
   )
 )
+
+if exist "%PROJECT_LIST%" del /q "%PROJECT_LIST%" >nul 2>&1
 
 if not "%PROJECT_COUNT%"=="3" (
   echo ERROR: expected exactly 3 candidate-closure projects, got %PROJECT_COUNT%.
