@@ -28,6 +28,14 @@ echo QEDCalc generic candidate master closure Kira runs
 echo family: %FAMILY%
 echo baseline seed: %BASELINE_SEED%
 echo solver: %SOLVER%
+echo.
+echo Rough runtime guide ^(heuristic only^):
+echo   3 sequential Kira/FireFly boundary runs
+echo   typical per boundary : about 10-90 minutes
+echo   typical total        : about 30 minutes-4.5 hours
+echo   difficult seeds may take longer; overnight execution is reasonable
+echo   this is not a completion-time guarantee
+echo.
 
 rem Avoid nested FOR /F command quoting around .venv\Scripts\python.exe.
 rem Write the three project paths to a temporary file first, then iterate it.
