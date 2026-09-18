@@ -432,7 +432,7 @@ def run_batch(
     if not families:
         if max_families is not None:
             print(
-                f"No family fits within max-diagrams={max_families} without splitting a canonical family.",
+                f"No unfinished family remains within max-families={max_families}.",
                 flush=True,
             )
         else:
