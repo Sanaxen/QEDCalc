@@ -6,8 +6,8 @@ Modes:
   --run      execute pending families sequentially
   --resume   auto-detect the first unfinished family and continue
 
-Run/plan/resume may be capped by --max-diagrams. Canonical families are atomic:
-the controller never starts a family whose diagram count would exceed the cap.
+Run/plan/resume may be capped by --max-families. The cap counts canonical
+families, which are the actual Stage-2 execution units.
 
 For each pending family the controller reuses completed seed audits, runs any
 missing FireFly baseline/boundary seeds, evaluates the one-axis boundary audit,
@@ -331,12 +331,12 @@ def _family_is_ready(family: str) -> bool:
 
 def _select_families(
     start_family: str | None,
-    max_diagrams: int | None,
+    max_families: int | None,
     *,
     skip_ready: bool = True,
 ) -> tuple[list[str], int]:
-    if max_diagrams is not None and max_diagrams <= 0:
-        raise ValueError("max_diagrams must be a positive integer")
+    if max_families is not None and max_families <= 0:
+        raise ValueError("max_families must be a positive integer")
 
     families = list(execution_families())
     if start_family:
@@ -347,15 +347,14 @@ def _select_families(
     if skip_ready:
         families = [family for family in families if not _family_is_ready(family)]
 
-    selected: list[str] = []
-    diagrams = 0
-    for family in families:
-        count = len(master_basis_api.build_family_spec(family).diagrams)
-        if max_diagrams is not None and diagrams + count > max_diagrams:
-            break
-        selected.append(family)
-        diagrams += count
-    return selected, diagrams
+    if max_families is not None:
+        families = families[:max_families]
+
+    diagram_count = sum(
+        len(master_basis_api.build_family_spec(family).diagrams)
+        for family in families
+    )
+    return families, diagram_count
 
 
 def _queue_for_families(families: list[str]) -> list[BatchStep]:
@@ -371,17 +370,16 @@ def _auto_resume_family() -> str | None:
     return families[0] if families else None
 
 
-def show_plan(start_family: str | None, max_diagrams: int | None) -> None:
-    families, diagram_count = _select_families(start_family, max_diagrams)
+def show_plan(start_family: str | None, max_families: int | None) -> None:
+    families, diagram_count = _select_families(start_family, max_families)
     queue = _queue_for_families(families)
     estimate = estimate_queue(queue)
     print("QEDCalc master-basis batch plan")
     print(f"selected families: {len(families)}")
-    print(f"selected diagrams: {diagram_count}" + (
-        f" / max {max_diagrams}" if max_diagrams is not None else ""
+    print(f"selected canonical families: {len(families)}" + (
+        f" / max {max_families}" if max_families is not None else ""
     ))
-    if max_diagrams is not None:
-        print("diagram cap is strict; canonical families are atomic and are never split")
+    print(f"covered diagrams in selected families: {diagram_count}")
     if families:
         print(f"first family: {families[0]}")
         print(f"last family: {families[-1]}")
@@ -419,7 +417,7 @@ def show_status() -> None:
 
 def run_batch(
     start_family: str | None,
-    max_diagrams: int | None,
+    max_families: int | None,
     *,
     resume_mode: bool = False,
 ) -> int:
@@ -430,11 +428,11 @@ def run_batch(
             return 0
         print(f"AUTO RESUME: first unfinished family is {start_family}", flush=True)
 
-    families, diagram_count = _select_families(start_family, max_diagrams)
+    families, diagram_count = _select_families(start_family, max_families)
     if not families:
-        if max_diagrams is not None:
+        if max_families is not None:
             print(
-                f"No family fits within max-diagrams={max_diagrams} without splitting a canonical family.",
+                f"No family fits within max-diagrams={max_families} without splitting a canonical family.",
                 flush=True,
             )
         else:
@@ -446,8 +444,8 @@ def run_batch(
     finish = datetime.now().astimezone() + timedelta(seconds=initial_estimate["total_median_s"])
     print("QEDCalc unattended master-basis run", flush=True)
     print(
-        f"selected families={len(families)} diagrams={diagram_count}" +
-        (f" max_diagrams={max_diagrams}" if max_diagrams is not None else ""),
+        f"selected families={len(families)} covered_diagrams={diagram_count}" +
+        (f" max_families={max_families}" if max_families is not None else ""),
         flush=True,
     )
     print(f"first family={families[0]} last family={families[-1]}", flush=True)
@@ -537,12 +535,12 @@ def main() -> None:
     mode.add_argument("--run", action="store_true")
     mode.add_argument("--resume", action="store_true")
     p.add_argument("--start-family")
-    p.add_argument("--max-diagrams", type=int)
+    p.add_argument("--max-families", type=int)
     args = p.parse_args()
 
     _cache_registry_once()
     if args.plan:
-        show_plan(args.start_family, args.max_diagrams)
+        show_plan(args.start_family, args.max_families)
         return
     if args.status:
         show_status()
@@ -550,7 +548,7 @@ def main() -> None:
     raise SystemExit(
         run_batch(
             args.start_family,
-            args.max_diagrams,
+            args.max_families,
             resume_mode=bool(args.resume),
         )
     )
