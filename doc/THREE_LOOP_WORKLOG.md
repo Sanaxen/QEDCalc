@@ -457,7 +457,7 @@ git pull
 .\run_three_loop_master_basis_all.bat plan Q12_full 5
 ```
 
-This command does not start Kira. It should show the existing Q12 r8s3d0 baseline as already satisfied and list Q12 boundary-r/s/d as the first missing seed steps. Because Q12 and Q17 each cover two diagrams and Q18 would raise the total from 4 to 6, the strict five-family cap should select Q12+Q17 only: 2 canonical families / 4 diagrams. It also prints low/median/high seed-stage runtime estimates.
+This command does not start Kira. It should show the existing Q12 r8s3d0 baseline as already satisfied and list Q12 boundary-r/s/d as the first missing seed steps. The strict five-family cap should select the first five unfinished canonical families beginning at Q12_full: Q12_full, Q17_full, Q18_full, Q20_full, and Q22_full. The plan also reports how many original diagrams those selected families cover and prints low/median/high seed-stage runtime estimates.
 
 3. If the plan is correct, start that limited unattended Stage-2 run:
 
