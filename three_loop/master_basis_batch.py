@@ -139,7 +139,7 @@ def cached_family_spec(family_id: str):
     return build_family_spec(family_id)
 
 
-def family_steps(family_id: str, *, baseline_solver: str = "ordinary",
+def family_steps(family_id: str, *, baseline_solver: str = "firefly",
                  boundary_solver: str = "firefly") -> list[BatchStep]:
     spec = cached_family_spec(family_id)
     base = spec.baseline_seed
