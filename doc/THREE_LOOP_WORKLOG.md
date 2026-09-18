@@ -278,7 +278,7 @@ The top-level runner is:
 
 Unattended resume is now automatic. `resume` with no family argument scans promotion-ready artifacts, checkpoint state, and existing successful seed audits, then starts from the first unfinished pending family. The user does not need to know which family was active when a PC reboot, console close, or other interruption occurred.
 
-`MAX_FAMILIES` is a strict safety cap on how many diagrams may be completed in one unattended batch. Canonical families are atomic and are never split. Therefore the controller stops before a family if adding that whole family would exceed the requested cap. For the current schedule, where Q12/Q17/Q18/... are two-diagram families, a cap of 5 processes Q12+Q17 = 4 diagrams and stops before Q18 rather than silently processing 6.
+`MAX_FAMILIES` is a strict safety cap on how many canonical families may be processed in one unattended batch. Canonical families are the Stage-2 execution units and are never split. A value of 5 therefore selects at most five unfinished canonical families, regardless of how many original Feynman diagrams those families cover. For the current schedule, starting at `Q12_full` with a cap of 5 selects `Q12_full`, `Q17_full`, `Q18_full`, `Q20_full`, and `Q22_full`. These five families currently cover ten original diagrams in total.
 
 Examples:
 
