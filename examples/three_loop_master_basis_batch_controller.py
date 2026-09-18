@@ -42,6 +42,7 @@ from three_loop.master_basis_batch import (
     execution_families,
     family_steps,
     load_checkpoint,
+    discover_seed_results,
     update_checkpoint,
 )
 
@@ -383,6 +384,27 @@ def show_plan(start_family: str | None, max_families: int | None) -> None:
     if families:
         print(f"first family: {families[0]}")
         print(f"last family: {families[-1]}")
+    pending_keys = {step.key for step in queue}
+    existing = discover_seed_results()
+    checkpoint = load_checkpoint().get("steps", {})
+    reused = []
+    for family in families:
+        for step in family_steps(family):
+            if step.key in pending_keys:
+                continue
+            prior = checkpoint.get(step.key, {})
+            if prior.get("status") == "pass":
+                reused.append((step, "checkpoint", str(prior.get("detail") or "")))
+                continue
+            hit = existing.get((step.family, step.seed.tag))
+            if hit:
+                reused.append((step, "audit", str(hit.get("path") or "")))
+    print(f"reused completed seed steps: {len(reused)}")
+    for step, source_kind, source in reused:
+        print(
+            f"  REUSE {step.family:12s} {step.phase:10s} {step.seed.tag:8s} "
+            f"{step.solver:8s} via {source_kind}: {source}"
+        )
     print(f"pending executable seed steps: {estimate['step_count']}")
     for row in estimate["steps"]:
         est = row["estimate"]
