@@ -252,7 +252,31 @@ Do not regress this cleanup behavior.
 
 The family/seed preparation, Kira project generation, master parsing, one-axis boundary comparison, union/intersection construction, and explicit-target envelope calculation are reusable in `three_loop/master_basis_api.py`.
 
-The generic Stage-2 validation over all 45 canonical families passed 45/45. Keep the deliberate operational restriction: do not switch to an unattended all-family batch runner until Q05 plus another 2-3 families have exercised the common API successfully in real Kira/FireFly runs.
+The generic Stage-2 validation over all 45 canonical families passed 45/45.
+
+The earlier deliberate restriction against unattended all-family execution has now been lifted. Q05, Q07, and Q09 exercised the common API in real Kira/FireFly runs, including two independent seed-dependent families (Q07 and Q09) that successfully traversed baseline -> boundaries -> mandatory union -> candidate closure -> no-rerun re-audit.
+
+The unattended controller in `examples/three_loop_master_basis_batch_controller.py` now:
+- uses FireFly for both baseline and boundary seed runs;
+- reuses existing successful seed audits/checkpoints;
+- prints empirical median/range runtime estimates and an estimated finish time before each seed run;
+- automatically enters mandatory-union reduction when the boundary audit is unstable;
+- automatically runs candidate closure;
+- treats the text-equation closure audit as provisional and always follows it with the authoritative no-rerun completion re-audit;
+- stops only on a genuine failed reduction/audit;
+- writes a `three_loop_<family>_promotion_ready.json` artifact for every scientifically proven family;
+- does not edit the executable canonical registry during a long unattended computation. Registry promotions remain reviewed Git changes after the generated proof artifacts are inspected.
+
+The top-level runner is:
+
+```powershell
+.\run_three_loop_master_basis_all.bat plan [START_FAMILY]
+.\run_three_loop_master_basis_all.bat run [START_FAMILY]
+.\run_three_loop_master_basis_all.bat status
+.\run_three_loop_master_basis_all.bat resume [START_FAMILY]
+```
+
+The initial total ETA covers currently pending baseline/boundary seed runs. Union/candidate-closure rescue time is added only when a family proves unstable.
 
 ## Q05 master-basis discovery: COMPLETE / PASS
 
@@ -391,6 +415,20 @@ re-audit: PASS
 
 Therefore `Q09_full -> Q09_final17` is formally promoted.
 
+## Q12 master-basis discovery: IN PROGRESS
+
+`Q12_full` covers Q12/Q35 and is currently the first pending family.
+
+Baseline FireFly reduction is complete:
+
+```text
+seed: r8s3d0
+master count: 82
+audit: PASS
+```
+
+The Q12 one-axis boundary stage has not yet been run. Because the unattended controller now discovers the existing successful baseline audit, starting the batch at Q12 will skip this baseline rather than recomputing it.
+
 ## Current next sequence
 
 1. Pull the branch:
@@ -399,24 +437,54 @@ Therefore `Q09_full -> Q09_final17` is formally promoted.
 git pull
 ```
 
-2. Run the updated master-basis schedule audit:
+2. Before starting unattended computation, inspect the Q12-and-later plan only:
 
 ```powershell
-.\run_three_loop_master_basis_schedule_audit.bat
+.\run_three_loop_master_basis_all.bat plan Q12_full
 ```
 
-This confirms the post-Q09 totals and prints the next pending canonical family from the executable schedule.
+This command does not start Kira. It should show the existing Q12 r8s3d0 baseline as already satisfied and list Q12 boundary-r/s/d as the first missing seed steps, followed by later pending families. It also prints low/median/high seed-stage runtime estimates.
 
-3. Run the reusable Stage-2 API validation if needed after the registry change:
+3. If the plan is correct, start the unattended Stage-2 run from Q12:
 
 ```powershell
-.\run_three_loop_master_basis_api_validation.bat
+.\run_three_loop_master_basis_all.bat run Q12_full
 ```
 
-4. Use the schedule audit's first pending family as the next real Kira/FireFly target. Do not guess the family name by hand.
-5. Keep using the generic baseline -> boundaries -> union reduction -> candidate closure / no-rerun re-audit path.
-6. Exact coefficient synthesis is complete only for Q01. Cross-family reuse on another promoted family remains a later step.
+The controller now executes the complete per-family decision tree automatically:
+
+```text
+existing result reuse
+  -> missing baseline/boundary FireFly runs
+  -> boundary audit
+     -> stable: promotion-ready artifact -> next family
+     -> unstable: mandatory union
+                  -> candidate closure
+                  -> no-rerun closure re-audit
+                  -> promotion-ready artifact
+                  -> next family
+```
+
+A genuine Kira/audit failure stops the batch with checkpoint/runtime history preserved. Resume from the affected family with:
+
+```powershell
+.\run_three_loop_master_basis_all.bat resume FAMILY_ID
+```
+
+Status only:
+
+```powershell
+.\run_three_loop_master_basis_all.bat status
+```
+
+4. The unattended runner deliberately does not rewrite `canonical_family_registry.py`. After one or more families reach promotion-ready status, inspect their generated `three_loop_<family>_promotion_ready.json` artifacts and apply reviewed registry promotions in Git.
+
+5. Current formal master-basis status remains 7/45 canonical families and 14/72 diagrams. Q12 baseline is complete but Q12 is not yet formally promoted.
+
+6. Exact coefficient synthesis is complete only for Q01. Cross-family coefficient-API validation remains a later stage after enough master bases are promoted.
+
 7. Master evaluation / epsilon expansion has not started and remains a likely major research bottleneck.
+
 8. Only after the global family/master picture is sufficiently stable should the 72-diagram total `F2(0)` be assembled.
 
 ## Continuity rule
