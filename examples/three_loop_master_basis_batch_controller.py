@@ -4,6 +4,10 @@ Modes:
   --plan     show pending steps and runtime estimate without executing Kira
   --status   show checkpoint summary
   --run      execute pending families sequentially
+  --resume   auto-detect the first unfinished family and continue
+
+Run/plan/resume may be capped by --max-diagrams. Canonical families are atomic:
+the controller never starts a family whose diagram count would exceed the cap.
 
 For each pending family the controller reuses completed seed audits, runs any
 missing FireFly baseline/boundary seeds, evaluates the one-axis boundary audit,
@@ -306,10 +310,81 @@ def _run_union_rescue(family: str, baseline_tag: str) -> int:
     return 0
 
 
-def show_plan(start_family: str | None) -> None:
-    queue = build_queue(start_family=start_family)
+def _promotion_ready_path(family: str) -> Path:
+    return AUDIT_DIR / f"three_loop_{family.lower()}_promotion_ready.json"
+
+
+def _family_is_ready(family: str) -> bool:
+    payload = _read_json(_promotion_ready_path(family))
+    if (
+        payload.get("audit_pass")
+        and payload.get("stage") == "master_basis_promotion_ready"
+        and payload.get("family") == family
+    ):
+        return True
+
+    baseline = master_basis_api.build_family_spec(family).baseline_seed
+    step = BatchStep(family, "family-ready", baseline, "firefly")
+    prior = load_checkpoint().get("steps", {}).get(step.key, {})
+    return prior.get("status") == "pass"
+
+
+def _select_families(
+    start_family: str | None,
+    max_diagrams: int | None,
+    *,
+    skip_ready: bool = True,
+) -> tuple[list[str], int]:
+    if max_diagrams is not None and max_diagrams <= 0:
+        raise ValueError("max_diagrams must be a positive integer")
+
+    families = list(execution_families())
+    if start_family:
+        if start_family not in families:
+            raise ValueError(f"start family is not pending: {start_family}")
+        families = families[families.index(start_family):]
+
+    if skip_ready:
+        families = [family for family in families if not _family_is_ready(family)]
+
+    selected: list[str] = []
+    diagrams = 0
+    for family in families:
+        count = len(master_basis_api.build_family_spec(family).diagrams)
+        if max_diagrams is not None and diagrams + count > max_diagrams:
+            break
+        selected.append(family)
+        diagrams += count
+    return selected, diagrams
+
+
+def _queue_for_families(families: list[str]) -> list[BatchStep]:
+    if not families:
+        return []
+    allowed = set(families)
+    queue = build_queue(start_family=families[0])
+    return [step for step in queue if step.family in allowed]
+
+
+def _auto_resume_family() -> str | None:
+    families, _ = _select_families(None, None, skip_ready=True)
+    return families[0] if families else None
+
+
+def show_plan(start_family: str | None, max_diagrams: int | None) -> None:
+    families, diagram_count = _select_families(start_family, max_diagrams)
+    queue = _queue_for_families(families)
     estimate = estimate_queue(queue)
     print("QEDCalc master-basis batch plan")
+    print(f"selected families: {len(families)}")
+    print(f"selected diagrams: {diagram_count}" + (
+        f" / max {max_diagrams}" if max_diagrams is not None else ""
+    ))
+    if max_diagrams is not None:
+        print("diagram cap is strict; canonical families are atomic and are never split")
+    if families:
+        print(f"first family: {families[0]}")
+        print(f"last family: {families[-1]}")
     print(f"pending executable seed steps: {estimate['step_count']}")
     for row in estimate["steps"]:
         est = row["estimate"]
@@ -335,22 +410,47 @@ def show_status() -> None:
     print("QEDCalc master-basis batch status")
     print("checkpoint:", ROOT / "output" / "three_loop_integral_family_audit" / "three_loop_master_basis_batch_checkpoint.json")
     print("step status counts:", counts)
+    next_family = _auto_resume_family()
+    print("auto-resume family:", next_family or "none (all pending families are promotion-ready)")
     failed = [row for row in rows if row.get("status") in {"fail", "soft-fail", "needs_union"}]
     for row in failed[-10:]:
         print(f"  {row.get('key')}: {row.get('status')} {row.get('detail','')}")
 
 
-def run_batch(start_family: str | None) -> int:
-    families = list(execution_families())
-    if start_family:
-        if start_family not in families:
-            raise SystemExit(f"start family is not pending: {start_family}")
-        families = families[families.index(start_family):]
+def run_batch(
+    start_family: str | None,
+    max_diagrams: int | None,
+    *,
+    resume_mode: bool = False,
+) -> int:
+    if resume_mode and start_family is None:
+        start_family = _auto_resume_family()
+        if start_family is None:
+            print("Nothing to resume: all currently pending families are promotion-ready.", flush=True)
+            return 0
+        print(f"AUTO RESUME: first unfinished family is {start_family}", flush=True)
 
-    initial_queue = build_queue(start_family=start_family)
+    families, diagram_count = _select_families(start_family, max_diagrams)
+    if not families:
+        if max_diagrams is not None:
+            print(
+                f"No family fits within max-diagrams={max_diagrams} without splitting a canonical family.",
+                flush=True,
+            )
+        else:
+            print("No unfinished pending family remains.", flush=True)
+        return 0
+
+    initial_queue = _queue_for_families(families)
     initial_estimate = estimate_queue(initial_queue)
     finish = datetime.now().astimezone() + timedelta(seconds=initial_estimate["total_median_s"])
     print("QEDCalc unattended master-basis run", flush=True)
+    print(
+        f"selected families={len(families)} diagrams={diagram_count}" +
+        (f" max_diagrams={max_diagrams}" if max_diagrams is not None else ""),
+        flush=True,
+    )
+    print(f"first family={families[0]} last family={families[-1]}", flush=True)
     print(
         f"seed steps currently pending: {initial_estimate['step_count']} "
         f"median~{_fmt(initial_estimate['total_median_s'])} "
@@ -364,6 +464,9 @@ def run_batch(start_family: str | None) -> int:
     )
 
     for index, family in enumerate(families, start=1):
+        if _family_is_ready(family):
+            print(f"SKIP promotion-ready family: {family}", flush=True)
+            continue
         spec = master_basis_api.build_family_spec(family)
         baseline = spec.baseline_seed
         print(
@@ -432,17 +535,25 @@ def main() -> None:
     mode.add_argument("--plan", action="store_true")
     mode.add_argument("--status", action="store_true")
     mode.add_argument("--run", action="store_true")
+    mode.add_argument("--resume", action="store_true")
     p.add_argument("--start-family")
+    p.add_argument("--max-diagrams", type=int)
     args = p.parse_args()
 
     _cache_registry_once()
     if args.plan:
-        show_plan(args.start_family)
+        show_plan(args.start_family, args.max_diagrams)
         return
     if args.status:
         show_status()
         return
-    raise SystemExit(run_batch(args.start_family))
+    raise SystemExit(
+        run_batch(
+            args.start_family,
+            args.max_diagrams,
+            resume_mode=bool(args.resume),
+        )
+    )
 
 
 if __name__ == "__main__":
