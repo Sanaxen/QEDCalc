@@ -441,7 +441,21 @@ master count: 82
 audit: PASS
 ```
 
-The Q12 one-axis boundary stage has not yet been run. Because the unattended controller now discovers the existing successful baseline audit, starting the batch at Q12 will skip this baseline rather than recomputing it.
+The one-axis FireFly boundary stage is also complete:
+
+```text
+r9s3d0 : 82 masters, retained 82/82, stable=True
+r8s4d0 : 82 masters, retained 82/82, stable=True
+r8s3d1 : 66 masters, retained 63/82, stable=False
+intersection across available sets: 63
+union across available sets: 85
+stable under tested one-axis extensions: False
+union reduction needed: True
+internal audit errors: 0
+boundary aggregate audit: PASS
+```
+
+Therefore the literal 82-form baseline set must not be promoted. Q12 is seed-dependent in the tested d+1 direction. The next required stage is the generic mandatory-union reduction over the 85-form union, followed by candidate closure and the authoritative no-rerun closure re-audit. The unattended controller should enter this rescue path automatically because the successful seed audits and boundary aggregate audit already exist.
 
 ## Current next sequence
 
