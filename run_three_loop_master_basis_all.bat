@@ -24,7 +24,7 @@ if "%ARG2%"=="" (
 ) else if "%ARG3%"=="" (
   ".venv\Scripts\python.exe" -m examples.three_loop_master_basis_batch_controller --plan --start-family "%ARG2%"
 ) else (
-  ".venv\Scripts\python.exe" -m examples.three_loop_master_basis_batch_controller --plan --start-family "%ARG2%" --max-diagrams "%ARG3%"
+  ".venv\Scripts\python.exe" -m examples.three_loop_master_basis_batch_controller --plan --start-family "%ARG2%" --max-families "%ARG3%"
 )
 exit /b %ERRORLEVEL%
 
@@ -38,27 +38,27 @@ if "%ARG2%"=="" (
 ) else if "%ARG3%"=="" (
   ".venv\Scripts\python.exe" -m examples.three_loop_master_basis_batch_controller --run --start-family "%ARG2%"
 ) else (
-  ".venv\Scripts\python.exe" -m examples.three_loop_master_basis_batch_controller --run --start-family "%ARG2%" --max-diagrams "%ARG3%"
+  ".venv\Scripts\python.exe" -m examples.three_loop_master_basis_batch_controller --run --start-family "%ARG2%" --max-families "%ARG3%"
 )
 exit /b %ERRORLEVEL%
 
 :resume
 if not "%ARG3%"=="" (
-  echo ERROR: resume accepts only an optional MAX_DIAGRAMS argument.
+  echo ERROR: resume accepts only an optional MAX_FAMILIES argument.
   goto :usage
 )
 if "%ARG2%"=="" (
   ".venv\Scripts\python.exe" -m examples.three_loop_master_basis_batch_controller --resume
 ) else (
-  ".venv\Scripts\python.exe" -m examples.three_loop_master_basis_batch_controller --resume --max-diagrams "%ARG2%"
+  ".venv\Scripts\python.exe" -m examples.three_loop_master_basis_batch_controller --resume --max-families "%ARG2%"
 )
 exit /b %ERRORLEVEL%
 
 :usage
 echo Usage:
-echo   %~nx0 plan [START_FAMILY] [MAX_DIAGRAMS]
-echo   %~nx0 run [START_FAMILY] [MAX_DIAGRAMS]
-echo   %~nx0 resume [MAX_DIAGRAMS]
+echo   %~nx0 plan [START_FAMILY] [MAX_FAMILIES]
+echo   %~nx0 run [START_FAMILY] [MAX_FAMILIES]
+echo   %~nx0 resume [MAX_FAMILIES]
 echo   %~nx0 status
 echo.
 echo Examples:
@@ -68,6 +68,5 @@ echo   %~nx0 status
 echo   %~nx0 resume
 echo   %~nx0 resume 5
 echo.
-echo MAX_DIAGRAMS is a strict upper bound. Canonical families are never split.
-echo If the next family would exceed the limit, the batch stops before that family.
+echo MAX_FAMILIES limits how many canonical families are processed in one unattended batch.
 exit /b 2
