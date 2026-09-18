@@ -523,7 +523,7 @@ Status only:
 
 ## Agreed post-master-basis roadmap
 
-After all 45 canonical families have stable promoted master bases, the next formal deliverable is a per-diagram exact master-coefficient archive for all 72 diagrams.
+After all 45 canonical families have stable promoted master bases, an additional formal deliverable is a per-diagram exact master-coefficient archive for all 72 diagrams. This archive supplements, and does not replace, the primary project objective: deriving and reproducing the analytic three-loop electron g-2 result.
 
 The intended pipeline is:
 
@@ -555,7 +555,7 @@ with the following metadata fixed alongside it:
 - exact coefficient expressions;
 - source artifacts / audit provenance.
 
-The archive should be generated in both machine-readable JSON and human-readable Markdown. The purpose is not only to reproduce the final three-loop coefficient, but to preserve a reusable and independently auditable intermediate dataset for future calculations.
+The archive should be generated in both machine-readable JSON and human-readable Markdown. It is an additional reusable and independently auditable intermediate dataset for future calculations. The main scientific endpoint remains the analytic evaluation and assembly of the complete three-loop electron g-2 coefficient.
 
 Literature validation is expected primarily at grouped levels because published three-loop g-2 calculations generally report diagram sets / topology classes rather than all 72 individual master decompositions. Therefore the validation hierarchy is:
 
