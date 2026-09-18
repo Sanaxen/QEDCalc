@@ -52,6 +52,7 @@ def main() -> None:
     print("validating known reference families ...", flush=True)
     q02 = build_family_spec("Q02_full")
     q05 = build_family_spec("Q05_full")
+    q07 = build_family_spec("Q07_full")
     q08 = build_family_spec("Q08_full")
     q10 = build_family_spec("Q10_full")
     q01 = build_family_spec("Q01_full")
@@ -59,10 +60,12 @@ def main() -> None:
     expected_master_ids = {
         "Q01_full": "Q01_final60",
         "Q02_full": "Q02_final17",
+        "Q05_full": "Q05_final13",
+        "Q07_full": "Q07_final25",
         "Q08_full": "Q08_final12",
         "Q10_full": "Q10_final13",
     }
-    for spec in (q01, q02, q08, q10):
+    for spec in (q01, q02, q05, q07, q08, q10):
         expected = expected_master_ids[spec.family_id]
         if spec.master_basis_id != expected:
             errors.append(
@@ -192,6 +195,8 @@ def main() -> None:
         "QEDCalc reusable master-basis API validation",
         f"Q01 master: {q01.master_basis_id}",
         f"Q02 master: {q02.master_basis_id}",
+        f"Q05 master: {q05.master_basis_id}",
+        f"Q07 master: {q07.master_basis_id}",
         f"Q08 master: {q08.master_basis_id}",
         f"Q10 master: {q10.master_basis_id}",
     ]
