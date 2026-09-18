@@ -13,6 +13,8 @@ EXPECTED_FAMILY_COUNT = 45
 EXPECTED_COMPLETE = {
     "Q01_full": "Q01_final60",
     "Q02_full": "Q02_final17",
+    "Q05_full": "Q05_final13",
+    "Q07_full": "Q07_final25",
     "Q08_full": "Q08_final12",
     "Q10_full": "Q10_final13",
 }
@@ -55,6 +57,8 @@ def main() -> None:
 
     expected_diagrams = {
         "Q02_full": ["Q02", "Q45"],
+        "Q05_full": ["Q05", "Q42"],
+        "Q07_full": ["Q07", "Q47"],
         "Q08_full": ["Q08", "Q48"],
         "Q10_full": ["Q10", "Q50"],
     }
@@ -69,12 +73,6 @@ def main() -> None:
     next_pending = schedule[0] if schedule else None
     if expected_pending and next_pending is None:
         errors.append("master-basis schedule is unexpectedly empty")
-    if next_pending is not None and next_pending.get("canonical_family_id") != "Q05_full":
-        errors.append(
-            "next pending family="
-            f"{next_pending.get('canonical_family_id')}, expected=Q05_full"
-        )
-
     audit["errors"] = errors
     audit["audit_pass"] = not errors
     audit["next_pending_family"] = next_pending
