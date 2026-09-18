@@ -36,7 +36,7 @@ Total = 72.
 
 The exact canonical-family autodiscovery / registry work is complete for all 72 diagrams. There are 45 canonical Kira families in total. The family classification is based on explicit denominator bases and exact momentum-map witnesses, not topology similarity alone.
 
-## Master-basis schedule status after Q07 promotion
+## Master-basis schedule status after Q09 promotion
 
 Completed canonical families:
 
@@ -45,16 +45,17 @@ Completed canonical families:
 - `Q05_full -> Q05_final13`, diagrams Q05/Q42
 - `Q07_full -> Q07_final25`, diagrams Q07/Q47
 - `Q08_full -> Q08_final12`, diagrams Q08/Q48
+- `Q09_full -> Q09_final17`, diagrams Q09/Q49
 - `Q10_full -> Q10_final13`, diagrams Q10/Q50
 
-Expected schedule summary after the Q07 promotion audit:
+Expected schedule summary after the Q09 promotion audit:
 
 ```text
 canonical families: 45
-master-basis complete families: 6
-master-basis pending families: 39
-complete diagram coverage: 12
-pending diagram coverage: 60
+master-basis complete families: 7
+master-basis pending families: 38
+complete diagram coverage: 14
+pending diagram coverage: 58
 next pending family: determined by the updated schedule audit
 ```
 
@@ -340,6 +341,56 @@ re-audit: PASS
 
 Therefore `Q07_full -> Q07_final25` is formally promoted.
 
+## Q09 master-basis discovery: COMPLETE / PASS
+
+`Q09_full` covers Q09/Q49.
+
+Baseline FireFly reduction:
+
+```text
+seed: r8s3d0
+master count: 43
+runtime: 1223.1 s
+audit: PASS
+```
+
+One-axis boundary comparison:
+
+```text
+r9s3d0 : 43 masters, retained 43/43, stable=True
+r8s4d0 : 43 masters, retained 43/43, stable=True
+r8s3d1 : 42 masters, retained 32/43, stable=False
+intersection: 32
+union: 53
+internal audit errors: 0
+boundary aggregate audit: PASS
+```
+
+Therefore the literal 43-master baseline was not promoted. The 53-form union was reduced in the common mandatory context:
+
+```text
+mandatory targets: 53
+required envelope: r8s3d2
+candidate master count: 17
+audit: PASS
+```
+
+The first generic candidate-closure audit again classified all non-master mandatory targets as unresolved because no human-readable reduction equation was emitted, while all 17 candidate masters were retained. The no-rerun re-audit verified the completed Kira reductions directly:
+
+```text
+guards: r9s3d2 / r8s4d2 / r8s3d3
+masters.final: 17 / 17 / 17
+candidate masters retained: 17/17 on all guards
+resolved non-masters: 36 on all guards
+extra masters: 0
+mandatory mismatches: 0
+internal audit errors: 0
+stable under tested one-axis extensions: True
+re-audit: PASS
+```
+
+Therefore `Q09_full -> Q09_final17` is formally promoted.
+
 ## Current next sequence
 
 1. Pull the branch:
@@ -354,7 +405,7 @@ git pull
 .\run_three_loop_master_basis_schedule_audit.bat
 ```
 
-This confirms the post-Q07 totals and prints the next pending canonical family from the executable schedule.
+This confirms the post-Q09 totals and prints the next pending canonical family from the executable schedule.
 
 3. Run the reusable Stage-2 API validation if needed after the registry change:
 
