@@ -16,6 +16,7 @@ EXPECTED_COMPLETE = {
     "Q05_full": "Q05_final13",
     "Q07_full": "Q07_final25",
     "Q08_full": "Q08_final12",
+    "Q09_full": "Q09_final17",
     "Q10_full": "Q10_final13",
 }
 
@@ -60,6 +61,7 @@ def main() -> None:
         "Q05_full": ["Q05", "Q42"],
         "Q07_full": ["Q07", "Q47"],
         "Q08_full": ["Q08", "Q48"],
+        "Q09_full": ["Q09", "Q49"],
         "Q10_full": ["Q10", "Q50"],
     }
     for family_id, diagrams in expected_diagrams.items():
