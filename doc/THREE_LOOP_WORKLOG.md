@@ -521,6 +521,53 @@ Status only:
 
 8. Only after the global family/master picture is sufficiently stable should the 72-diagram total `F2(0)` be assembled.
 
+## Agreed post-master-basis roadmap
+
+After all 45 canonical families have stable promoted master bases, the next formal deliverable is a per-diagram exact master-coefficient archive for all 72 diagrams.
+
+The intended pipeline is:
+
+```text
+45 canonical families: stable master bases
+  -> 72 individual diagrams: exact master coefficients
+  -> 72-diagram coefficient archive (JSON + human-readable Markdown)
+  -> master integral evaluation / epsilon expansion
+  -> per-diagram renormalized F2(0)
+  -> category subtotals
+  -> literature comparison at the category / diagram-set level
+  -> full 72-diagram three-loop g-2 assembly
+```
+
+Each individual diagram must retain a relation of the form
+
+```text
+F2_diagram^(3)(D) = sum_j c_diagram,j(D) * M_family,j(D)
+```
+
+with the following metadata fixed alongside it:
+- diagram ID;
+- canonical family;
+- promoted master-basis ID;
+- exact master-integral exponent vectors;
+- canonical propagator basis;
+- dimensional convention D=4-2 epsilon;
+- normalization / mass / sign conventions;
+- exact coefficient expressions;
+- source artifacts / audit provenance.
+
+The archive should be generated in both machine-readable JSON and human-readable Markdown. The purpose is not only to reproduce the final three-loop coefficient, but to preserve a reusable and independently auditable intermediate dataset for future calculations.
+
+Literature validation is expected primarily at grouped levels because published three-loop g-2 calculations generally report diagram sets / topology classes rather than all 72 individual master decompositions. Therefore the validation hierarchy is:
+
+```text
+Level 1: per-diagram exact master-coefficient identities
+Level 2: category / literature diagram-set subtotals
+Level 3: published analytic/numerical subtotal comparison
+Level 4: full three-loop coefficient comparison
+```
+
+The per-diagram Level-1 archive is a QEDCalc deliverable even where no published per-diagram reference exists.
+
 ## Continuity rule
 
 At the start of a new chat/session, read this file first, then inspect the current branch and newest user-provided local logs. Update this worklog after meaningful milestones, design changes, important failures/fixes, or likely session handoffs.
