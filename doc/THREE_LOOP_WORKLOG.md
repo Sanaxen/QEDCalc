@@ -270,15 +270,15 @@ The unattended controller in `examples/three_loop_master_basis_batch_controller.
 The top-level runner is:
 
 ```powershell
-.\run_three_loop_master_basis_all.bat plan [START_FAMILY] [MAX_DIAGRAMS]
-.\run_three_loop_master_basis_all.bat run [START_FAMILY] [MAX_DIAGRAMS]
+.\run_three_loop_master_basis_all.bat plan [START_FAMILY] [MAX_FAMILIES]
+.\run_three_loop_master_basis_all.bat run [START_FAMILY] [MAX_FAMILIES]
 .\run_three_loop_master_basis_all.bat status
-.\run_three_loop_master_basis_all.bat resume [MAX_DIAGRAMS]
+.\run_three_loop_master_basis_all.bat resume [MAX_FAMILIES]
 ```
 
 Unattended resume is now automatic. `resume` with no family argument scans promotion-ready artifacts, checkpoint state, and existing successful seed audits, then starts from the first unfinished pending family. The user does not need to know which family was active when a PC reboot, console close, or other interruption occurred.
 
-`MAX_DIAGRAMS` is a strict safety cap on how many diagrams may be completed in one unattended batch. Canonical families are atomic and are never split. Therefore the controller stops before a family if adding that whole family would exceed the requested cap. For the current schedule, where Q12/Q17/Q18/... are two-diagram families, a cap of 5 processes Q12+Q17 = 4 diagrams and stops before Q18 rather than silently processing 6.
+`MAX_FAMILIES` is a strict safety cap on how many diagrams may be completed in one unattended batch. Canonical families are atomic and are never split. Therefore the controller stops before a family if adding that whole family would exceed the requested cap. For the current schedule, where Q12/Q17/Q18/... are two-diagram families, a cap of 5 processes Q12+Q17 = 4 diagrams and stops before Q18 rather than silently processing 6.
 
 Examples:
 
@@ -451,13 +451,13 @@ The Q12 one-axis boundary stage has not yet been run. Because the unattended con
 git pull
 ```
 
-2. Before starting unattended computation, inspect a deliberately small Q12-and-later batch. The recommended first cap is 5 diagrams:
+2. Before starting unattended computation, inspect a deliberately small Q12-and-later batch. The recommended first cap is 5 canonical families:
 
 ```powershell
 .\run_three_loop_master_basis_all.bat plan Q12_full 5
 ```
 
-This command does not start Kira. It should show the existing Q12 r8s3d0 baseline as already satisfied and list Q12 boundary-r/s/d as the first missing seed steps. Because Q12 and Q17 each cover two diagrams and Q18 would raise the total from 4 to 6, the strict five-diagram cap should select Q12+Q17 only: 2 canonical families / 4 diagrams. It also prints low/median/high seed-stage runtime estimates.
+This command does not start Kira. It should show the existing Q12 r8s3d0 baseline as already satisfied and list Q12 boundary-r/s/d as the first missing seed steps. Because Q12 and Q17 each cover two diagrams and Q18 would raise the total from 4 to 6, the strict five-family cap should select Q12+Q17 only: 2 canonical families / 4 diagrams. It also prints low/median/high seed-stage runtime estimates.
 
 3. If the plan is correct, start that limited unattended Stage-2 run:
 
@@ -485,7 +485,7 @@ A genuine Kira/audit failure or external interruption leaves checkpoint/runtime 
 .\run_three_loop_master_basis_all.bat resume
 ```
 
-To keep the resumed unattended block small, apply a fresh strict diagram cap, for example:
+To keep the resumed unattended block small, apply a fresh strict family cap, for example:
 
 ```powershell
 .\run_three_loop_master_basis_all.bat resume 5
