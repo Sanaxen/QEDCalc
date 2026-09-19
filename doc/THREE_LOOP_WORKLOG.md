@@ -47,15 +47,17 @@ Completed canonical families:
 - `Q08_full -> Q08_final12`, diagrams Q08/Q48
 - `Q09_full -> Q09_final17`, diagrams Q09/Q49
 - `Q10_full -> Q10_final13`, diagrams Q10/Q50
+- `Q12_full -> Q12_final24`, diagrams Q12/Q35
+- `Q17_full -> Q17_final23`, diagrams Q17/Q37
 
 Expected schedule summary after the Q09 promotion audit:
 
 ```text
 canonical families: 45
-master-basis complete families: 7
-master-basis pending families: 38
-complete diagram coverage: 14
-pending diagram coverage: 58
+master-basis complete families: 9
+master-basis pending families: 36
+complete diagram coverage: 18
+pending diagram coverage: 54
 next pending family: determined by the updated schedule audit
 ```
 
@@ -429,7 +431,7 @@ re-audit: PASS
 
 Therefore `Q09_full -> Q09_final17` is formally promoted.
 
-## Q12 master-basis discovery: IN PROGRESS
+## Q12 master-basis discovery: COMPLETE / PASS
 
 `Q12_full` covers Q12/Q35 and is currently the first pending family.
 
@@ -455,7 +457,15 @@ internal audit errors: 0
 boundary aggregate audit: PASS
 ```
 
-Therefore the literal 82-form baseline set must not be promoted. Q12 is seed-dependent in the tested d+1 direction. The next required stage is the generic mandatory-union reduction over the 85-form union, followed by candidate closure and the authoritative no-rerun closure re-audit. The unattended controller should enter this rescue path automatically because the successful seed audits and boundary aggregate audit already exist.
+Therefore the literal 82-form baseline set was not promoted. Q12 is seed-dependent in the tested d+1 direction. The unattended controller entered the generic mandatory-union rescue path over the 85-form union and produced a 24-master candidate basis. The authoritative no-rerun closure re-audit passed, and the family was promoted:
+
+```text
+Q12_full -> Q12_final24
+proof mode: mandatory-union-plus-no-rerun-closure
+audit pass: True
+```
+
+Q12 is formally complete.
 
 ## Q17 master-basis discovery: PROMOTION READY / PASS
 
@@ -488,7 +498,7 @@ Promotion-ready result:
 Q17_full -> Q17_final23
 ```
 
-The executable canonical registry has not yet been updated in this worklog entry; promotion-ready artifacts should be reviewed together with the Q12 result from the same two-family unattended batch before applying the reviewed registry update.
+The executable canonical registry now contains `Q17_full -> Q17_final23` together with `Q12_full -> Q12_final24`.
 
 ## Current next sequence
 
@@ -546,7 +556,7 @@ Status only:
 
 4. The unattended runner deliberately does not rewrite `canonical_family_registry.py`. After one or more families reach promotion-ready status, inspect their generated `three_loop_<family>_promotion_ready.json` artifacts and apply reviewed registry promotions in Git.
 
-5. Current formal master-basis status remains 7/45 canonical families and 14/72 diagrams. Q12 baseline is complete but Q12 is not yet formally promoted.
+5. Current formal master-basis status is 9/45 canonical families and 18/72 diagrams. Q12 and Q17 are now formally promoted.
 
 6. Exact coefficient synthesis is complete only for Q01. Cross-family coefficient-API validation remains a later stage after enough master bases are promoted.
 
