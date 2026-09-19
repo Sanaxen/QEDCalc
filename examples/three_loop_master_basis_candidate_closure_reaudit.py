@@ -32,7 +32,7 @@ from examples.three_loop_master_basis_candidate_closure import (
     _resolve,
     _stem,
 )
-from three_loop.master_basis_api import find_single_masters_final
+from three_loop.master_basis_api import find_or_infer_masters
 
 
 def _completed_kira_log(project: Path) -> tuple[Path | None, bool, str]:
@@ -80,7 +80,11 @@ def reaudit(args: argparse.Namespace) -> None:
         mandatory_path = project / MANDATORY_NAME
         try:
             mandatory = _read_integrals(mandatory_path, spec.family_id)
-            masters_path, masters = find_single_masters_final(project, spec.family_id)
+            masters_path, masters, master_source_mode = find_or_infer_masters(
+                project,
+                spec.family_id,
+                mandatory_targets=mandatory,
+            )
         except Exception as exc:
             errors.append(f"{seed.tag}: {exc}")
             rows.append({
@@ -121,6 +125,7 @@ def reaudit(args: argparse.Namespace) -> None:
             "seed": seed.tag,
             "project": str(project),
             "masters_final": str(masters_path),
+            "master_source_mode": master_source_mode,
             "master_count": len(masters),
             "mandatory_file": str(mandatory_path),
             "mandatory_count": len(mandatory),
@@ -187,7 +192,7 @@ def reaudit(args: argparse.Namespace) -> None:
             lines.append(f"{row['seed']}: ERROR {row['error']}")
             continue
         lines.extend([
-            f"{row['seed']}: masters.final={row['master_count']} stable={row['stable']}",
+            f"{row['seed']}: masters={row['master_count']} source={row['master_source_mode']} stable={row['stable']}",
             f"  Kira completed: {row['kira_completed']} ({row['completion_note']})",
             f"  mandatory targets: {row['mandatory_count']}",
             f"  candidate masters retained: {row['candidate_master_count']}/{len(candidate)}",
