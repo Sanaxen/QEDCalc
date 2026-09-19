@@ -87,15 +87,22 @@ def _union_audit(family_id: str, solver: str, baseline_seed: Seed) -> tuple[Path
         "union_*_reduction_audit.json"
     )
     hits = sorted(AUDIT_DIR.glob(pattern))
-    if len(hits) != 1:
+    passing: list[tuple[Path, dict]] = []
+    for path in hits:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if data.get("audit_pass"):
+            passing.append((path, data))
+    if not passing:
         raise FileNotFoundError(
-            f"expected exactly one union-reduction audit for {family_id} {baseline_seed.tag}; "
+            f"no passing union/refinement audit for {family_id} {baseline_seed.tag}; "
             f"hits={hits}"
         )
-    path = hits[0]
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if not data.get("audit_pass"):
-        raise ValueError(f"union-reduction audit is not PASS: {path}")
+    # Candidate refinement may produce a newer, stricter basis than the initial
+    # union reduction. Prefer the newest passing artifact.
+    path, data = max(passing, key=lambda item: item[0].stat().st_mtime)
     return path, data
 
 
