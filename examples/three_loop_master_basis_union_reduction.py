@@ -82,6 +82,15 @@ def _sha256_targets(targets: list[str]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _target_sectors(targets: list[str]) -> list[int]:
+    sectors: set[int] = set()
+    for target in targets:
+        _, indices = parse_integral(target)
+        sector = sum(1 << i for i, power in enumerate(indices) if int(power) > 0)
+        sectors.add(sector)
+    return sorted(sectors)
+
+
 def _resolve(args: argparse.Namespace):
     spec = build_family_spec(args.family)
     baseline_seed = args.baseline_seed or spec.baseline_seed
@@ -98,12 +107,14 @@ def _resolve(args: argparse.Namespace):
 def prepare(args: argparse.Namespace) -> None:
     spec, baseline_seed, source, targets, envelope, project = _resolve(args)
 
+    reduce_sectors = _target_sectors(targets)
     export_kira_project(
         spec,
         project,
         seed=envelope,
         solver=args.solver,
         mandatory_file=MANDATORY_NAME,
+        reduce_sectors=reduce_sectors,
         clean=True,
     )
     mandatory = project / MANDATORY_NAME
@@ -122,6 +133,7 @@ def prepare(args: argparse.Namespace) -> None:
         "mandatory_target_count": len(targets),
         "mandatory_target_sha256": _sha256_targets(targets),
         "required_envelope": envelope.tag,
+        "reduce_sectors": reduce_sectors,
         "project": str(project),
     }
     (project / "qedcalc_union_reduction_manifest.json").write_text(
@@ -136,6 +148,7 @@ def prepare(args: argparse.Namespace) -> None:
     print(f"union target source: {source}")
     print(f"mandatory targets: {len(targets)}")
     print(f"required envelope: {envelope.tag}")
+    print(f"mandatory target sectors: {reduce_sectors}")
     print(f"project: {project}")
     print(f"mandatory file: {mandatory}")
     print("QEDCalc generic mandatory-union reduction prepare PASS")
