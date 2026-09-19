@@ -23,6 +23,7 @@ from three_loop.master_basis_api import (
     build_family_spec,
     export_kira_project,
     find_single_masters_final,
+    find_or_infer_masters,
     parse_integral,
 )
 
@@ -313,7 +314,11 @@ def finalize(args: argparse.Namespace) -> None:
     for seed in envelope.one_axis_extensions():
         project = _project(spec.family_id, args.solver, baseline_seed, seed)
         try:
-            masters_path, masters = find_single_masters_final(project, spec.family_id)
+            masters_path, masters, master_source_mode = find_or_infer_masters(
+                project,
+                spec.family_id,
+                mandatory_targets=closure,
+            )
         except Exception as exc:
             errors.append(f"{seed.tag}: {exc}")
             rows.append({"seed": seed.tag, "project": str(project), "stable": False, "error": str(exc)})
@@ -336,6 +341,7 @@ def finalize(args: argparse.Namespace) -> None:
             "seed": seed.tag,
             "project": str(project),
             "masters_final": str(masters_path),
+            "master_source_mode": master_source_mode,
             "master_count": len(masters),
             "candidate_status": candidate_status,
             "union_target_status": union_status,
