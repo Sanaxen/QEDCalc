@@ -72,6 +72,14 @@ def _target_sectors(targets: list[str]) -> list[int]:
     return sorted(sectors)
 
 
+def _maximal_sectors(sectors: list[int]) -> list[int]:
+    unique = sorted(set(int(x) for x in sectors))
+    return [
+        sector for sector in unique
+        if not any(sector != other and (sector & other) == sector for other in unique)
+    ]
+
+
 def _union_audit(family_id: str, solver: str, baseline_seed: Seed) -> tuple[Path, dict]:
     pattern = (
         f"three_loop_{family_id.lower()}_{solver}_{baseline_seed.tag}_"
@@ -153,6 +161,7 @@ def prepare(args: argparse.Namespace) -> None:
 
     projects: list[dict[str, str]] = []
     reduce_sectors = _target_sectors(closure)
+    top_level_sectors = _maximal_sectors([spec.top_sector, *reduce_sectors])
     for seed in envelope.one_axis_extensions():
         project = _project(spec.family_id, args.solver, baseline_seed, seed)
         export_kira_project(
@@ -162,6 +171,7 @@ def prepare(args: argparse.Namespace) -> None:
             solver=args.solver,
             mandatory_file=MANDATORY_NAME,
             reduce_sectors=reduce_sectors,
+            top_level_sectors=top_level_sectors,
             clean=True,
         )
         mandatory = project / MANDATORY_NAME
@@ -186,6 +196,7 @@ def prepare(args: argparse.Namespace) -> None:
         "closure_target_count": len(closure),
         "closure_targets": closure,
         "reduce_sectors": reduce_sectors,
+        "top_level_sectors": top_level_sectors,
         "boundaries": projects,
     }
     manifest_path = _manifest_path(spec.family_id, args.solver, baseline_seed, envelope)
@@ -203,6 +214,7 @@ def prepare(args: argparse.Namespace) -> None:
     print(f"candidate masters: {len(candidate)}")
     print(f"closure targets: {len(closure)}")
     print(f"mandatory target sectors: {reduce_sectors}")
+    print(f"Kira top-level sectors: {top_level_sectors}")
     for row in projects:
         print(f"boundary {row['seed']}: {row['project']}")
     print(f"manifest: {manifest_path}")
