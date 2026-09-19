@@ -539,6 +539,38 @@ f51bacc99478f246f4aa992c887cd026b6c538ec  expose union target sectors as Kira to
 
 Baseline/boundary jobs remain unchanged.
 
+## Q18 no-reduction diagnosis: all mandatory targets are masters
+
+A dedicated diagnostic established the actual cause of the repeated Q18 union-reduction stop.
+
+Observed facts:
+
+```text
+mandatory targets: 38
+prepared/source targets identical: True
+all target sectors covered by physical top sector 255
+Kira mandatory-list length: 38
+Kira reported master integrals: 38
+Kira then printed: No integrals to reduce, skipping this family.
+```
+
+Therefore the sector configuration was not the cause. Kira had classified every mandatory union target as a master integral, leaving no non-master integral to reduce. In this valid completion mode Kira does not emit `masters.final`, while QEDCalc previously assumed that file must always exist.
+
+The generic master-basis code now recognizes this mode conservatively. It accepts a missing `masters.final` only when a completed Kira log explicitly contains the no-reduction marker, reports exactly the mandatory target count as masters, and lists exactly the same mandatory integral set. The inferred master set is then carried forward with provenance `kira-no-reduction-all-masters`.
+
+This support was added consistently to mandatory-union finalize, candidate closure, and the authoritative no-rerun closure re-audit.
+
+Relevant commits:
+
+```text
+09662505563437216c4119860f4b0ece007581c8  generic verified no-reduction/all-masters handling
+ae8b52814c1a5b93aacd61fd9672c605d2d98a3f  union finalize support
+8c085da8f5960e7e838ca159b71e76f1fa8e3888  candidate closure support
+d49157530d9fb00dfb2533ae6b0f117aa50e93df  no-rerun re-audit support
+```
+
+The earlier target/top-level-sector extensions remain harmless general support but were not the root fix for Q18.
+
 ## Current next sequence
 
 1. Pull the branch:
