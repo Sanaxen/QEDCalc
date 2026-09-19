@@ -500,6 +500,29 @@ Q17_full -> Q17_final23
 
 The executable canonical registry now contains `Q17_full -> Q17_final23` together with `Q12_full -> Q12_final24`.
 
+## Q18 unattended union-reduction stop and generic fix
+
+During an unattended `resume 4` batch beginning at `Q18_full`, the Q18 mandatory-union reduction stopped with:
+
+```text
+No integrals to reduce, skipping this family.
+ValueError: Q18_full: expected one masters.final, found 0
+```
+
+The generic mandatory-list path was still constraining the Kira `reduce` block to the canonical top sector only, even though the explicit mandatory union targets can live entirely in lower sectors. In that situation Kira can legitimately find no selected integral inside the requested reduction sector and therefore emit no `masters.final`.
+
+The generic master-basis API was changed so mandatory-list jobs can specify the actual sector set of the explicit targets. The mandatory-union and candidate-closure helpers now derive the sector IDs from the positive indices of their target integrals and pass those sectors to Kira. Ordinary baseline/boundary jobs remain unchanged and still use the canonical top sector.
+
+Relevant commits:
+
+```text
+a76c90faf7f62c24f4b8d7804c9c73e763c0ad85  target-sector support in master_basis_api
+20ff1c9a651e81877aeb210a7731a76200bc6637  mandatory union uses actual target sectors
+f792c9c7af8e1adf3e16f75a96b5fa12218ef121  candidate closure uses actual target sectors
+```
+
+After pulling these changes, the unattended batch should be resumed rather than restarted from scratch. Existing Q18 baseline/boundary audits remain reusable; the failed union reduction is regenerated and rerun with the corrected sector selection.
+
 ## Current next sequence
 
 1. Pull the branch:
