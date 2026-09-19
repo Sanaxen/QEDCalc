@@ -274,12 +274,20 @@ def build_family_spec(family_id: str) -> FamilySpec:
     )
 
 
-def render_integralfamilies_yaml(spec: FamilySpec) -> str:
+def render_integralfamilies_yaml(
+    spec: FamilySpec,
+    *,
+    top_level_sectors: Sequence[int] | None = None,
+) -> str:
+    sectors = list(top_level_sectors) if top_level_sectors is not None else [spec.top_sector]
+    if not sectors:
+        raise ValueError("top_level_sectors must not be empty")
+    sector_text = ", ".join(str(int(x)) for x in sectors)
     lines = [
         "integralfamilies:",
         f'  - name: "{spec.family_id}"',
         "    loop_momenta: [k, l, r]",
-        f"    top_level_sectors: [{spec.top_sector}]",
+        f"    top_level_sectors: [{sector_text}]",
         "    propagators:",
     ]
     for prop in spec.propagators:
@@ -373,6 +381,7 @@ def export_kira_project(
     solver: str = "ordinary",
     mandatory_file: str | None = None,
     reduce_sectors: Sequence[int] | None = None,
+    top_level_sectors: Sequence[int] | None = None,
     clean: bool = True,
 ) -> Path:
     root = Path(root)
@@ -383,7 +392,9 @@ def export_kira_project(
     config = root / "config"
     config.mkdir(parents=True, exist_ok=True)
     (config / "integralfamilies.yaml").write_text(
-        render_integralfamilies_yaml(spec), encoding="utf-8", newline="\n"
+        render_integralfamilies_yaml(spec, top_level_sectors=top_level_sectors),
+        encoding="utf-8",
+        newline="\n",
     )
     (config / "kinematics.yaml").write_text(
         render_kinematics_yaml(), encoding="utf-8", newline="\n"
