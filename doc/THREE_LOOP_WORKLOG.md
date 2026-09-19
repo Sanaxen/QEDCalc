@@ -605,6 +605,22 @@ Relevant commits:
 9f9bb4b80a227ec83a33f34c63721f32eb92a160  iterative candidate refinement in unattended controller
 ```
 
+## Pending status-display cleanup after current resume-4 batch
+
+The current unattended batch is running four canonical families beginning with Q18_full and presently reports `auto-resume family: Q03_full`. Historical checkpoint entries include several `soft-fail` and one older `fail` from Q17/Q18/Q20/Q22 candidate-closure/refinement stages. These entries are retained for provenance, but the current `status` output makes them look like active failures even when later refinement or promotion has superseded them.
+
+After the current `resume 4` batch finishes, improve the batch `status` display so it clearly separates:
+
+- currently running work,
+- currently unresolved failures,
+- historical/superseded soft-fail or fail entries,
+- promotion-ready families,
+- the next auto-resume family.
+
+In particular, a family that later reaches promotion-ready status, or whose failed closure step is superseded by a later successful refinement/reaudit, should not be presented as if that old failure were still the active blocker. Preserve the raw checkpoint history; change only the status interpretation/presentation.
+
+Do not modify the running batch while it is active. Apply this cleanup only after the current four-family run has completed and its promotion-ready results have been reviewed.
+
 ## Current next sequence
 
 1. Pull the branch:
