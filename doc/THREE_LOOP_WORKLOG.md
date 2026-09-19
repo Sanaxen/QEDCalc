@@ -457,6 +457,39 @@ boundary aggregate audit: PASS
 
 Therefore the literal 82-form baseline set must not be promoted. Q12 is seed-dependent in the tested d+1 direction. The next required stage is the generic mandatory-union reduction over the 85-form union, followed by candidate closure and the authoritative no-rerun closure re-audit. The unattended controller should enter this rescue path automatically because the successful seed audits and boundary aggregate audit already exist.
 
+## Q17 master-basis discovery: PROMOTION READY / PASS
+
+`Q17_full` covers Q17/Q37.
+
+The unattended Stage-2 controller completed the full seed-dependent rescue path. The initial text-equation candidate-closure audit reported unresolved non-master targets and returned a soft failure, but all candidate masters were retained. The authoritative no-rerun completion re-audit then verified the completed Kira reductions directly:
+
+```text
+candidate envelope: r8s3d2
+union targets: 90
+candidate masters: 23
+guards: r9s3d2 / r8s4d2 / r8s3d3
+
+all guards:
+  masters.final: 23
+  candidate masters retained: 23/23
+  resolved non-masters: 67
+  extra masters: 0
+  mandatory mismatches: 0
+  Kira completed: True
+  stable: True
+
+internal audit errors: 0
+no-rerun closure re-audit: PASS
+```
+
+Promotion-ready result:
+
+```text
+Q17_full -> Q17_final23
+```
+
+The executable canonical registry has not yet been updated in this worklog entry; promotion-ready artifacts should be reviewed together with the Q12 result from the same two-family unattended batch before applying the reviewed registry update.
+
 ## Current next sequence
 
 1. Pull the branch:
