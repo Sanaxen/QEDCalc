@@ -23,6 +23,7 @@ from three_loop.master_basis_api import (
     build_family_spec,
     export_kira_project,
     find_single_masters_final,
+    find_or_infer_masters,
     parse_integral,
     required_envelope,
 )
@@ -180,7 +181,11 @@ def finalize(args: argparse.Namespace) -> None:
             "union target source changed after prepare; rerun the reduction from prepare"
         )
 
-    masters_path, masters = find_single_masters_final(project, spec.family_id)
+    masters_path, masters, master_source_mode = find_or_infer_masters(
+        project,
+        spec.family_id,
+        mandatory_targets=prepared_targets,
+    )
     AUDIT_DIR.mkdir(parents=True, exist_ok=True)
 
     stem = (
@@ -208,6 +213,7 @@ def finalize(args: argparse.Namespace) -> None:
         "required_envelope": envelope.tag,
         "project": str(project),
         "masters_final": str(masters_path),
+        "master_source_mode": master_source_mode,
         "candidate_master_count": len(masters),
         "candidate_masters": masters,
         "candidate_master_copy": str(master_copy),
@@ -225,7 +231,7 @@ def finalize(args: argparse.Namespace) -> None:
         f"solver: {args.solver}",
         f"mandatory targets: {len(targets)}",
         f"required envelope: {envelope.tag}",
-        f"masters.final: {masters_path}",
+        f"master source: {master_source_mode}: {masters_path}",
         f"candidate master count: {len(masters)}",
         f"candidate master copy: {master_copy}",
         f"audit JSON: {audit_json}",
