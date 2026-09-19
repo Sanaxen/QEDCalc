@@ -308,6 +308,7 @@ def render_jobs_yaml(
     *,
     solver: str = "ordinary",
     mandatory_file: str | None = None,
+    reduce_sectors: Sequence[int] | None = None,
 ) -> str:
     if solver not in {"ordinary", "firefly"}:
         raise ValueError(f"unsupported solver: {solver}")
@@ -325,10 +326,14 @@ def render_jobs_yaml(
     triangular = "false" if solver == "firefly" else "sectorwise"
     back = "false" if solver == "firefly" else "true"
     firefly = "true" if solver == "firefly" else "false"
+    sectors = list(reduce_sectors) if reduce_sectors is not None else [spec.top_sector]
+    if not sectors:
+        raise ValueError("reduce_sectors must not be empty")
+    sector_text = ", ".join(str(int(x)) for x in sectors)
     return f"""jobs:
   - reduce_sectors:
       reduce:
-        - {{topologies: [{spec.family_id}], sectors: [{spec.top_sector}], r: {seed.r}, s: {seed.s}, d: {seed.d}}}
+        - {{topologies: [{spec.family_id}], sectors: [{sector_text}], r: {seed.r}, s: {seed.s}, d: {seed.d}}}
       select_integrals:
 {selection}
       run_symmetries: true
@@ -367,6 +372,7 @@ def export_kira_project(
     seed: Seed | None = None,
     solver: str = "ordinary",
     mandatory_file: str | None = None,
+    reduce_sectors: Sequence[int] | None = None,
     clean: bool = True,
 ) -> Path:
     root = Path(root)
@@ -383,7 +389,13 @@ def export_kira_project(
         render_kinematics_yaml(), encoding="utf-8", newline="\n"
     )
     (root / "jobs.yaml").write_text(
-        render_jobs_yaml(spec, seed, solver=solver, mandatory_file=mandatory_file),
+        render_jobs_yaml(
+            spec,
+            seed,
+            solver=solver,
+            mandatory_file=mandatory_file,
+            reduce_sectors=reduce_sectors,
+        ),
         encoding="utf-8", newline="\n",
     )
     manifest = {
