@@ -456,7 +456,7 @@ def find_single_masters_final(project: str | Path, family_id: str) -> tuple[Path
 
 
 def _normalize_integral_text(text: str) -> str:
-    return re.sub(r"\\s+", "", text)
+    return re.sub(r"\s+", "", text)
 
 
 def infer_all_master_no_reduction(
@@ -476,7 +476,7 @@ def infer_all_master_no_reduction(
     if not mandatory:
         return None
 
-    pattern = re.compile(rf"{re.escape(family_id)}\\s*\\[[^\\]]+\\]")
+    pattern = re.compile(rf"{re.escape(family_id)}\s*\[[^\]]+\]")
     logs = sorted([*project.glob("*.log"), *project.glob("*.log.gz")], key=lambda p: str(p))
     for path in reversed(logs):
         try:
@@ -492,7 +492,7 @@ def infer_all_master_no_reduction(
         if "Total time:" not in text:
             continue
 
-        count_matches = re.findall(r"Number of master integrals:\\s*(\\d+)", text)
+        count_matches = re.findall(r"Number of master integrals:\s*(\d+)", text)
         if not count_matches:
             continue
         reported_count = int(count_matches[-1])
