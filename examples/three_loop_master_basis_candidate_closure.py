@@ -63,6 +63,15 @@ def _read_integrals(path: Path, family_id: str) -> list[str]:
     return out
 
 
+def _target_sectors(targets: list[str]) -> list[int]:
+    sectors: set[int] = set()
+    for target in targets:
+        _, indices = parse_integral(target)
+        sector = sum(1 << i for i, power in enumerate(indices) if int(power) > 0)
+        sectors.add(sector)
+    return sorted(sectors)
+
+
 def _union_audit(family_id: str, solver: str, baseline_seed: Seed) -> tuple[Path, dict]:
     pattern = (
         f"three_loop_{family_id.lower()}_{solver}_{baseline_seed.tag}_"
@@ -143,6 +152,7 @@ def prepare(args: argparse.Namespace) -> None:
     AUDIT_DIR.mkdir(parents=True, exist_ok=True)
 
     projects: list[dict[str, str]] = []
+    reduce_sectors = _target_sectors(closure)
     for seed in envelope.one_axis_extensions():
         project = _project(spec.family_id, args.solver, baseline_seed, seed)
         export_kira_project(
@@ -151,6 +161,7 @@ def prepare(args: argparse.Namespace) -> None:
             seed=seed,
             solver=args.solver,
             mandatory_file=MANDATORY_NAME,
+            reduce_sectors=reduce_sectors,
             clean=True,
         )
         mandatory = project / MANDATORY_NAME
@@ -174,6 +185,7 @@ def prepare(args: argparse.Namespace) -> None:
         "candidate_masters": candidate,
         "closure_target_count": len(closure),
         "closure_targets": closure,
+        "reduce_sectors": reduce_sectors,
         "boundaries": projects,
     }
     manifest_path = _manifest_path(spec.family_id, args.solver, baseline_seed, envelope)
@@ -190,6 +202,7 @@ def prepare(args: argparse.Namespace) -> None:
     print(f"union targets: {len(union_targets)}")
     print(f"candidate masters: {len(candidate)}")
     print(f"closure targets: {len(closure)}")
+    print(f"mandatory target sectors: {reduce_sectors}")
     for row in projects:
         print(f"boundary {row['seed']}: {row['project']}")
     print(f"manifest: {manifest_path}")
