@@ -236,79 +236,227 @@ def _record_promotion_ready(
     return path
 
 
-def _run_union_rescue(family: str, baseline_tag: str) -> int:
-    code = _run_bat_stage(
-        family,
-        baseline_tag,
-        bat_name="run_three_loop_master_basis_union_reduction.bat",
-        phase="union-reduction",
-        phase_class="union",
-    )
-    if code:
-        return code
+def _seed_from_tag(tag: str) -> master_basis_api.Seed:
+    left, d_text = tag.rsplit("d", 1)
+    r_text, s_text = left.split("s", 1)
+    return master_basis_api.Seed(int(r_text[1:]), int(s_text), int(d_text))
 
-    union_path, union = _single_audit(
-        f"three_loop_{family.lower()}_firefly_{baseline_tag}_union_*_reduction_audit.json"
-    )
-    if not union_path or not union.get("audit_pass"):
-        print(f"STOP: union reduction audit missing/failed for {family}", flush=True)
-        return 21
 
-    # The text-equation closure audit can return nonzero even when all Kira runs
-    # completed successfully. Do not stop here; the no-rerun audit is the
-    # authoritative completion check for this generic FireFly path.
-    closure_code = _run_bat_stage(
-        family,
-        baseline_tag,
-        bat_name="run_three_loop_master_basis_candidate_closure.bat",
-        phase="candidate-closure",
-        phase_class="closure",
-        tolerate_nonzero=True,
-    )
-    if closure_code:
+def _latest_refinement_audit(family: str, baseline_tag: str) -> tuple[Path | None, dict]:
+    hits = sorted(AUDIT_DIR.glob(
+        f"three_loop_{family.lower()}_firefly_{baseline_tag}_union_*_refinement_reduction_audit.json"
+    ))
+    passing = []
+    for path in hits:
+        data = _read_json(path)
+        if data.get("audit_pass") and data.get("stage") == "master_basis_candidate_refinement":
+            passing.append((path, data))
+    return max(passing, key=lambda item: item[0].stat().st_mtime) if passing else (None, {})
+
+
+def _refine_candidate_from_reaudit(
+    family: str,
+    baseline_tag: str,
+    reaudit_path: Path,
+    reaudit: dict,
+    current_candidate_count: int,
+) -> tuple[Path | None, dict]:
+    """Promote a strictly smaller completed boundary master set to next candidate."""
+    eligible = []
+    for row in reaudit.get("boundary_rows", []):
+        if not isinstance(row, dict):
+            continue
+        try:
+            count = int(row.get("master_count", 0))
+        except Exception:
+            continue
+        if count <= 0 or count >= current_candidate_count:
+            continue
+        if not row.get("kira_completed"):
+            continue
+        if row.get("missing_mandatory_targets") or row.get("extra_mandatory_targets"):
+            continue
+        if row.get("extra_masters"):
+            continue
+        if row.get("master_source_mode") != "masters.final":
+            continue
+        source = Path(str(row.get("masters_final") or ""))
+        if not source.exists():
+            continue
+        eligible.append((count, str(row.get("seed") or ""), source, row))
+
+    if not eligible:
+        return None, {}
+
+    count, seed_tag, source, row = min(eligible, key=lambda item: (item[0], item[1]))
+    seed = _seed_from_tag(seed_tag)
+    masters = master_basis_api.parse_masters_final(source, family)
+    if len(masters) != count:
         print(
-            f"{family}: candidate closure returned {closure_code}; "
-            "running no-rerun completion audit before deciding failure.",
+            f"REFINE STOP: {family} {seed_tag} expected {count} masters but parsed {len(masters)}",
             flush=True,
         )
+        return None, {}
 
-    reaudit_code = _run_bat_stage(
-        family,
-        baseline_tag,
-        bat_name="run_three_loop_master_basis_candidate_closure_reaudit.bat",
-        phase="candidate-closure-reaudit",
-        phase_class="closure-audit",
+    copy_path = AUDIT_DIR / (
+        f"{family.lower()}_firefly_{baseline_tag}_union_{seed_tag}_refined_masters.txt"
     )
-    if reaudit_code:
-        print(f"STOP: authoritative no-rerun closure audit failed for {family}", flush=True)
-        return reaudit_code
+    copy_path.write_text("\n".join(masters) + "\n", encoding="utf-8", newline="\n")
 
-    reaudit_path, reaudit = _single_audit(
-        f"three_loop_{family.lower()}_firefly_{baseline_tag}_candidate_*_closure_reaudit.json"
+    # Preserve the original union target source; only the candidate basis and
+    # common envelope are tightened.
+    _, prior = _single_audit(
+        f"three_loop_{family.lower()}_firefly_{baseline_tag}_union_*_reduction_audit.json"
     )
-    if (
-        not reaudit_path
-        or not reaudit.get("audit_pass")
-        or not reaudit.get("stable_under_one_axis_extensions")
-    ):
-        print(f"STOP: stable closure proof artifact missing for {family}", flush=True)
-        return 22
-
-    count = int(union.get("candidate_master_count", 0))
-    source = str(union.get("candidate_master_copy") or "")
-    if count <= 0 or not source:
-        print(f"STOP: invalid candidate basis metadata for {family}", flush=True)
-        return 23
-
-    _record_promotion_ready(
-        family,
-        baseline_tag,
-        basis_count=count,
-        basis_source=source,
-        proof_mode="mandatory-union-plus-no-rerun-closure",
-        proof_audit=str(reaudit_path),
+    source_targets = str(
+        reaudit.get("source_union_target_file")
+        or prior.get("source_target_file")
+        or ""
     )
-    return 0
+    target_count = int(
+        reaudit.get("union_target_count")
+        or prior.get("mandatory_target_count")
+        or 0
+    )
+    if not source_targets or target_count <= 0:
+        return None, {}
+
+    path = AUDIT_DIR / (
+        f"three_loop_{family.lower()}_firefly_{baseline_tag}_union_{seed_tag}_"
+        "refinement_reduction_audit.json"
+    )
+    payload = {
+        "schema_version": 1,
+        "stage": "master_basis_candidate_refinement",
+        "family": family,
+        "baseline_seed": baseline_tag,
+        "solver": "firefly",
+        "source_target_file": source_targets,
+        "mandatory_target_count": target_count,
+        "required_envelope": seed_tag,
+        "candidate_master_count": len(masters),
+        "candidate_masters": masters,
+        "candidate_master_copy": str(copy_path),
+        "refined_from_reaudit": str(reaudit_path),
+        "refined_from_boundary_seed": seed_tag,
+        "refined_from_master_source": str(source),
+        "audit_pass": True,
+    }
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(
+        f"REFINE CANDIDATE: {family} {current_candidate_count} -> {len(masters)} "
+        f"masters at envelope {seed_tag}",
+        flush=True,
+    )
+    print(f"refinement audit: {path}", flush=True)
+    return path, payload
+
+
+def _run_union_rescue(family: str, baseline_tag: str) -> int:
+    refinement_path, refinement = _latest_refinement_audit(family, baseline_tag)
+
+    if refinement_path:
+        print(
+            f"{family}: reusing refined candidate basis from {refinement_path}",
+            flush=True,
+        )
+        union_path, union = refinement_path, refinement
+    else:
+        code = _run_bat_stage(
+            family,
+            baseline_tag,
+            bat_name="run_three_loop_master_basis_union_reduction.bat",
+            phase="union-reduction",
+            phase_class="union",
+        )
+        if code:
+            return code
+
+        union_path, union = _single_audit(
+            f"three_loop_{family.lower()}_firefly_{baseline_tag}_union_*_reduction_audit.json"
+        )
+        if not union_path or not union.get("audit_pass"):
+            print(f"STOP: union reduction audit missing/failed for {family}", flush=True)
+            return 21
+
+    # Some families require more than one refinement round. Each failed
+    # authoritative closure may expose a strictly smaller valid master set at a
+    # tested boundary. Promote that set to the next candidate and close again.
+    for refinement_round in range(1, 8):
+        current_count = int(union.get("candidate_master_count", 0))
+        if current_count <= 0:
+            print(f"STOP: invalid candidate count for {family}", flush=True)
+            return 23
+
+        closure_code = _run_bat_stage(
+            family,
+            baseline_tag,
+            bat_name="run_three_loop_master_basis_candidate_closure.bat",
+            phase=f"candidate-closure-r{refinement_round}",
+            phase_class="closure",
+            tolerate_nonzero=True,
+        )
+        if closure_code:
+            print(
+                f"{family}: candidate closure returned {closure_code}; "
+                "running no-rerun completion audit before deciding failure.",
+                flush=True,
+            )
+
+        reaudit_code = _run_bat_stage(
+            family,
+            baseline_tag,
+            bat_name="run_three_loop_master_basis_candidate_closure_reaudit.bat",
+            phase=f"candidate-closure-reaudit-r{refinement_round}",
+            phase_class="closure-audit",
+            tolerate_nonzero=True,
+        )
+
+        reaudit_path, reaudit = _single_audit(
+            f"three_loop_{family.lower()}_firefly_{baseline_tag}_candidate_*_closure_reaudit.json"
+        )
+        if (
+            reaudit_path
+            and reaudit.get("audit_pass")
+            and reaudit.get("stable_under_one_axis_extensions")
+        ):
+            source = str(union.get("candidate_master_copy") or "")
+            if not source:
+                print(f"STOP: invalid candidate basis metadata for {family}", flush=True)
+                return 23
+            _record_promotion_ready(
+                family,
+                baseline_tag,
+                basis_count=current_count,
+                basis_source=source,
+                proof_mode="iterative-mandatory-union-plus-no-rerun-closure",
+                proof_audit=str(reaudit_path),
+            )
+            return 0
+
+        if not reaudit_path:
+            print(f"STOP: no closure re-audit artifact for {family}", flush=True)
+            return reaudit_code or 22
+
+        refined_path, refined = _refine_candidate_from_reaudit(
+            family,
+            baseline_tag,
+            reaudit_path,
+            reaudit,
+            current_count,
+        )
+        if not refined_path:
+            print(
+                f"STOP: authoritative closure failed and exposed no strictly smaller "
+                f"candidate basis for {family}",
+                flush=True,
+            )
+            return reaudit_code or 22
+
+        union_path, union = refined_path, refined
+
+    print(f"STOP: candidate refinement exceeded 7 rounds for {family}", flush=True)
+    return 27
 
 
 def _promotion_ready_path(family: str) -> Path:
