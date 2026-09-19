@@ -454,6 +454,76 @@ def find_single_masters_final(project: str | Path, family_id: str) -> tuple[Path
     return candidates[0], masters
 
 
+
+def _normalize_integral_text(text: str) -> str:
+    return re.sub(r"\\s+", "", text)
+
+
+def infer_all_master_no_reduction(
+    project: str | Path,
+    family_id: str,
+    mandatory_targets: Iterable[str],
+) -> tuple[Path, list[str]] | None:
+    """Recognize Kira's valid 'all selected targets are masters' completion mode.
+
+    Kira may emit no masters.final when every selected mandatory integral is
+    already a master, printing 'No integrals to reduce, skipping this family.'
+    instead.  Accept this only when a completed Kira log explicitly reports the
+    same master set as the exact mandatory target set.
+    """
+    project = Path(project)
+    mandatory = {_normalize_integral_text(x) for x in mandatory_targets}
+    if not mandatory:
+        return None
+
+    pattern = re.compile(rf"{re.escape(family_id)}\\s*\\[[^\\]]+\\]")
+    logs = sorted([*project.glob("*.log"), *project.glob("*.log.gz")], key=lambda p: str(p))
+    for path in reversed(logs):
+        try:
+            if path.suffix == ".gz":
+                import gzip
+                text = gzip.open(path, "rt", encoding="utf-8", errors="replace").read()
+            else:
+                text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if "No integrals to reduce, skipping this family." not in text:
+            continue
+        if "Total time:" not in text:
+            continue
+
+        count_matches = re.findall(r"Number of master integrals:\\s*(\\d+)", text)
+        if not count_matches:
+            continue
+        reported_count = int(count_matches[-1])
+        listed = {_normalize_integral_text(x) for x in pattern.findall(text)}
+        listed &= mandatory
+
+        if reported_count == len(mandatory) and listed == mandatory:
+            return path, sorted(mandatory)
+    return None
+
+
+def find_or_infer_masters(
+    project: str | Path,
+    family_id: str,
+    *,
+    mandatory_targets: Iterable[str] | None = None,
+) -> tuple[Path, list[str], str]:
+    """Return masters from masters.final or verified Kira no-reduction mode."""
+    try:
+        path, masters = find_single_masters_final(project, family_id)
+        return path, masters, "masters.final"
+    except ValueError as exc:
+        if mandatory_targets is None or "found 0" not in str(exc):
+            raise
+        inferred = infer_all_master_no_reduction(project, family_id, mandatory_targets)
+        if inferred is None:
+            raise
+        path, masters = inferred
+        return path, masters, "kira-no-reduction-all-masters"
+
+
 def compare_master_sets(named_sets: dict[str, Iterable[str]]) -> dict[str, Any]:
     normalized = {name: set(values) for name, values in named_sets.items()}
     if not normalized:
