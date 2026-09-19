@@ -571,6 +571,40 @@ d49157530d9fb00dfb2533ae6b0f117aa50e93df  no-rerun re-audit support
 
 The earlier target/top-level-sector extensions remain harmless general support but were not the root fix for Q18.
 
+## Q18 iterative candidate refinement
+
+After the Q18 all-masters/no-reduction union case was handled correctly, candidate closure exposed a second, genuinely mathematical seed-dependence:
+
+```text
+candidate envelope: r8s3d0
+candidate masters: 38
+
+r9s3d0 -> 38 masters
+r8s4d0 -> 38 masters
+r8s3d1 -> 3 masters + 35 resolved non-masters
+```
+
+Therefore the 38-form candidate is not stable. The d+1 boundary is a strictly stronger reduction context and supplies a new 3-master candidate basis.
+
+The unattended controller has been generalized to perform iterative candidate refinement. When the authoritative no-rerun closure audit fails but a completed boundary run supplies a strict subset of the current candidate masters with exact mandatory-list agreement, that smaller master set is promoted to the next candidate, the common envelope is advanced to that boundary seed, and closure is repeated. This may iterate multiple times until one-axis extensions no longer change the candidate basis.
+
+For Q18 the expected next step is:
+
+```text
+38 masters at r8s3d0
+  -> refine to 3 masters at r8s3d1
+  -> closure at r9s3d1 / r8s4d1 / r8s3d2
+  -> refine again if needed
+  -> promotion-ready only after stable closure
+```
+
+Relevant commits:
+
+```text
+9a7f157b6db1ee8d8e6f040f12ac2c818dc2e60a  closure prefers newest refined candidate audit
+9f9bb4b80a227ec83a33f34c63721f32eb92a160  iterative candidate refinement in unattended controller
+```
+
 ## Current next sequence
 
 1. Pull the branch:
