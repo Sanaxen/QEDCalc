@@ -523,6 +523,22 @@ f792c9c7af8e1adf3e16f75a96b5fa12218ef121  candidate closure uses actual target s
 
 After pulling these changes, the unattended batch should be resumed rather than restarted from scratch. Existing Q18 baseline/boundary audits remain reusable; the failed union reduction is regenerated and rerun with the corrected sector selection.
 
+## Q18 mandatory-sector follow-up fix
+
+The first target-sector fix was insufficient: Q18 still produced `No integrals to reduce`. The remaining issue is that Kira's family definition still exposed only the original physical `top_level_sectors`. Mandatory union targets may contain positive powers on auxiliary propagators, placing them in sectors that are not subsectors of the physical top sector.
+
+Kira requires such higher/different sectors to be included in the integral family's `top_level_sectors` when they are to participate in symmetry/reduction. The generic API now supports overriding `top_level_sectors` for mandatory-list jobs. Union reduction and candidate closure derive the target sectors, compute the maximal sector cover together with the physical top sector, and emit those sectors in both the family definition and the reduction job.
+
+Relevant commits:
+
+```text
+7278d700e50c829665bfa93ce92d6f991ad0bd60  allow mandatory jobs to extend Kira top-level sectors
+f51bacc99478f246f4aa992c887cd026b6c538ec  expose union target sectors as Kira top levels
+4017e54a708d9c3537ed6ca4815dee13532ae8ae  extend closure top levels likewise
+```
+
+Baseline/boundary jobs remain unchanged.
+
 ## Current next sequence
 
 1. Pull the branch:
