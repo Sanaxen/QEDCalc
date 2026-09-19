@@ -91,6 +91,14 @@ def _target_sectors(targets: list[str]) -> list[int]:
     return sorted(sectors)
 
 
+def _maximal_sectors(sectors: list[int]) -> list[int]:
+    unique = sorted(set(int(x) for x in sectors))
+    return [
+        sector for sector in unique
+        if not any(sector != other and (sector & other) == sector for other in unique)
+    ]
+
+
 def _resolve(args: argparse.Namespace):
     spec = build_family_spec(args.family)
     baseline_seed = args.baseline_seed or spec.baseline_seed
@@ -108,6 +116,7 @@ def prepare(args: argparse.Namespace) -> None:
     spec, baseline_seed, source, targets, envelope, project = _resolve(args)
 
     reduce_sectors = _target_sectors(targets)
+    top_level_sectors = _maximal_sectors([spec.top_sector, *reduce_sectors])
     export_kira_project(
         spec,
         project,
@@ -115,6 +124,7 @@ def prepare(args: argparse.Namespace) -> None:
         solver=args.solver,
         mandatory_file=MANDATORY_NAME,
         reduce_sectors=reduce_sectors,
+        top_level_sectors=top_level_sectors,
         clean=True,
     )
     mandatory = project / MANDATORY_NAME
@@ -134,6 +144,7 @@ def prepare(args: argparse.Namespace) -> None:
         "mandatory_target_sha256": _sha256_targets(targets),
         "required_envelope": envelope.tag,
         "reduce_sectors": reduce_sectors,
+        "top_level_sectors": top_level_sectors,
         "project": str(project),
     }
     (project / "qedcalc_union_reduction_manifest.json").write_text(
@@ -149,6 +160,7 @@ def prepare(args: argparse.Namespace) -> None:
     print(f"mandatory targets: {len(targets)}")
     print(f"required envelope: {envelope.tag}")
     print(f"mandatory target sectors: {reduce_sectors}")
+    print(f"Kira top-level sectors: {top_level_sectors}")
     print(f"project: {project}")
     print(f"mandatory file: {mandatory}")
     print("QEDCalc generic mandatory-union reduction prepare PASS")
