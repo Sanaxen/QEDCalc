@@ -737,3 +737,105 @@ The per-diagram Level-1 archive is a QEDCalc deliverable even where no published
 At the start of a new chat/session, read this file first, then inspect the current branch and newest user-provided local logs. Update this worklog after meaningful milestones, design changes, important failures/fixes, or likely session handoffs.
 
 ---
+
+
+---
+
+## 2026-09-21: formal 72-diagram input -> graph -> canonical-family bridge added
+
+Purpose: restore the missing reproducible front half of the three-loop pipeline while the existing master-basis computation continues independently.
+
+Current long-running computation remains unchanged:
+
+```powershell
+.\run_three_loop_master_basis_all.bat resume 4
+```
+
+Added formal inputs:
+
+```text
+input/three_loop/
+  Q01.tex ... Q50.tex
+  VP01.tex ... VP12.tex
+  VP4A.tex VP4B.tex VP4C.tex
+  VP22.tex
+  LBL01.tex ... LBL06.tex
+  manifest.json
+```
+
+Input count:
+
+```text
+50 + 12 + 3 + 1 + 6 = 72
+```
+
+Each .tex contains the complete amplitude taken from
+`3loop_vertex_72_complete_equations.md` plus reviewed provenance metadata:
+
+- diagram ID
+- physical family
+- source document
+- graph metadata
+
+`manifest.json` records SHA-256 for all 72 formal inputs.
+
+Added bridge/audit implementation:
+
+```text
+three_loop/input_pipeline.py
+examples/three_loop_input_to_family_audit.py
+run_three_loop_input_to_family_audit.bat
+tests/test_three_loop_input_pipeline.py
+doc/three_loop_input_to_family_pipeline.md
+```
+
+Canonical front-half flow is now:
+
+```text
+3loop_vertex_72_complete_equations.md
+  -> input/three_loop/*.tex
+  -> formal input graph metadata
+  -> exact audit against data/three_loop_topologies.json
+  -> existing global classification
+  -> existing canonical-family autodiscovery / registry
+  -> 45 canonical integral families
+  -> existing master-basis pipeline
+```
+
+Direct source-vs-registry verification performed during implementation:
+
+```text
+source sections          : 72
+registry diagrams        : 72
+exact graph matches      : 72/72
+mismatches               : 0
+physical-family counts   : quenched 50 / VP1 12 / VP2 3 / VP22 1 / LBL 6
+```
+
+Important scope:
+
+The v1 bridge does not claim arbitrary raw-LaTeX -> Feynman-graph inference.
+The reviewed topology metadata is stored together with each complete amplitude
+and is independently checked against the executable 72-diagram topology
+registry. This provides continuous provenance now and a 72-case regression
+oracle for a future raw-LaTeX graph recognizer.
+
+The new audit does not launch Kira/FireFly and does not modify current
+master-basis artifacts. It is therefore a front-end provenance layer, not a
+replacement for the running `resume 4` computation.
+
+The intended reproducible path is now:
+
+```text
+source amplitude
+ -> formal input
+ -> graph
+ -> topology registry
+ -> canonical family
+ -> IBP/master-basis stage
+ -> stable master basis
+ -> master evaluation
+ -> renormalization
+ -> 72-diagram sum
+ -> final analytic three-loop coefficient
+```
