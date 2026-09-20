@@ -1,0 +1,518 @@
+{
+  "schema_version": 1,
+  "source_document": "3loop_vertex_72_complete_equations.md",
+  "diagram_count": 72,
+  "expected_family_counts": {
+    "quenched": 50,
+    "vp1_insert": 12,
+    "vp2_insert": 3,
+    "vp1_double": 1,
+    "external_lbl": 6
+  },
+  "files": [
+    {
+      "diagram_id": "Q01",
+      "path": "input/three_loop/Q01.tex",
+      "physical_family": "quenched",
+      "sha256": "5a568adcf5cb047a3a62a2f3288ae62c344df59b77114043fa27fcf6ad50343d",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q02",
+      "path": "input/three_loop/Q02.tex",
+      "physical_family": "quenched",
+      "sha256": "8e8e0f356b6e5774336df52a157eaedcab84ae8ddf9c35a91bffb46dcfec9a0f",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q03",
+      "path": "input/three_loop/Q03.tex",
+      "physical_family": "quenched",
+      "sha256": "538ff8e24447e94e19b7ba610454939dc7b6e698005f7c288de6105f3a95e9ac",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q04",
+      "path": "input/three_loop/Q04.tex",
+      "physical_family": "quenched",
+      "sha256": "f91041243a64cd267878d4025664b526652cc111abf57a45d26a470f27bbad42",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q05",
+      "path": "input/three_loop/Q05.tex",
+      "physical_family": "quenched",
+      "sha256": "6623439eefcbff0cac2be9ad1aa1ef4af081b9ad0a2d0e7f42ce381fac170331",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q06",
+      "path": "input/three_loop/Q06.tex",
+      "physical_family": "quenched",
+      "sha256": "668e9449a5798cfe08ba3645fcfd14de80375e968848b1996fc6db5534b6d7ce",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q07",
+      "path": "input/three_loop/Q07.tex",
+      "physical_family": "quenched",
+      "sha256": "95162c4da3a81bebbb0a99881256ffb066f566124a71c10ca7d0406b6b2b4842",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q08",
+      "path": "input/three_loop/Q08.tex",
+      "physical_family": "quenched",
+      "sha256": "d62b4e8ca80a0fd823882e651ad21a8be3da6b1164c9f3cb4197d0402df5f8f6",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q09",
+      "path": "input/three_loop/Q09.tex",
+      "physical_family": "quenched",
+      "sha256": "b5454aeb041d9b070086b5c7aab42a3cca73ee619221873a7801cfeeec83ce73",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q10",
+      "path": "input/three_loop/Q10.tex",
+      "physical_family": "quenched",
+      "sha256": "21c5aeda5232759e7a82fb16353b6093ee81f0e930f1233421625afdbb7559df",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q11",
+      "path": "input/three_loop/Q11.tex",
+      "physical_family": "quenched",
+      "sha256": "f33a43ec1b61ff4d482204ecdb8ebfb1f3447bf24e383d8b0678501bd96fd063",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q12",
+      "path": "input/three_loop/Q12.tex",
+      "physical_family": "quenched",
+      "sha256": "5f47721400968ea815f33aa82c8b9f766b9d8ff66679eb58bb5312832b08fa10",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q13",
+      "path": "input/three_loop/Q13.tex",
+      "physical_family": "quenched",
+      "sha256": "421b3fe64383e66a6ccdfcca81367a5b6a88a0d9e6f5a04c8a1f282e071f65db",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q14",
+      "path": "input/three_loop/Q14.tex",
+      "physical_family": "quenched",
+      "sha256": "5831e17ebf651a4eb8fc8b108c3f6cc9de12af7cf1c920955fbee01e373914e7",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q15",
+      "path": "input/three_loop/Q15.tex",
+      "physical_family": "quenched",
+      "sha256": "149b02db8a464b15ec39e2089aac234895483f6580bc3ffbf4ca3e92169c824a",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q16",
+      "path": "input/three_loop/Q16.tex",
+      "physical_family": "quenched",
+      "sha256": "1de1b7369d4c5709e017d085790430d15d5700f1239f84766d7e442d3ecf7281",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q17",
+      "path": "input/three_loop/Q17.tex",
+      "physical_family": "quenched",
+      "sha256": "7acba69e138b4431ca729fddca3e2d09c4dacdaf2911f73ebb16bdd4bb6a9f78",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q18",
+      "path": "input/three_loop/Q18.tex",
+      "physical_family": "quenched",
+      "sha256": "835eeb3986b5e22010a1bcc6304fdf7f2e988ea521a290e416b6e3e9b6cbf717",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q19",
+      "path": "input/three_loop/Q19.tex",
+      "physical_family": "quenched",
+      "sha256": "d37c864d03a86015c03445ce88b664e900ef33c9f2d6b01c3beee06a1506f938",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q20",
+      "path": "input/three_loop/Q20.tex",
+      "physical_family": "quenched",
+      "sha256": "9d99c6f5149e865d98f93006cc80a8fa6e6642c6bb04ee06b291aa116551024c",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q21",
+      "path": "input/three_loop/Q21.tex",
+      "physical_family": "quenched",
+      "sha256": "33210dae1441b6add23959d51ab4b733f1b7d9009cb694de863ef32cda359307",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q22",
+      "path": "input/three_loop/Q22.tex",
+      "physical_family": "quenched",
+      "sha256": "eab2289ab27c28d5fec878fb58f9599bc87a58921f126c0cb4334bc2be1e61da",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q23",
+      "path": "input/three_loop/Q23.tex",
+      "physical_family": "quenched",
+      "sha256": "9312580c5f3d498f0b1b37afea85eac59e80985443f25e1f6b39baf4d28fd9f5",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q24",
+      "path": "input/three_loop/Q24.tex",
+      "physical_family": "quenched",
+      "sha256": "5b7913fbf76ddec589cbb01e1c8104e71d74e77ef2fed4784826feeb4a9eabcd",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q25",
+      "path": "input/three_loop/Q25.tex",
+      "physical_family": "quenched",
+      "sha256": "8a220467e52e3893b2f0ba8d2e5986f98c68d3033a1dae72a3f4d29ae6fa4c4b",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q26",
+      "path": "input/three_loop/Q26.tex",
+      "physical_family": "quenched",
+      "sha256": "869748477de7271ef267639ee5650aea980122aae4de817bd7ab473d6b56a910",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q27",
+      "path": "input/three_loop/Q27.tex",
+      "physical_family": "quenched",
+      "sha256": "00fa655d80756190fe2eabeb8f4ecde483839da1d52f9e61475564fc262d185f",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q28",
+      "path": "input/three_loop/Q28.tex",
+      "physical_family": "quenched",
+      "sha256": "308a0538bd324447c7bbc6da6fa6bbc5be99df4c46458a43c9193a640d9bfa43",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q29",
+      "path": "input/three_loop/Q29.tex",
+      "physical_family": "quenched",
+      "sha256": "f843e32d4e45c34772f6ef0a30347137a718806b3ed11c156e4417e3f6a35fd1",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q30",
+      "path": "input/three_loop/Q30.tex",
+      "physical_family": "quenched",
+      "sha256": "76ea66fed2e88fe6aea9a9c56d2c6346a0da189b375da268633f4bcd17cc010a",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q31",
+      "path": "input/three_loop/Q31.tex",
+      "physical_family": "quenched",
+      "sha256": "e11ed74d3714a3772d897627c7a76298da4a1971e404dfbf12bb29b4c16191fe",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q32",
+      "path": "input/three_loop/Q32.tex",
+      "physical_family": "quenched",
+      "sha256": "f25c028159565faccc9222f099e54b28df546b133d1bd6324b22baab45c2b0ae",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q33",
+      "path": "input/three_loop/Q33.tex",
+      "physical_family": "quenched",
+      "sha256": "071c81bb0471d68c0058cccfc9bfdc6ca9e6fdbdc12716e3ae573065debd16c6",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q34",
+      "path": "input/three_loop/Q34.tex",
+      "physical_family": "quenched",
+      "sha256": "00de00d909ade14e7b8d3a3879bc778fe853aec6a822b42fb5dde5a64fa024e6",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q35",
+      "path": "input/three_loop/Q35.tex",
+      "physical_family": "quenched",
+      "sha256": "8b435bfac62a8ad5d2fd64dd4da8310351e3eb7ae7d602058f694374d7b6bf72",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q36",
+      "path": "input/three_loop/Q36.tex",
+      "physical_family": "quenched",
+      "sha256": "3081bdd22829261d6ea891da09e19e8f7220a8614c0dd4f75764557998dad7b7",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q37",
+      "path": "input/three_loop/Q37.tex",
+      "physical_family": "quenched",
+      "sha256": "39c8ba50a31f634570332b8822d9e610879a8dfb642f6ba42e533a8dcf43c0e9",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q38",
+      "path": "input/three_loop/Q38.tex",
+      "physical_family": "quenched",
+      "sha256": "ba24e8b47cc4a303f9a72bc173569daa08c13ae7986dd21a7a1196ab7b5779a2",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q39",
+      "path": "input/three_loop/Q39.tex",
+      "physical_family": "quenched",
+      "sha256": "e5eecc24a04581b5b94c7774437c4e64143b13a5fdbe2cfc25d9e1bf303ec6cd",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q40",
+      "path": "input/three_loop/Q40.tex",
+      "physical_family": "quenched",
+      "sha256": "21328d769dccbbcf09f02043210cf49ca9381c7e888fc11535816f4018059d3c",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q41",
+      "path": "input/three_loop/Q41.tex",
+      "physical_family": "quenched",
+      "sha256": "d1b2993d89dc2ead8fb662c40ea11697dab10346efc848043d1f600f8502ea3a",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q42",
+      "path": "input/three_loop/Q42.tex",
+      "physical_family": "quenched",
+      "sha256": "c9e4c9a8b92a411a2741717cca7ff70b8b707b0f58d16a5e735e5a986f2a67fe",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q43",
+      "path": "input/three_loop/Q43.tex",
+      "physical_family": "quenched",
+      "sha256": "56d0a8d4b239760edb01dc2d02739a9fa98137205b43744e54a518afa072ae8e",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q44",
+      "path": "input/three_loop/Q44.tex",
+      "physical_family": "quenched",
+      "sha256": "4c971d77269feca2a0298b6cb6146e1c57793df3220f93d79df3dbe3e851afa3",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q45",
+      "path": "input/three_loop/Q45.tex",
+      "physical_family": "quenched",
+      "sha256": "58f4e30fdf21c5d6c7a935154af81def1d310fc822aa148f50918b4af73ae168",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q46",
+      "path": "input/three_loop/Q46.tex",
+      "physical_family": "quenched",
+      "sha256": "697bc8a7411f1114eb2be38d442b343f25562f7c38bf505f3b309ee53c038e10",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q47",
+      "path": "input/three_loop/Q47.tex",
+      "physical_family": "quenched",
+      "sha256": "c0f1233e5c657c5a99a197729c2e591d95402642d83419068177742cfd1ff35a",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q48",
+      "path": "input/three_loop/Q48.tex",
+      "physical_family": "quenched",
+      "sha256": "72774f324379ae39ef8e84a1fec6053183d44fbfbcf6844f8c456ac148c1a4a3",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q49",
+      "path": "input/three_loop/Q49.tex",
+      "physical_family": "quenched",
+      "sha256": "924112f8133c1fae78f10663ee7b1061a0d48d628a5d3a28c905c3e4f0f8d02d",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "Q50",
+      "path": "input/three_loop/Q50.tex",
+      "physical_family": "quenched",
+      "sha256": "ad8fa538be0e0cf1ed664d223eded0ba661fabd7156b25ca5cb9979976744901",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "VP01",
+      "path": "input/three_loop/VP01.tex",
+      "physical_family": "vp1_insert",
+      "sha256": "2d9e84911ba7b2bd7e2f911c81d30aa5d8d1f47aded148a8b2879923af1c86bd",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "VP02",
+      "path": "input/three_loop/VP02.tex",
+      "physical_family": "vp1_insert",
+      "sha256": "6c46fe10e2c0ee10bb07057044034bcaf0feb1d8b9577d8e82151116e4b593b4",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "VP03",
+      "path": "input/three_loop/VP03.tex",
+      "physical_family": "vp1_insert",
+      "sha256": "c158f749165fb9e00490fd5a6bdabe3340f59405adb152fe234e5a513ddf7146",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "VP04",
+      "path": "input/three_loop/VP04.tex",
+      "physical_family": "vp1_insert",
+      "sha256": "7348c36af9ed64fc4948fc5479b6f5369f08e9ddb882ddf5dd17ee224b77890e",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "VP05",
+      "path": "input/three_loop/VP05.tex",
+      "physical_family": "vp1_insert",
+      "sha256": "2bb53fafd7ce6cf892775f96b150728dc4b5f56d79ee0fc40340980d1795516b",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "VP06",
+      "path": "input/three_loop/VP06.tex",
+      "physical_family": "vp1_insert",
+      "sha256": "137d67cab951a9fde9bdbc2144c4b0f1eab9c1a19a535d02b0d1c47e4d561931",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "VP07",
+      "path": "input/three_loop/VP07.tex",
+      "physical_family": "vp1_insert",
+      "sha256": "f42a9feef5db3bbf3f63cfa3c143f91c772986e050d6c5e97f1926c83bf72bca",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "VP08",
+      "path": "input/three_loop/VP08.tex",
+      "physical_family": "vp1_insert",
+      "sha256": "858346b3fe1f8089edca8653d6d9a7e62b2c68ed2634812f8ff2a32b5302b497",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "VP09",
+      "path": "input/three_loop/VP09.tex",
+      "physical_family": "vp1_insert",
+      "sha256": "5fa30e4a16cdae4e7cc38044ad78d16d99790fbac65dfbfb0bfb8823e8fb09cb",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "VP10",
+      "path": "input/three_loop/VP10.tex",
+      "physical_family": "vp1_insert",
+      "sha256": "f94691342c3931de8e0bcec72cb3783e70b0f57e7bc4d32a2ef4a8a0e343fdb4",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "VP11",
+      "path": "input/three_loop/VP11.tex",
+      "physical_family": "vp1_insert",
+      "sha256": "e9a0deafc1b0883438c458bd68aea38189954fdfad348dd0d6c4755ac6637d47",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "VP12",
+      "path": "input/three_loop/VP12.tex",
+      "physical_family": "vp1_insert",
+      "sha256": "dd094bf2408535b5383dd5da537b4c9734a95c3a9e57cbee59db7fdd26b6768b",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "VP4A",
+      "path": "input/three_loop/VP4A.tex",
+      "physical_family": "vp2_insert",
+      "sha256": "49aa8eb4c0168a876a8832a5073af018223ef8155f4095c2510e493d134f2cf2",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "VP4B",
+      "path": "input/three_loop/VP4B.tex",
+      "physical_family": "vp2_insert",
+      "sha256": "6b3c59e12e35129c71f98c6a98cfad4d37af0671ffbc4cead9cb9b61bae55102",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "VP4C",
+      "path": "input/three_loop/VP4C.tex",
+      "physical_family": "vp2_insert",
+      "sha256": "d1d32dca930f6cfadb4290c81d98dab6c3e8c4abf97e79d4955a189bb3b76d9c",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "VP22",
+      "path": "input/three_loop/VP22.tex",
+      "physical_family": "vp1_double",
+      "sha256": "0174fdd74362f23ee0e5db94080d1438daa075c90f906a2fd906983f04641725",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "LBL01",
+      "path": "input/three_loop/LBL01.tex",
+      "physical_family": "external_lbl",
+      "sha256": "396b279ac5757bbdbbbfa7f5fd92fc282ed1cd0a8cbba82e6a0689c255508c5e",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "LBL02",
+      "path": "input/three_loop/LBL02.tex",
+      "physical_family": "external_lbl",
+      "sha256": "6710b3996f8c82ba0cbc79b1c3289c91c96db38e55e79621b34b81e46df8161d",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "LBL03",
+      "path": "input/three_loop/LBL03.tex",
+      "physical_family": "external_lbl",
+      "sha256": "a62f31cc416ec57aa34a076447ea4bdfe69c6961c52886d38803c4af02da32e2",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "LBL04",
+      "path": "input/three_loop/LBL04.tex",
+      "physical_family": "external_lbl",
+      "sha256": "114476e4aaf051344c32fbb297135017a37e3ae4cafa3c0f7a67530f55b4902d",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "LBL05",
+      "path": "input/three_loop/LBL05.tex",
+      "physical_family": "external_lbl",
+      "sha256": "1c5c53a3dd92a9a5b4cb27e258c80adfee43e97b551295e53c2569dd85c7da3f",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    },
+    {
+      "diagram_id": "LBL06",
+      "path": "input/three_loop/LBL06.tex",
+      "physical_family": "external_lbl",
+      "sha256": "5d0ac761156f1eb56e4eb083830c749860f88b2206f4a8f7f026f327ec0710f8",
+      "source_document": "3loop_vertex_72_complete_equations.md"
+    }
+  ]
+}
