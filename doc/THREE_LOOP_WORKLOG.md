@@ -839,3 +839,38 @@ source amplitude
  -> 72-diagram sum
  -> final analytic three-loop coefficient
 ```
+
+
+---
+
+## 2026-09-21: formal input-to-family follow-up placed on hold until 72-diagram master-basis completion
+
+The formal 72-diagram input -> graph -> canonical-family front-end has been connected and documented, but further work on this topic is intentionally paused for now.
+
+Current priority is to let the existing 72-diagram master-basis processing complete:
+
+```powershell
+.\run_three_loop_master_basis_all.bat resume 4
+```
+
+Until the full `run_three_loop_master_basis_all.bat` processing over the 72-diagram workload is complete, do not expand or restructure the new input-to-family pipeline further.
+
+In particular, defer:
+
+- additional raw-LaTeX -> graph automation,
+- further integration of the front-end pipeline with master-basis reporting,
+- construction of the final all-in-one three-loop report runner,
+- additional documentation expansion beyond maintenance fixes.
+
+After the 72-diagram master-basis processing is complete, resume this topic and connect the completed master-basis results to the already established provenance chain:
+
+```text
+formal input
+ -> graph
+ -> topology registry
+ -> canonical family
+ -> completed master basis
+ -> later master evaluation / renormalization / final sum
+```
+
+This hold is deliberate so that the currently running master-basis computation remains the main execution priority and is not disturbed by unrelated pipeline restructuring.
