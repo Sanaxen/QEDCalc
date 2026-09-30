@@ -52,6 +52,7 @@ def _resolve_baseline(family_id: str, seed: Seed) -> tuple[Path, list[str]]:
     candidates = [
         _generic_master_copy(family_id, "ordinary", seed),
         _generic_master_copy(family_id, "firefly", seed),
+        _generic_master_copy(family_id, "masters", seed),
         *_legacy_master_candidates(family_id, seed),
     ]
     for path in candidates:
@@ -77,7 +78,7 @@ def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--family", required=True)
     p.add_argument("--baseline-seed", type=_parse_seed)
-    p.add_argument("--solver", choices=("ordinary", "firefly"), default="firefly")
+    p.add_argument("--solver", choices=("ordinary", "firefly", "masters"), default="masters")
     args = p.parse_args()
 
     spec = build_family_spec(args.family)
