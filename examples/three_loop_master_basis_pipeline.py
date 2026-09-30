@@ -35,6 +35,13 @@ def project_path(family: str, seed: Seed, solver: str) -> Path:
 def prepare(args: argparse.Namespace) -> None:
     spec = build_family_spec(args.family)
     seed = args.seed or spec.baseline_seed
+    if seed.r < spec.unique_physical_count:
+        raise ValueError(
+            f"{spec.family_id}: seed {seed.tag} has r={seed.r}, but this family "
+            f"has {spec.unique_physical_count} unique physical denominators. "
+            f"Use at least r{spec.unique_physical_count}s{seed.s}d{seed.d}; "
+            f"baseline is {spec.baseline_seed.tag}."
+        )
     project = project_path(spec.family_id, seed, args.solver)
     export_kira_project(spec, project, seed=seed, solver=args.solver)
     print("QEDCalc generic master-basis prepare")
