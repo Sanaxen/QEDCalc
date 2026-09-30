@@ -10,8 +10,8 @@ set "BASELINE_SEED=%~2"
 set "SOLVER=%~3"
 if "%SOLVER%"=="" set "SOLVER=firefly"
 
-if /I not "%SOLVER%"=="ordinary" if /I not "%SOLVER%"=="firefly" (
-  echo ERROR: solver must be ordinary or firefly.
+if /I not "%SOLVER%"=="ordinary" if /I not "%SOLVER%"=="firefly" if /I not "%SOLVER%"=="masters" (
+  echo ERROR: solver must be ordinary, firefly, or masters.
   exit /b 2
 )
 
@@ -30,7 +30,7 @@ echo baseline seed: %BASELINE_SEED%
 echo solver: %SOLVER%
 echo.
 echo Rough runtime guide ^(heuristic only^):
-echo   3 sequential Kira/FireFly boundary runs
+echo   3 sequential Kira boundary runs ^(FireFly only when solver=firefly^)
 echo   typical per boundary : about 10-90 minutes
 echo   typical total        : about 30 minutes-4.5 hours
 echo   difficult seeds may take longer; overnight execution is reasonable
@@ -91,6 +91,6 @@ endlocal
 exit /b 0
 
 :usage
-echo Usage: %~nx0 FAMILY BASELINE_SEED [ordinary^|firefly]
+echo Usage: %~nx0 FAMILY BASELINE_SEED [ordinary^|firefly^|masters]
 echo Example: %~nx0 Q05_full r8s3d0 firefly
 exit /b 2
