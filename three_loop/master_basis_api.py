@@ -318,7 +318,7 @@ def render_jobs_yaml(
     mandatory_file: str | None = None,
     reduce_sectors: Sequence[int] | None = None,
 ) -> str:
-    if solver not in {"ordinary", "firefly"}:
+    if solver not in {"ordinary", "firefly", "masters"}:
         raise ValueError(f"unsupported solver: {solver}")
     if mandatory_file:
         selection = (
@@ -331,9 +331,14 @@ def render_jobs_yaml(
             f"          - {{topologies: [{spec.family_id}], sectors: [{spec.top_sector}], "
             f"r: {seed.r}, s: {seed.s}, d: {seed.d}}}"
         )
-    triangular = "false" if solver == "firefly" else "sectorwise"
-    back = "false" if solver == "firefly" else "true"
-    firefly = "true" if solver == "firefly" else "false"
+    if solver == "masters":
+        triangular = "false"
+        back = "false"
+        firefly = "false"
+    else:
+        triangular = "false" if solver == "firefly" else "sectorwise"
+        back = "false" if solver == "firefly" else "true"
+        firefly = "true" if solver == "firefly" else "false"
     sectors = list(reduce_sectors) if reduce_sectors is not None else [spec.top_sector]
     if not sectors:
         raise ValueError("reduce_sectors must not be empty")
@@ -443,6 +448,31 @@ def parse_masters_final(path: str | Path, family_id: str) -> list[str]:
             out.append(item)
     return out
 
+
+def find_master_list(project: str | Path, family_id: str) -> tuple[Path, list[str]]:
+    """Find the master list from initiate-only or full reduction output."""
+    project = Path(project)
+    final_candidates = sorted(project.rglob("masters.final"), key=lambda p: str(p))
+    if len(final_candidates) == 1:
+        masters = parse_masters_final(final_candidates[0], family_id)
+        if masters:
+            return final_candidates[0], masters
+    elif len(final_candidates) > 1:
+        raise ValueError(
+            f"{family_id}: expected at most one masters.final, found {len(final_candidates)}"
+        )
+
+    candidates: list[tuple[Path, list[str]]] = []
+    for name in ("master", "masters"):
+        for path in sorted(project.rglob(name), key=lambda p: str(p)):
+            masters = parse_masters_final(path, family_id)
+            if masters:
+                candidates.append((path, masters))
+    if len(candidates) != 1:
+        raise ValueError(
+            f"{family_id}: expected one initiate-only master list, found {len(candidates)}"
+        )
+    return candidates[0]
 
 def find_single_masters_final(project: str | Path, family_id: str) -> tuple[Path, list[str]]:
     candidates = sorted(Path(project).rglob("masters.final"), key=lambda p: str(p))
