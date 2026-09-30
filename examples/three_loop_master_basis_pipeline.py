@@ -36,7 +36,7 @@ def prepare(args: argparse.Namespace) -> None:
     spec = build_family_spec(args.family)
     seed = args.seed or spec.baseline_seed
     project = project_path(spec.family_id, seed, args.solver)
-    export_kira_project(spec, project, seed=seed, solver=args.solver)
+    export_kira_project(spec, project, seed=seed, solver=args.solver, clean=args.fresh)
     print("QEDCalc generic master-basis prepare")
     print(f"family: {spec.family_id}")
     print(f"representative: {spec.representative}")
@@ -47,6 +47,7 @@ def prepare(args: argparse.Namespace) -> None:
     print(f"seed: {seed.tag}")
     print(f"solver: {args.solver}")
     print(f"project: {project}")
+    print(f"prepare mode: {'fresh' if args.fresh else 'resume-safe'}")
     print("QEDCalc generic master-basis prepare PASS")
 
 
@@ -105,6 +106,7 @@ def main() -> None:
     parser.add_argument("--family", required=True)
     parser.add_argument("--seed", type=_parse_seed)
     parser.add_argument("--solver", choices=("ordinary", "firefly"), default="ordinary")
+    parser.add_argument("--fresh", action="store_true", help="discard existing Kira/FireFly runtime state before prepare; default preserves compatible interrupted state")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--prepare", action="store_true")
     group.add_argument("--finalize", action="store_true")
