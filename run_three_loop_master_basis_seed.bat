@@ -8,7 +8,10 @@ if "%~2"=="" goto :usage
 set "FAMILY=%~1"
 set "SEED=%~2"
 set "SOLVER=%~3"
+set "MODE=%~4"
 if "%SOLVER%"=="" set "SOLVER=ordinary"
+set "PREPARE_EXTRA="
+if /I "%MODE%"=="fresh" set "PREPARE_EXTRA=--fresh"
 
 if /I not "%SOLVER%"=="ordinary" if /I not "%SOLVER%"=="firefly" (
   echo ERROR: solver must be ordinary or firefly.
@@ -20,7 +23,7 @@ if not exist ".venv\Scripts\python.exe" (
   exit /b 1
 )
 
-".venv\Scripts\python.exe" -m examples.three_loop_master_basis_pipeline --family "%FAMILY%" --seed "%SEED%" --solver "%SOLVER%" --prepare
+".venv\Scripts\python.exe" -m examples.three_loop_master_basis_pipeline --family "%FAMILY%" --seed "%SEED%" --solver "%SOLVER%" --prepare %PREPARE_EXTRA%
 if errorlevel 1 exit /b %ERRORLEVEL%
 
 for /f "usebackq delims=" %%I in (`powershell.exe -NoProfile -Command "('%FAMILY%').ToLowerInvariant()"`) do set "FAMILY_LOWER=%%I"
@@ -40,7 +43,7 @@ echo seed: %SEED%
 echo solver: %SOLVER%
 echo Windows project: %WIN_PROJECT%
 
-wsl.exe --cd "%WIN_PROJECT%" bash -lc "set -o pipefail; command -v kira >/dev/null 2>&1 || { echo 'ERROR: kira not found in WSL PATH'; exit 127; }; export FERMATPATH=$HOME/fermat/Ferl7/fer64; rm -rf results sectormappings tmp firefly_saves ff_save firefly_saves_alt pyred; echo FERMATPATH=$FERMATPATH; kira jobs.yaml 2>&1 | tee kira_%SOLVER%_%SEED%.log"
+wsl.exe --cd "%WIN_PROJECT%" bash -lc "set -o pipefail; command -v kira >/dev/null 2>&1 || { echo 'ERROR: kira not found in WSL PATH'; exit 127; }; export FERMATPATH=$HOME/fermat/Ferl7/fer64; echo FERMATPATH=$FERMATPATH; echo QEDCalc runtime mode: %MODE%; kira jobs.yaml 2>&1 | tee -a kira_%SOLVER%_%SEED%.log"
 set "KIRA_ERR=%ERRORLEVEL%"
 if not "%KIRA_ERR%"=="0" (
   echo ERROR: Kira exited with code %KIRA_ERR%.
@@ -55,6 +58,8 @@ endlocal
 exit /b 0
 
 :usage
-echo Usage: %~nx0 FAMILY SEED [ordinary^|firefly]
-echo Example: %~nx0 Q05_full r9s3d0 firefly
+echo Usage: %~nx0 FAMILY SEED [ordinary^|firefly] [fresh]
+echo Default mode preserves compatible interrupted Kira/FireFly runtime state.
+echo Example resume-safe: %~nx0 Q05_full r9s3d0 firefly
+echo Example fresh      : %~nx0 Q05_full r9s3d0 firefly fresh
 exit /b 2
