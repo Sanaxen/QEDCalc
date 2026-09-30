@@ -566,18 +566,35 @@ def find_or_infer_masters(
     *,
     mandatory_targets: Iterable[str] | None = None,
 ) -> tuple[Path, list[str], str]:
-    """Return masters from masters.final or verified Kira no-reduction mode."""
+    """Return masters from full reduction, initiate-only, or verified no-reduction mode."""
     try:
         path, masters = find_single_masters_final(project, family_id)
         return path, masters, "masters.final"
-    except ValueError as exc:
-        if mandatory_targets is None or "found 0" not in str(exc):
+    except ValueError as final_exc:
+        if "found 0" not in str(final_exc):
             raise
+
+    # In initiate-only mode Kira does not emit masters.final.  It writes the
+    # discovered master list as results/<family>/masters (or occasionally
+    # another equivalent initiate-only master/master(s) path). Reuse the same
+    # tolerant resolver used by the generic seed pipeline.
+    try:
+        path, masters = find_master_list(project, family_id)
+        return path, masters, "initiate-only-master-list"
+    except ValueError as initiate_exc:
+        if "found 0" not in str(initiate_exc):
+            raise
+
+    if mandatory_targets is not None:
         inferred = infer_all_master_no_reduction(project, family_id, mandatory_targets)
-        if inferred is None:
-            raise
-        path, masters = inferred
-        return path, masters, "kira-no-reduction-all-masters"
+        if inferred is not None:
+            path, masters = inferred
+            return path, masters, "kira-no-reduction-all-masters"
+
+    raise ValueError(
+        f"{family_id}: no masters.final, initiate-only master list, or verified "
+        "no-reduction master set found"
+    )
 
 
 def compare_master_sets(named_sets: dict[str, Iterable[str]]) -> dict[str, Any]:
