@@ -172,6 +172,15 @@ def prepare(args: argparse.Namespace) -> None:
     top_level_sectors = _maximal_sectors([spec.top_sector, *reduce_sectors])
     for seed in envelope.one_axis_extensions():
         project = _project(spec.family_id, args.solver, baseline_seed, seed)
+        mandatory = project / MANDATORY_NAME
+        expected_mandatory = "\n".join(closure) + "\n"
+        if not args.fresh and mandatory.exists():
+            current_mandatory = mandatory.read_text(encoding="utf-8", errors="replace")
+            if current_mandatory != expected_mandatory:
+                raise RuntimeError(
+                    "resume-safe prepare refused because candidate-closure targets changed. "
+                    "Re-run with --fresh to discard old runtime state intentionally."
+                )
         export_kira_project(
             spec,
             project,
@@ -180,10 +189,9 @@ def prepare(args: argparse.Namespace) -> None:
             mandatory_file=MANDATORY_NAME,
             reduce_sectors=reduce_sectors,
             top_level_sectors=top_level_sectors,
-            clean=True,
+            clean=args.fresh,
         )
-        mandatory = project / MANDATORY_NAME
-        mandatory.write_text("\n".join(closure) + "\n", encoding="utf-8", newline="\n")
+        mandatory.write_text(expected_mandatory, encoding="utf-8", newline="\n")
         projects.append({"seed": seed.tag, "project": str(project), "mandatory_file": str(mandatory)})
 
     manifest = {
@@ -428,6 +436,7 @@ def main() -> None:
     parser.add_argument("--family", required=True)
     parser.add_argument("--baseline-seed", type=_parse_seed)
     parser.add_argument("--solver", choices=("ordinary", "firefly"), default="firefly")
+    parser.add_argument("--fresh", action="store_true", help="discard existing Kira/FireFly runtime state before prepare; default preserves compatible interrupted state")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--prepare", action="store_true")
     group.add_argument("--finalize", action="store_true")
