@@ -118,6 +118,15 @@ def prepare(args: argparse.Namespace) -> None:
 
     reduce_sectors = _target_sectors(targets)
     top_level_sectors = _maximal_sectors([spec.top_sector, *reduce_sectors])
+    mandatory = project / MANDATORY_NAME
+    expected_mandatory = "\n".join(targets) + "\n"
+    if not args.fresh and mandatory.exists():
+        current_mandatory = mandatory.read_text(encoding="utf-8", errors="replace")
+        if current_mandatory != expected_mandatory:
+            raise RuntimeError(
+                "resume-safe prepare refused because mandatory union targets changed. "
+                "Re-run with --fresh to discard old runtime state intentionally."
+            )
     export_kira_project(
         spec,
         project,
@@ -126,10 +135,9 @@ def prepare(args: argparse.Namespace) -> None:
         mandatory_file=MANDATORY_NAME,
         reduce_sectors=reduce_sectors,
         top_level_sectors=top_level_sectors,
-        clean=True,
+        clean=args.fresh,
     )
-    mandatory = project / MANDATORY_NAME
-    mandatory.write_text("\n".join(targets) + "\n", encoding="utf-8", newline="\n")
+    mandatory.write_text(expected_mandatory, encoding="utf-8", newline="\n")
 
     manifest = {
         "schema_version": 1,
@@ -163,6 +171,7 @@ def prepare(args: argparse.Namespace) -> None:
     print(f"mandatory target sectors: {reduce_sectors}")
     print(f"Kira top-level sectors: {top_level_sectors}")
     print(f"project: {project}")
+    print(f"prepare mode: {'fresh' if args.fresh else 'resume-safe'}")
     print(f"mandatory file: {mandatory}")
     print("QEDCalc generic mandatory-union reduction prepare PASS")
 
@@ -261,6 +270,7 @@ def main() -> None:
     parser.add_argument("--baseline-seed", type=_parse_seed)
     parser.add_argument("--solver", choices=("ordinary", "firefly"), default="firefly")
     parser.add_argument("--targets", type=Path)
+    parser.add_argument("--fresh", action="store_true", help="discard existing Kira/FireFly runtime state before prepare; default preserves compatible interrupted state")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--prepare", action="store_true")
     group.add_argument("--finalize", action="store_true")
