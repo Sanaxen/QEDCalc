@@ -14,7 +14,7 @@ from three_loop.master_basis_api import (
     Seed,
     build_family_spec,
     export_kira_project,
-    find_single_masters_final,
+    find_master_list,
 )
 
 
@@ -54,7 +54,7 @@ def finalize(args: argparse.Namespace) -> None:
     spec = build_family_spec(args.family)
     seed = args.seed or spec.baseline_seed
     project = project_path(spec.family_id, seed, args.solver)
-    masters_path, masters = find_single_masters_final(project, spec.family_id)
+    masters_path, masters = find_master_list(project, spec.family_id)
     audit_dir = ROOT / "output" / "three_loop_integral_family_audit"
     audit_dir.mkdir(parents=True, exist_ok=True)
     stem = f"three_loop_{spec.family_id.lower()}_{args.solver}_{seed.tag}_generic_audit"
@@ -104,7 +104,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--family", required=True)
     parser.add_argument("--seed", type=_parse_seed)
-    parser.add_argument("--solver", choices=("ordinary", "firefly"), default="ordinary")
+    parser.add_argument("--solver", choices=("ordinary", "firefly", "masters"), default="ordinary")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--prepare", action="store_true")
     group.add_argument("--finalize", action="store_true")
