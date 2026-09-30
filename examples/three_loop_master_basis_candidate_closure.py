@@ -331,19 +331,49 @@ def finalize(args: argparse.Namespace) -> None:
             rows.append({"seed": seed.tag, "project": str(project), "stable": False, "error": str(exc)})
             continue
 
-        candidate_status = _classify_targets(project, spec.family_id, candidate, masters)
-        union_status = _classify_targets(project, spec.family_id, union_targets, masters)
-        closure_status = _classify_targets(project, spec.family_id, closure, masters)
         current_set = set(masters)
         missing_candidate_masters = sorted(candidate_set - current_set)
-        candidate_unresolved = candidate_status["counts"]["unresolved"]
-        closure_unresolved = closure_status["counts"]["unresolved"]
-        stable = not missing_candidate_masters and candidate_unresolved == 0 and closure_unresolved == 0
-        if not stable:
-            errors.append(
-                f"{seed.tag}: candidate/closure unstable; missing candidate masters="
-                f"{len(missing_candidate_masters)}, unresolved={closure_unresolved}"
-            )
+        new_masters = sorted(current_set - candidate_set)
+
+        if args.solver == "masters":
+            # Initiate-only mode intentionally has no reduction equations.
+            # Because every boundary uses the exact same mandatory closure
+            # target set, compare the discovered master sets directly.
+            # Equality proves stability at that boundary; a strict subset is a
+            # valid refinement signal; masters outside the candidate mean the
+            # candidate is not stable in the stronger context.
+            candidate_status = {
+                "mode": "initiate-only-set-comparison",
+                "candidate_count": len(candidate_set),
+                "boundary_master_count": len(current_set),
+                "retained_candidate": len(candidate_set & current_set),
+                "missing_candidate": missing_candidate_masters,
+                "new_masters": new_masters,
+            }
+            union_status = {"mode": "not-applicable-without-reduction-equations"}
+            closure_status = {"mode": "not-applicable-without-reduction-equations"}
+            stable = current_set == candidate_set
+            refinement_candidate = bool(current_set) and current_set < candidate_set
+            if not stable:
+                errors.append(
+                    f"{seed.tag}: initiate-only candidate set changed; "
+                    f"missing={len(missing_candidate_masters)}, new={len(new_masters)}, "
+                    f"refinement_candidate={refinement_candidate}"
+                )
+        else:
+            candidate_status = _classify_targets(project, spec.family_id, candidate, masters)
+            union_status = _classify_targets(project, spec.family_id, union_targets, masters)
+            closure_status = _classify_targets(project, spec.family_id, closure, masters)
+            candidate_unresolved = candidate_status["counts"]["unresolved"]
+            closure_unresolved = closure_status["counts"]["unresolved"]
+            stable = not missing_candidate_masters and candidate_unresolved == 0 and closure_unresolved == 0
+            refinement_candidate = False
+            if not stable:
+                errors.append(
+                    f"{seed.tag}: candidate/closure unstable; missing candidate masters="
+                    f"{len(missing_candidate_masters)}, unresolved={closure_unresolved}"
+                )
+
         rows.append({
             "seed": seed.tag,
             "project": str(project),
@@ -354,6 +384,8 @@ def finalize(args: argparse.Namespace) -> None:
             "union_target_status": union_status,
             "closure_target_status": closure_status,
             "missing_candidate_masters": missing_candidate_masters,
+            "new_masters": new_masters,
+            "refinement_candidate": refinement_candidate,
             "stable": stable,
         })
 
@@ -399,14 +431,24 @@ def finalize(args: argparse.Namespace) -> None:
         if "error" in row:
             lines.append(f"{row['seed']}: ERROR {row['error']}")
             continue
-        cc = row["candidate_status"]["counts"]
-        uc = row["union_target_status"]["counts"]
-        lines.extend([
-            f"{row['seed']}: masters.final={row['master_count']} stable={row['stable']}",
-            f"  candidate status: {cc}",
-            f"  union target status: {uc}",
-            f"  missing candidate masters: {len(row['missing_candidate_masters'])}",
-        ])
+        if args.solver == "masters":
+            cs = row["candidate_status"]
+            lines.extend([
+                f"{row['seed']}: masters={row['master_count']} stable={row['stable']}",
+                f"  retained candidate: {cs['retained_candidate']}/{cs['candidate_count']}",
+                f"  missing candidate masters: {len(row['missing_candidate_masters'])}",
+                f"  new masters: {len(row['new_masters'])}",
+                f"  refinement candidate: {row['refinement_candidate']}",
+            ])
+        else:
+            cc = row["candidate_status"]["counts"]
+            uc = row["union_target_status"]["counts"]
+            lines.extend([
+                f"{row['seed']}: masters.final={row['master_count']} stable={row['stable']}",
+                f"  candidate status: {cc}",
+                f"  union target status: {uc}",
+                f"  missing candidate masters: {len(row['missing_candidate_masters'])}",
+            ])
     lines.extend([
         f"stable under tested one-axis extensions: {stable_all}",
         f"internal audit errors: {len(errors)}",
@@ -427,7 +469,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--family", required=True)
     parser.add_argument("--baseline-seed", type=_parse_seed)
-    parser.add_argument("--solver", choices=("ordinary", "firefly"), default="firefly")
+    parser.add_argument("--solver", choices=("ordinary", "firefly", "masters"), default="firefly")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--prepare", action="store_true")
     group.add_argument("--finalize", action="store_true")
