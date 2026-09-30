@@ -857,3 +857,52 @@ git pull
 ```powershell
 .\run_three_loop_master_basis_all.bat resume 5
 ```
+
+
+---
+
+## 18. 高速化: initiate-only master discovery
+
+3ループ Stage-2 では、baseline と one-axis boundary の目的は
+**完全な係数 reduction ではなく master integral 集合の同定**です。
+
+Q03_full では従来の FireFly 経路が 1,254,743 functions の interpolation
+に入り、10日を超える実行時間になりました。このため baseline /
+boundary の標準 solver を `masters` に変更しました。
+
+`masters` モードの Kira 設定は次です。
+
+```yaml
+run_symmetries: true
+run_initiate: true
+run_triangular: false
+run_back_substitution: false
+run_firefly: false
+```
+
+Kira は mandatory selection 後、forward elimination の前に master
+integral 一覧を確定します。そのため master 一覧だけが必要な通常の
+baseline / boundary では FireFly interpolation を実行しません。
+
+一方、次の段階では実際の reduction 結果が必要なので FireFly を維持します。
+
+- mandatory union reduction
+- candidate closure
+- no-rerun closure verification
+
+既存の FireFly 完了結果はそのまま再利用されます。
+
+個別確認例:
+
+```powershell
+.\run_three_loop_master_basis_seed.bat Q03_full r8s3d0 masters
+```
+
+one-axis boundary 一括実行:
+
+```powershell
+.\run_three_loop_master_basis_boundaries.bat Q03_full r8s3d0 masters
+```
+
+通常の全体 runner でも baseline / boundary は自動的に `masters`
+モードを使います。
