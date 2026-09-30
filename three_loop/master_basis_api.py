@@ -384,30 +384,27 @@ def export_kira_project(
     top_level_sectors: Sequence[int] | None = None,
     clean: bool = True,
 ) -> Path:
+    """Export a Kira project, optionally preserving interrupted runtime state.
+
+    clean=False is the resume-safe mode used by long-running FireFly jobs.
+    Existing static Kira configuration must match byte-for-byte before runtime
+    state is preserved. If it changed, the caller must explicitly request a
+    fresh run with clean=True.
+    """
     root = Path(root)
     seed = seed or spec.baseline_seed
     root.mkdir(parents=True, exist_ok=True)
-    if clean:
-        clean_runtime_outputs(root)
-    config = root / "config"
-    config.mkdir(parents=True, exist_ok=True)
-    (config / "integralfamilies.yaml").write_text(
-        render_integralfamilies_yaml(spec, top_level_sectors=top_level_sectors),
-        encoding="utf-8",
-        newline="\n",
+
+    integral_text = render_integralfamilies_yaml(
+        spec, top_level_sectors=top_level_sectors
     )
-    (config / "kinematics.yaml").write_text(
-        render_kinematics_yaml(), encoding="utf-8", newline="\n"
-    )
-    (root / "jobs.yaml").write_text(
-        render_jobs_yaml(
-            spec,
-            seed,
-            solver=solver,
-            mandatory_file=mandatory_file,
-            reduce_sectors=reduce_sectors,
-        ),
-        encoding="utf-8", newline="\n",
+    kinematics_text = render_kinematics_yaml()
+    jobs_text = render_jobs_yaml(
+        spec,
+        seed,
+        solver=solver,
+        mandatory_file=mandatory_file,
+        reduce_sectors=reduce_sectors,
     )
     manifest = {
         "schema_version": 1,
@@ -417,11 +414,46 @@ def export_kira_project(
         "solver": solver,
         "mandatory_file": mandatory_file,
     }
+
+    static_files = {
+        root / "config" / "integralfamilies.yaml": integral_text,
+        root / "config" / "kinematics.yaml": kinematics_text,
+        root / "jobs.yaml": jobs_text,
+    }
+    if not clean:
+        mismatches: list[str] = []
+        for path, expected in static_files.items():
+            if path.exists():
+                actual = path.read_text(encoding="utf-8", errors="replace")
+                if actual != expected:
+                    mismatches.append(str(path))
+        if mismatches:
+            raise RuntimeError(
+                "resume-safe prepare refused because the Kira configuration changed: "
+                + ", ".join(mismatches)
+                + ". Re-run with --fresh to discard old runtime state intentionally."
+            )
+
+    if clean:
+        clean_runtime_outputs(root)
+
+    config = root / "config"
+    config.mkdir(parents=True, exist_ok=True)
+    (config / "integralfamilies.yaml").write_text(
+        integral_text, encoding="utf-8", newline="\n"
+    )
+    (config / "kinematics.yaml").write_text(
+        kinematics_text, encoding="utf-8", newline="\n"
+    )
+    (root / "jobs.yaml").write_text(
+        jobs_text, encoding="utf-8", newline="\n"
+    )
     (root / "qedcalc_master_basis_manifest.json").write_text(
-        json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8", newline="\n"
+        json.dumps(manifest, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+        newline="\n",
     )
     return root
-
 
 def parse_integral(text: str) -> tuple[str, tuple[int, ...]]:
     match = re.fullmatch(r"\s*([A-Za-z0-9_]+)\s*\[([^\]]+)\]\s*", text)
