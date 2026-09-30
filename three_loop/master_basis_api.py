@@ -468,11 +468,37 @@ def find_master_list(project: str | Path, family_id: str) -> tuple[Path, list[st
             masters = parse_masters_final(path, family_id)
             if masters:
                 candidates.append((path, masters))
-    if len(candidates) != 1:
+
+    if not candidates:
         raise ValueError(
-            f"{family_id}: expected one initiate-only master list, found {len(candidates)}"
+            f"{family_id}: expected an initiate-only master list, found 0"
         )
-    return candidates[0]
+
+    # Kira may materialize the same initiate-only master set in more than one
+    # path (for example both 'master' and 'masters').  Treat bytewise-equivalent
+    # normalized master sets as one logical result, but still fail loudly if
+    # different candidate sets are present.
+    normalized: dict[tuple[str, ...], list[Path]] = {}
+    for path, masters in candidates:
+        key = tuple(sorted(set(masters)))
+        normalized.setdefault(key, []).append(path)
+
+    if len(normalized) != 1:
+        details = "; ".join(
+            f"{len(paths)} file(s), {len(key)} masters: "
+            + ", ".join(str(p) for p in paths)
+            for key, paths in normalized.items()
+        )
+        raise ValueError(
+            f"{family_id}: conflicting initiate-only master lists found: {details}"
+        )
+
+    key, paths = next(iter(normalized.items()))
+    preferred = sorted(
+        paths,
+        key=lambda p: (0 if p.name == "masters" else 1, str(p)),
+    )[0]
+    return preferred, list(key)
 
 def find_single_masters_final(project: str | Path, family_id: str) -> tuple[Path, list[str]]:
     candidates = sorted(Path(project).rglob("masters.final"), key=lambda p: str(p))
