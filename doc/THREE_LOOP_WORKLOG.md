@@ -874,3 +874,66 @@ formal input
 ```
 
 This hold is deliberate so that the currently running master-basis computation remains the main execution priority and is not disturbed by unrelated pipeline restructuring.
+
+
+---
+
+## 2026-10-01: Q03 power-loss interruption and FireFly resume-safety fix
+
+Q03_full had been running for more than ten days when a power outage caused a
+hard interruption. The interrupted FireFly interpolation had exceeded one
+million classified functions but had not completed the current prime-field
+stage.
+
+Post-interruption inspection found a reliability problem in the generic
+master-basis runners: prepare/run paths deleted Kira/FireFly runtime state
+before every retry. In particular, the generic cleanup included
+
+```text
+firefly_saves
+ff_save
+firefly_saves_alt
+sectormappings
+tmp
+results
+pyred
+```
+
+and the BAT runners repeated the deletion immediately before launching Kira.
+Therefore a power-loss retry could destroy any FireFly state that survived the
+interruption.
+
+A dedicated branch was created:
+
+```text
+feature/firefly-resume-safety
+```
+
+The branch changes the long-running FireFly paths so that compatible existing
+runtime state is preserved by default. Static Kira configuration and mandatory
+target lists are checked before reuse; a mismatch aborts rather than silently
+reusing incompatible state. Destructive cleanup is now explicit via
+`--fresh` / the optional BAT argument `fresh`.
+
+The seed, mandatory-union, and candidate-closure runners no longer delete
+FireFly runtime state unconditionally and append to existing logs on retry.
+
+A read-only diagnostic was added:
+
+```powershell
+.\run_three_loop_firefly_resume_audit.bat Q03_full
+```
+
+It reports surviving runtime-state directories and the latest FireFly progress
+line without preparing, cleaning, or launching Kira.
+
+Important: preservation of the saved directories removes the QEDCalc-side
+destructive restart behavior, but actual FireFly probe-level recovery must be
+confirmed empirically on the interrupted Q03 project. Do not use `fresh`
+before that check.
+
+Performance work remains separate. Q03 showed that increasing threads is not
+the preferred first intervention on the current 16 GB machine because the run
+is already memory constrained and likely page-file sensitive. Next optimization
+work should target reduction of the selected interpolation problem / memory
+footprint before increasing parallelism.
