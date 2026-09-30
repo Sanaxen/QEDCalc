@@ -10,8 +10,8 @@ set "BASELINE_SEED=%~2"
 set "SOLVER=%~3"
 if "%SOLVER%"=="" set "SOLVER=firefly"
 
-if /I not "%SOLVER%"=="ordinary" if /I not "%SOLVER%"=="firefly" (
-  echo ERROR: solver must be ordinary or firefly.
+if /I not "%SOLVER%"=="ordinary" if /I not "%SOLVER%"=="firefly" if /I not "%SOLVER%"=="masters" (
+  echo ERROR: solver must be ordinary, firefly, or masters.
   exit /b 2
 )
 
@@ -58,6 +58,6 @@ endlocal
 exit /b 0
 
 :usage
-echo Usage: %~nx0 FAMILY BASELINE_SEED [ordinary^|firefly]
+echo Usage: %~nx0 FAMILY BASELINE_SEED [ordinary^|firefly^|masters]
 echo Example: %~nx0 Q05_full r8s3d0 firefly
 exit /b 2
