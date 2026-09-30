@@ -139,8 +139,8 @@ def cached_family_spec(family_id: str):
     return build_family_spec(family_id)
 
 
-def family_steps(family_id: str, *, baseline_solver: str = "firefly",
-                 boundary_solver: str = "firefly") -> list[BatchStep]:
+def family_steps(family_id: str, *, baseline_solver: str = "masters",
+                 boundary_solver: str = "masters") -> list[BatchStep]:
     spec = cached_family_spec(family_id)
     base = spec.baseline_seed
     r1, s1, d1 = base.one_axis_extensions()
