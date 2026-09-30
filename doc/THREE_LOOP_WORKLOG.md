@@ -874,3 +874,82 @@ formal input
 ```
 
 This hold is deliberate so that the currently running master-basis computation remains the main execution priority and is not disturbed by unrelated pipeline restructuring.
+
+
+---
+
+## 2026-10-01: master-basis speed redesign — initiate-only discovery
+
+Q03_full exposed a severe scaling problem in the Stage-2 master-basis discovery
+path. A FireFly run reached about 1.25 million interpolation functions and ran
+for more than ten days before an external power loss stopped the process.
+
+The expensive step was not mathematically necessary for the baseline/boundary
+purpose. Kira's documented best-practice workflow states that when the goal is
+only to determine the master-integral list, the job may stop after
+`run_initiate: true` with both triangular reduction and back substitution
+disabled. Kira determines and reports the master list before forward
+elimination.
+
+A dedicated optimization branch was created:
+
+```text
+feature/master-basis-initiate-only
+```
+
+New solver mode:
+
+```text
+masters
+```
+
+For this mode the generated Kira job uses:
+
+```yaml
+run_symmetries: true
+run_initiate: true
+run_triangular: false
+run_back_substitution: false
+run_firefly: false
+```
+
+The unattended Stage-2 controller now uses `masters` for the four routine
+master-discovery seeds:
+
+```text
+baseline
+boundary-r
+boundary-s
+boundary-d
+```
+
+Existing completed FireFly audits remain reusable. Full FireFly reduction is
+still retained for the stages that genuinely require reduction/classification
+information:
+
+```text
+mandatory-union reduction
+candidate closure
+authoritative no-rerun closure verification
+```
+
+The generic master parser accepts either the historical `masters.final`
+artifact or Kira initiate-only `master` / `masters` output. The boundary
+audit accepts the new solver mode and compares the resulting master sets in the
+same way as before.
+
+The intended impact is to remove FireFly rational-function interpolation from
+ordinary baseline/boundary master discovery. In a Q03-like case this avoids the
+1,254,743-function interpolation phase entirely if Kira initiate completes as
+documented.
+
+Validation policy:
+
+1. Run one known completed family with `masters`.
+2. Compare the initiate-only master set against the existing FireFly master set.
+3. If identical, run Q03_full through the new path.
+4. Keep FireFly only for union/closure stages that require actual reductions.
+
+This optimization is prioritized over thread-count increases because the
+current workstation is already memory constrained; additional FireFly threads
+could increase paging and reduce effective throughput.
