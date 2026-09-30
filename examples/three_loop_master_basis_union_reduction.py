@@ -259,7 +259,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--family", required=True)
     parser.add_argument("--baseline-seed", type=_parse_seed)
-    parser.add_argument("--solver", choices=("ordinary", "firefly"), default="firefly")
+    parser.add_argument("--solver", choices=("ordinary", "firefly", "masters"), default="firefly")
     parser.add_argument("--targets", type=Path)
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--prepare", action="store_true")
