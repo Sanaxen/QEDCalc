@@ -48,11 +48,17 @@ def _read_master_file(path: Path, family_id: str) -> list[str]:
     return out
 
 
-def _resolve_baseline(family_id: str, seed: Seed) -> tuple[Path, list[str]]:
+def _resolve_baseline(
+    family_id: str,
+    seed: Seed,
+    preferred_solver: str,
+) -> tuple[Path, list[str]]:
+    solver_order = [preferred_solver] + [
+        solver for solver in ("ordinary", "firefly", "masters")
+        if solver != preferred_solver
+    ]
     candidates = [
-        _generic_master_copy(family_id, "ordinary", seed),
-        _generic_master_copy(family_id, "firefly", seed),
-        _generic_master_copy(family_id, "masters", seed),
+        *(_generic_master_copy(family_id, solver, seed) for solver in solver_order),
         *_legacy_master_candidates(family_id, seed),
     ]
     for path in candidates:
@@ -84,7 +90,9 @@ def main() -> None:
     spec = build_family_spec(args.family)
     baseline_seed = args.baseline_seed or spec.baseline_seed
     boundaries = baseline_seed.one_axis_extensions()
-    baseline_path, baseline = _resolve_baseline(spec.family_id, baseline_seed)
+    baseline_path, baseline = _resolve_baseline(
+        spec.family_id, baseline_seed, args.solver
+    )
 
     named: dict[str, list[str]] = {baseline_seed.tag: baseline}
     rows: list[dict[str, object]] = []
