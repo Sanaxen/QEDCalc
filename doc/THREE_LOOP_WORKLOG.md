@@ -937,3 +937,87 @@ the preferred first intervention on the current 16 GB machine because the run
 is already memory constrained and likely page-file sensitive. Next optimization
 work should target reduction of the selected interpolation problem / memory
 footprint before increasing parallelism.
+
+
+---
+
+## 2026-10-01: FireFly speed priority - sparse master discovery
+
+After the Q03_full run exceeded ten days, optimization priority was changed from
+rare power-loss resilience to reducing the actual Kira/FireFly problem size.
+
+The generic Stage-2 baseline currently uses:
+
+```text
+select_mandatory_recursively
+```
+
+over the full r/s/d seed. Q03 demonstrated that this can create a very large
+interpolation problem (the interrupted run reported 1,254,743 functions).
+
+A new experimental discovery path was added on:
+
+```text
+feature/firefly-sparse-master-discovery
+```
+
+The new path does not recursively request every integral in the seed volume.
+Instead it constructs a deterministic sector skeleton:
+
+```text
+Level 0:
+  one corner integral for every non-empty physical subsector
+
+Level 1:
+  Level 0
+  + one single dot on each active physical line
+  + one single numerator power on each auxiliary slot
+
+Level 2:
+  Level 1
+  + physical dot pairs
+  + auxiliary numerator pairs
+  + dot-plus-numerator mixed probes
+```
+
+Every non-empty physical subsector is still touched. The resulting target list
+is passed through Kira as an explicit mandatory list. This is intended only to
+discover a candidate master basis. It does not weaken the existing rule that a
+basis must pass closure validation before promotion.
+
+New implementation:
+
+```text
+three_loop/master_basis_sparse_discovery.py
+examples/three_loop_master_basis_sparse_discovery.py
+run_three_loop_master_basis_sparse_discovery.bat
+examples/three_loop_master_basis_sparse_compare.py
+run_three_loop_master_basis_sparse_compare.bat
+tests/test_three_loop_master_basis_sparse_discovery.py
+```
+
+Recommended Q03 validation sequence after pulling this branch:
+
+```powershell
+.\.venv\Scripts\python.exe -m examples.three_loop_master_basis_sparse_discovery --family Q03_full --level 0 --show-plan
+.\run_three_loop_master_basis_sparse_discovery.bat Q03_full 0 fresh
+
+.\.venv\Scripts\python.exe -m examples.three_loop_master_basis_sparse_discovery --family Q03_full --level 1 --show-plan
+.\run_three_loop_master_basis_sparse_discovery.bat Q03_full 1 fresh
+
+.\run_three_loop_master_basis_sparse_compare.bat Q03_full 0 1
+```
+
+If L0 and L1 produce the same master set, use L1 as the first candidate and run
+the existing closure validation. If they differ, run Level 2 and compare L1 vs
+L2 before closure.
+
+Important: mandatory target count is not equal to the FireFly interpolation
+function count. Kira can still generate a substantially larger rational system
+internally. The optimization hypothesis is that explicit sparse target
+selection will avoid the combinatorial explosion caused by the full recursive
+seed. Q03 is the benchmark that must confirm the actual speedup before the
+sparse path replaces the generic production schedule.
+
+Thread count remains unchanged at one. The current machine is memory constrained
+and additional threads are not the first optimization lever.
