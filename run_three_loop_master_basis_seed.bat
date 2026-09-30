@@ -26,6 +26,7 @@ if errorlevel 1 exit /b %ERRORLEVEL%
 for /f "usebackq delims=" %%I in (`powershell.exe -NoProfile -Command "('%FAMILY%').ToLowerInvariant()"`) do set "FAMILY_LOWER=%%I"
 set "SOLVER_SUFFIX="
 if /I "%SOLVER%"=="firefly" set "SOLVER_SUFFIX=_firefly"
+if /I "%SOLVER%"=="masters" set "SOLVER_SUFFIX=_masters"
 set "WIN_PROJECT=%CD%\output\kira_%FAMILY_LOWER%%SOLVER_SUFFIX%_%SEED%"
 
 if not exist "%WIN_PROJECT%\jobs.yaml" (
