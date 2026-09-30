@@ -111,21 +111,21 @@ def _run_step(step: BatchStep) -> int:
     return int(proc.returncode)
 
 
-def _boundary_audit_path(family: str, baseline_tag: str) -> Path:
-    return AUDIT_DIR / f"three_loop_{family.lower()}_firefly_{baseline_tag}_boundary_aggregate_audit.json"
+def _boundary_audit_path(family: str, baseline_tag: str, solver: str = "masters") -> Path:
+    return AUDIT_DIR / f"three_loop_{family.lower()}_{solver}_{baseline_tag}_boundary_aggregate_audit.json"
 
 
-def _run_boundary_audit(family: str, baseline_tag: str) -> tuple[int, dict]:
+def _run_boundary_audit(family: str, baseline_tag: str, solver: str = "masters") -> tuple[int, dict]:
     cmd = [
         sys.executable,
         "-m",
         "examples.three_loop_master_basis_boundary_audit",
         "--family", family,
         "--baseline-seed", baseline_tag,
-        "--solver", "firefly",
+        "--solver", solver,
     ]
     proc = subprocess.run(cmd, cwd=ROOT)
-    path = _boundary_audit_path(family, baseline_tag)
+    path = _boundary_audit_path(family, baseline_tag, solver)
     payload = {}
     if path.exists():
         try:
@@ -656,7 +656,8 @@ def run_batch(
                 )
                 return code
 
-        code, audit = _run_boundary_audit(family, baseline.tag)
+        boundary_solver = steps[1].solver if len(steps) > 1 else steps[0].solver
+        code, audit = _run_boundary_audit(family, baseline.tag, boundary_solver)
         if code or not audit.get("audit_pass"):
             print(f"STOP: boundary audit failed for {family}", flush=True)
             return code or 24
@@ -686,7 +687,7 @@ def run_batch(
             basis_count=count,
             basis_source=source,
             proof_mode="stable-one-axis-baseline",
-            proof_audit=str(_boundary_audit_path(family, baseline.tag)),
+            proof_audit=str(_boundary_audit_path(family, baseline.tag, boundary_solver)),
         )
 
     print(
