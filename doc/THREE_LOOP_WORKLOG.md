@@ -18,6 +18,51 @@ git pull
 
 Do not ask for manual multi-step edits when a helper/BAT can be pushed.
 
+## Scientific deliverable: 72-diagram IBP reduction reference
+
+A central purpose of this project is not only to reproduce the final analytic
+three-loop electron g-2 coefficient, but to leave behind a trustworthy,
+diagram-by-diagram IBP/master-reduction reference for all 72 three-loop vertex
+diagrams.
+
+This is an important deliverable in its own right. A future researcher or
+developer attempting the same calculation should be able to compare their
+result against a known audited reference instead of discovering only at the very
+end that an earlier family mapping, seed choice, IBP reduction, master basis, or
+coefficient reduction was wrong.
+
+The intended value of the archive is therefore:
+
+- provide a concrete correctness reference for each of the 72 diagrams;
+- make intermediate mistakes detectable before the final 72-diagram sum;
+- allow independent implementations to compare exact reductions family by family
+  and diagram by diagram;
+- preserve the canonical family, stable master basis, and exact reduction
+  provenance needed to reproduce the calculation;
+- act as a practical guide for later researchers rather than only a record of
+  the final g-2 number.
+
+The final project must therefore preserve, for every diagram, enough information
+to reconstruct and audit the IBP reduction path. At minimum this includes:
+
+```text
+diagram
+ -> canonical integral family
+ -> exact integral / target set
+ -> promoted stable master basis
+ -> exact master-coefficient reduction
+ -> provenance / audit artifacts
+```
+
+Where practical, the archive should include both machine-readable output and a
+human-readable explanation. The 72-diagram exact master-coefficient archive
+described later in this worklog is the formal realization of this objective.
+
+The project should not treat a successful final numerical/analytic sum as
+sufficient evidence by itself. Intermediate family/master/reduction results must
+remain independently checkable so that an error cannot stay hidden until the
+last stage.
+
 ## Overall objective
 
 Take all 72 three-loop electron-vertex diagrams through projected-amplitude generation, canonical integral-family mapping, IBP reduction, master-basis identification, exact master-coefficient synthesis, master evaluation / epsilon expansion, diagram `F2(0)` values, and the full three-loop `g-2` coefficient.
