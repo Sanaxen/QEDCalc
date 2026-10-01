@@ -677,7 +677,7 @@ Status only:
 
 4. The unattended runner deliberately does not rewrite `canonical_family_registry.py`. After one or more families reach promotion-ready status, inspect their generated `three_loop_<family>_promotion_ready.json` artifacts and apply reviewed registry promotions in Git.
 
-5. Current formal master-basis status is 9/45 canonical families and 18/72 diagrams. Q12 and Q17 are now formally promoted.
+5. Current formal master-basis status is 10/45 canonical families and 20/72 diagrams. Q03, Q12, and Q17 are now formally promoted.
 
 6. Exact coefficient synthesis is complete only for Q01. Cross-family coefficient-API validation remains a later stage after enough master bases are promoted.
 
@@ -1035,3 +1035,16 @@ Batch-controller safeguards added with this change:
 - existing completed initiate-only union/closure audits are reused;
 - if initiate-only rescue does not stabilize, the controller falls back to the
   existing FireFly refinement path.
+
+
+### Q03 formal promotion
+
+The reviewed promotion-ready artifact for Q03 passed the masters-first one-axis
+closure with the same 136-master set at `r10s4d2`, `r9s5d2`, and
+`r9s4d3`. The executable canonical registry now records:
+
+```text
+Q03_full -> Q03_final136
+```
+
+Formal master-basis progress is now 10/45 canonical families and 20/72 diagrams.
