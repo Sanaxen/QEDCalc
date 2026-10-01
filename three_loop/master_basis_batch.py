@@ -62,9 +62,13 @@ def _seed_from_obj(obj: Any) -> Seed | None:
         return None
 
 
-def discover_seed_results() -> dict[tuple[str, str], dict[str, Any]]:
-    """Index successful existing seed audits, including older dedicated audits."""
-    out: dict[tuple[str, str], dict[str, Any]] = {}
+def discover_seed_results() -> dict[tuple[str, str, str], dict[str, Any]]:
+    """Index successful seed audits by family, seed, and solver.
+
+    Solver identity is part of the cache key deliberately. An older FireFly
+    result must not silently satisfy a newer initiate-only masters step.
+    """
+    out: dict[tuple[str, str, str], dict[str, Any]] = {}
     if not AUDIT_DIR.exists():
         return out
     for path in AUDIT_DIR.glob("*.json"):
@@ -79,12 +83,13 @@ def discover_seed_results() -> dict[tuple[str, str], dict[str, Any]]:
             continue
         if not isinstance(masters, list) and not isinstance(count, int):
             continue
-        out[(str(family), seed.tag)] = {
+        solver = str(payload.get("solver") or payload.get("solver_backend") or "legacy")
+        out[(str(family), seed.tag, solver)] = {
             "path": str(path),
             "family": str(family),
             "seed": seed.tag,
             "master_count": int(count if isinstance(count, int) else len(masters)),
-            "solver": str(payload.get("solver") or payload.get("solver_backend") or "legacy"),
+            "solver": solver,
         }
     return out
 
@@ -166,7 +171,7 @@ def build_queue(*, start_family: str | None = None) -> list[BatchStep]:
             prior = checkpoint.get(step.key, {})
             if prior.get("status") == "pass":
                 continue
-            if (step.family, step.seed.tag) in existing:
+            if (step.family, step.seed.tag, step.solver) in existing:
                 continue
             queue.append(step)
     return queue
