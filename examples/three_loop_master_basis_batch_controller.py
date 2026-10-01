@@ -159,14 +159,15 @@ def _run_bat_stage(
     bat_name: str,
     phase: str,
     phase_class: str,
+    solver: str = "firefly",
     tolerate_nonzero: bool = False,
 ) -> int:
     step = BatchStep(family, phase, master_basis_api.Seed(
         int(baseline_tag.split("s", 1)[0][1:]),
         int(baseline_tag.split("s", 1)[1].split("d", 1)[0]),
         int(baseline_tag.rsplit("d", 1)[1]),
-    ), "firefly")
-    cmd = ["cmd.exe", "/d", "/c", str(_bat(bat_name)), family, baseline_tag, "firefly"]
+    ), solver)
+    cmd = ["cmd.exe", "/d", "/c", str(_bat(bat_name)), family, baseline_tag, solver]
     print(f"\n=== RUN {family}:{phase} via {bat_name} ===", flush=True)
     start = time.perf_counter()
     update_checkpoint(step, status="running")
@@ -178,7 +179,7 @@ def _run_bat_stage(
         "phase": phase,
         "phase_class": phase_class,
         "seed": baseline_tag,
-        "solver": "firefly",
+        "solver": solver,
         "elapsed_s": elapsed,
         "topology": spec.topology_family,
         "unique_physical": spec.unique_physical_count,
@@ -224,7 +225,7 @@ def _record_promotion_ready(
         family,
         "family-ready",
         master_basis_api.build_family_spec(family).baseline_seed,
-        "firefly",
+        "masters",
     )
     update_checkpoint(
         synthetic,
@@ -352,7 +353,7 @@ def _refine_candidate_from_reaudit(
     return path, payload
 
 
-def _run_union_rescue(family: str, baseline_tag: str) -> int:
+def _run_union_rescue_firefly(family: str, baseline_tag: str) -> int:
     refinement_path, refinement = _latest_refinement_audit(family, baseline_tag)
 
     if refinement_path:
@@ -459,6 +460,93 @@ def _run_union_rescue(family: str, baseline_tag: str) -> int:
     return 27
 
 
+def _run_union_rescue(family: str, baseline_tag: str) -> int:
+    """Masters-first union/closure rescue with FireFly fallback.
+
+    Reuse any completed initiate-only artifacts first. FireFly is retained as
+    the authoritative fallback when initiate-only closure does not stabilize.
+    """
+    union_path, union = _single_audit(
+        f"three_loop_{family.lower()}_masters_{baseline_tag}_union_*_reduction_audit.json"
+    )
+    if not union_path or not union.get("audit_pass"):
+        code = _run_bat_stage(
+            family,
+            baseline_tag,
+            bat_name="run_three_loop_master_basis_union_reduction.bat",
+            phase="union-reduction",
+            phase_class="union",
+            solver="masters",
+        )
+        if code:
+            print(
+                f"{family}: initiate-only union failed; falling back to FireFly union rescue.",
+                flush=True,
+            )
+            return _run_union_rescue_firefly(family, baseline_tag)
+        union_path, union = _single_audit(
+            f"three_loop_{family.lower()}_masters_{baseline_tag}_union_*_reduction_audit.json"
+        )
+
+    if not union_path or not union.get("audit_pass"):
+        print(
+            f"{family}: initiate-only union audit missing/failed; falling back to FireFly.",
+            flush=True,
+        )
+        return _run_union_rescue_firefly(family, baseline_tag)
+
+    current_count = int(union.get("candidate_master_count", 0))
+    source = str(union.get("candidate_master_copy") or "")
+    if current_count <= 0 or not source:
+        print(
+            f"{family}: invalid initiate-only union candidate metadata; falling back to FireFly.",
+            flush=True,
+        )
+        return _run_union_rescue_firefly(family, baseline_tag)
+
+    closure_path, closure = _single_audit(
+        f"three_loop_{family.lower()}_masters_{baseline_tag}_candidate_*_closure_audit.json"
+    )
+    if not (
+        closure_path
+        and closure.get("audit_pass")
+        and closure.get("stable_under_one_axis_extensions")
+    ):
+        code = _run_bat_stage(
+            family,
+            baseline_tag,
+            bat_name="run_three_loop_master_basis_candidate_closure.bat",
+            phase="candidate-closure",
+            phase_class="closure",
+            solver="masters",
+            tolerate_nonzero=True,
+        )
+        closure_path, closure = _single_audit(
+            f"three_loop_{family.lower()}_masters_{baseline_tag}_candidate_*_closure_audit.json"
+        )
+        if code or not (
+            closure_path
+            and closure.get("audit_pass")
+            and closure.get("stable_under_one_axis_extensions")
+        ):
+            print(
+                f"{family}: initiate-only candidate closure did not stabilize; "
+                "falling back to FireFly rescue.",
+                flush=True,
+            )
+            return _run_union_rescue_firefly(family, baseline_tag)
+
+    _record_promotion_ready(
+        family,
+        baseline_tag,
+        basis_count=current_count,
+        basis_source=source,
+        proof_mode="masters-initiate-union-plus-one-axis-closure",
+        proof_audit=str(closure_path),
+    )
+    return 0
+
+
 def _promotion_ready_path(family: str) -> Path:
     return AUDIT_DIR / f"three_loop_{family.lower()}_promotion_ready.json"
 
@@ -544,7 +632,7 @@ def show_plan(start_family: str | None, max_families: int | None) -> None:
             if prior.get("status") == "pass":
                 reused.append((step, "checkpoint", str(prior.get("detail") or "")))
                 continue
-            hit = existing.get((step.family, step.seed.tag))
+            hit = existing.get((step.family, step.seed.tag, step.solver))
             if hit:
                 reused.append((step, "audit", str(hit.get("path") or "")))
     print(f"reused completed seed steps: {len(reused)}")
