@@ -953,3 +953,85 @@ Validation policy:
 This optimization is prioritized over thread-count increases because the
 current workstation is already memory constrained; additional FireFly threads
 could increase paging and reduce effective throughput.
+
+
+## Masters-first initiate-only Stage-2 acceleration
+
+A severe Q03 performance case motivated separating master-basis discovery from the
+later coefficient reduction problem. The original Q03 FireFly baseline had run
+for more than ten days without completing. Kira initiate-only master discovery
+(`solver=masters`) was validated first against already-known families.
+
+Validation against prior FireFly results:
+
+```text
+Q08 r7s3d0  : 12 masters  (matches Q08_final12)
+
+Q02 r8s3d0  : 63 masters
+Q02 r9s3d0  : 63 masters
+Q02 r8s4d0  : 75 masters
+Q02 r8s3d1  : 55 masters
+```
+
+All Q02 counts exactly reproduce the previously observed FireFly seed results.
+
+Q03 initiate-only discovery:
+
+```text
+r9s3d0   -> 844 masters
+r10s3d0  -> 844 masters
+r9s4d0   -> 1499 masters
+r9s3d1   -> 454 masters
+
+intersection -> 139
+union        -> 1896
+```
+
+The common mandatory-union context required envelope `r9s4d2`. Initiate-only
+processing of the 1896 union targets produced a 136-master candidate basis.
+
+The candidate was then tested with the same mandatory closure target set at all
+three one-axis extensions:
+
+```text
+r10s4d2 -> 136/136 retained, new=0
+r9s5d2  -> 136/136 retained, new=0
+r9s4d3  -> 136/136 retained, new=0
+```
+
+Therefore the existing one-axis Stage-2 closure criterion is satisfied and
+`Q03_full -> Q03_final136` is promotion-ready.
+
+The production strategy is now hybrid rather than FireFly-free:
+
+```text
+master discovery:
+  masters baseline
+  -> masters one-axis boundaries
+  -> stable: promotion-ready
+
+seed-dependent family:
+  masters union
+  -> masters candidate closure
+  -> stable: promotion-ready
+
+initiate-only failure or unstable closure:
+  -> FireFly union/refinement/closure fallback
+
+later exact reduction / coefficient reconstruction:
+  -> Kira + FireFly remains available and expected
+```
+
+FireFly is intentionally retained for the work it is best suited to: actual
+large rational-function reductions and coefficient reconstruction. The new
+initiate-only path avoids paying that cost merely to identify a stable master
+basis.
+
+Batch-controller safeguards added with this change:
+
+- completed seed reuse is keyed by `family + seed + solver`, so an old FireFly
+  result cannot silently satisfy a new `masters` step;
+- union and candidate closure run `masters` first;
+- existing completed initiate-only union/closure audits are reused;
+- if initiate-only rescue does not stabilize, the controller falls back to the
+  existing FireFly refinement path.
