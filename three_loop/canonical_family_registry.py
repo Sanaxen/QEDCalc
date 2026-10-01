@@ -25,6 +25,8 @@ Q04_MASTER_BASIS = "Q04_final92"
 Q04_CANONICAL_FAMILY = "Q04_full"
 Q05_MASTER_BASIS = "Q05_final13"
 Q05_CANONICAL_FAMILY = "Q05_full"
+Q06_MASTER_BASIS = "Q06_final91"
+Q06_CANONICAL_FAMILY = "Q06_full"
 Q07_MASTER_BASIS = "Q07_final25"
 Q07_CANONICAL_FAMILY = "Q07_full"
 Q08_MASTER_BASIS = "Q08_final12"
@@ -50,6 +52,8 @@ def _master_basis_id(family_id: str) -> str | None:
         return Q04_MASTER_BASIS
     if family_id == Q05_CANONICAL_FAMILY:
         return Q05_MASTER_BASIS
+    if family_id == Q06_CANONICAL_FAMILY:
+        return Q06_MASTER_BASIS
     if family_id == Q07_CANONICAL_FAMILY:
         return Q07_MASTER_BASIS
     if family_id == Q08_CANONICAL_FAMILY:
