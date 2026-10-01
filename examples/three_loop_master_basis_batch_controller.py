@@ -663,13 +663,40 @@ def show_status() -> None:
     for row in rows:
         status = str(row.get("status", "unknown"))
         counts[status] = counts.get(status, 0) + 1
+
     print("QEDCalc master-basis batch status")
     print("checkpoint:", ROOT / "output" / "three_loop_integral_family_audit" / "three_loop_master_basis_batch_checkpoint.json")
-    print("step status counts:", counts)
+    print("raw checkpoint step status counts:", counts)
+
     next_family = _auto_resume_family()
     print("auto-resume family:", next_family or "none (all pending families are promotion-ready)")
-    failed = [row for row in rows if row.get("status") in {"fail", "soft-fail", "needs_union"}]
-    for row in failed[-10:]:
+
+    running = [row for row in rows if row.get("status") == "running"]
+    if running:
+        print("checkpoint entries marked running:")
+        for row in running:
+            family = str(row.get("family") or "")
+            ready = bool(family and _family_is_ready(family))
+            suffix = " (family already ready; historical/stale)" if ready else ""
+            print(f"  {row.get('key')}: running{suffix}")
+
+    problem_statuses = {"fail", "soft-fail", "needs_union"}
+    problems = [row for row in rows if row.get("status") in problem_statuses]
+    unresolved: list[dict] = []
+    superseded: list[dict] = []
+    for row in problems:
+        family = str(row.get("family") or "")
+        if family and _family_is_ready(family):
+            superseded.append(row)
+        else:
+            unresolved.append(row)
+
+    print(f"unresolved historical/error entries: {len(unresolved)}")
+    for row in unresolved[-10:]:
+        print(f"  {row.get('key')}: {row.get('status')} {row.get('detail','')}")
+
+    print(f"superseded error entries from ready families: {len(superseded)}")
+    for row in superseded[-10:]:
         print(f"  {row.get('key')}: {row.get('status')} {row.get('detail','')}")
 
 
