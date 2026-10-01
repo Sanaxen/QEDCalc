@@ -5,7 +5,7 @@ Purpose: persistent engineering handoff notes for continuing the 3-loop QED vert
 ## Working branch and operating convention
 
 - Repository: `Sanaxen/QEDCalc`
-- Branch: `feature/three-loop-stage1-3`
+- Branch: `feature/master-basis-initiate-only`
 - User environment: Windows 11 frontend, WSL/Linux for Kira/FireFly/Fermat.
 - Heavy computations are run by the user locally.
 - Assistant implements helpers/APIs/audits/BATs and pushes them.
@@ -605,85 +605,88 @@ Relevant commits:
 9f9bb4b80a227ec83a33f34c63721f32eb92a160  iterative candidate refinement in unattended controller
 ```
 
-## Pending status-display cleanup after current resume-4 batch
+## Status-display cleanup: COMPLETE
 
-The current unattended batch is running four canonical families beginning with Q18_full and presently reports `auto-resume family: Q03_full`. Historical checkpoint entries include several `soft-fail` and one older `fail` from Q17/Q18/Q20/Q22 candidate-closure/refinement stages. These entries are retained for provenance, but the current `status` output makes them look like active failures even when later refinement or promotion has superseded them.
+The checkpoint status display has been updated so historical failures no longer
+look like active blockers. It now separates:
 
-After the current `resume 4` batch finishes, improve the batch `status` display so it clearly separates:
-
-- currently running work,
-- currently unresolved failures,
-- historical/superseded soft-fail or fail entries,
-- promotion-ready families,
+- checkpoint entries still marked `running`;
+- unresolved error entries;
+- superseded error entries belonging to families that are already ready;
 - the next auto-resume family.
 
-In particular, a family that later reaches promotion-ready status, or whose failed closure step is superseded by a later successful refinement/reaudit, should not be presented as if that old failure were still the active blocker. Preserve the raw checkpoint history; change only the status interpretation/presentation.
+A stale historical Q03 FireFly running entry is explicitly identified as stale
+because Q03 is already formally complete. At the latest check:
 
-Do not modify the running batch while it is active. Apply this cleanup only after the current four-family run has completed and its promotion-ready results have been reviewed.
+```text
+auto-resume family: Q04_full
+unresolved historical/error entries: 0
+```
+
+Raw checkpoint history is preserved for provenance.
+
 
 ## Current next sequence
 
-1. Pull the branch:
+Current formal master-basis status:
+
+```text
+10/45 canonical families complete
+20/72 diagrams covered
+Q03_full -> Q03_final136 formally promoted
+next auto-resume family: Q04_full
+```
+
+The active Stage-2 strategy is now masters-first with FireFly fallback:
+
+```text
+masters baseline
+  -> masters boundary-r / boundary-s / boundary-d
+  -> boundary audit
+     -> stable: promotion-ready
+     -> seed-dependent:
+          masters mandatory union
+          -> masters candidate closure
+          -> stable: promotion-ready
+          -> otherwise FireFly fallback/refinement
+```
+
+Completed seed reuse is keyed by `family + seed + solver`, preventing an older
+FireFly result from silently satisfying an initiate-only `masters` step.
+
+The next unattended test is one canonical family only:
 
 ```powershell
 git pull
+.\run_three_loop_master_basis_all.bat resume 1
 ```
 
-2. Before starting unattended computation, inspect a deliberately small Q12-and-later batch. The recommended first cap is 5 canonical families:
+At present this should start from `Q04_full`.
 
-```powershell
-.\run_three_loop_master_basis_all.bat plan Q12_full 5
-```
+After each family reaches promotion-ready status, inspect the generated
+`three_loop_<family>_promotion_ready.json` artifact and apply the reviewed
+registry promotion in Git. Continue until all 45 canonical families have stable
+promoted master bases.
 
-This command does not start Kira. It should show the existing Q12 r8s3d0 baseline as already satisfied and list Q12 boundary-r/s/d as the first missing seed steps. The strict five-family cap should select the first five unfinished canonical families beginning at Q12_full: Q12_full, Q17_full, Q18_full, Q20_full, and Q22_full. The plan also reports how many original diagrams those selected families cover and prints low/median/high seed-stage runtime estimates.
+Exact coefficient synthesis is still complete only for Q01. The 72-diagram
+exact master-coefficient archive, master evaluation / epsilon expansion,
+renormalized diagram F2(0), category subtotals, literature comparison, and full
+three-loop sum remain later stages.
 
-3. If the plan is correct, start that limited unattended Stage-2 run:
+### Deliberately deferred work
 
-```powershell
-.\run_three_loop_master_basis_all.bat run Q12_full 5
-```
+Further expansion of the formal input -> graph -> canonical-family front-end
+remains on hold until the 45-family master-basis stage is complete. Deferred
+items are:
 
-The controller now executes the complete per-family decision tree automatically:
+- additional raw-LaTeX -> graph automation;
+- deeper integration of the front-end with master-basis reporting;
+- construction of the final all-in-one three-loop report runner;
+- non-maintenance documentation expansion for that front-end.
 
-```text
-existing result reuse
-  -> missing baseline/boundary FireFly runs
-  -> boundary audit
-     -> stable: promotion-ready artifact -> next family
-     -> unstable: mandatory union
-                  -> candidate closure
-                  -> no-rerun closure re-audit
-                  -> promotion-ready artifact
-                  -> next family
-```
+This is the only intentional implementation hold currently recorded in this
+worklog.
 
-A genuine Kira/audit failure or external interruption leaves checkpoint/runtime history and successful audit artifacts in place. The family name does not need to be known. Resume automatically with:
-
-```powershell
-.\run_three_loop_master_basis_all.bat resume
-```
-
-To keep the resumed unattended block small, apply a fresh strict family cap, for example:
-
-```powershell
-.\run_three_loop_master_basis_all.bat resume 5
-```
-
-Status only:
-
-```powershell
-.\run_three_loop_master_basis_all.bat status
-```
-
-4. The unattended runner deliberately does not rewrite `canonical_family_registry.py`. After one or more families reach promotion-ready status, inspect their generated `three_loop_<family>_promotion_ready.json` artifacts and apply reviewed registry promotions in Git.
-
-5. Current formal master-basis status is 10/45 canonical families and 20/72 diagrams. Q03, Q12, and Q17 are now formally promoted.
-
-6. Exact coefficient synthesis is complete only for Q01. Cross-family coefficient-API validation remains a later stage after enough master bases are promoted.
-
-7. Master evaluation / epsilon expansion has not started and remains a likely major research bottleneck.
-
-8. Only after the global family/master picture is sufficiently stable should the 72-diagram total `F2(0)` be assembled.
 
 ## Agreed post-master-basis roadmap
 
