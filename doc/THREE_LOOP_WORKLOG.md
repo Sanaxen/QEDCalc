@@ -676,8 +676,8 @@ Raw checkpoint history is preserved for provenance.
 Current formal master-basis status:
 
 ```text
-13/45 canonical families complete
-26/72 diagrams covered
+14/45 canonical families complete
+28/72 diagrams covered
 Q03_full -> Q03_final136 formally promoted
 next auto-resume family: Q04_full
 ```
@@ -1095,7 +1095,7 @@ closure with the same 136-master set at `r10s4d2`, `r9s5d2`, and
 Q03_full -> Q03_final136
 ```
 
-Formal master-basis progress is now 13/45 canonical families and 26/72 diagrams.
+Formal master-basis progress is now 14/45 canonical families and 28/72 diagrams.
 
 
 ### Q04 formal promotion
@@ -1125,7 +1125,7 @@ Therefore the executable canonical registry now records:
 Q04_full -> Q04_final92
 ```
 
-Formal master-basis progress is now 13/45 canonical families and 26/72 diagrams.
+Formal master-basis progress is now 14/45 canonical families and 28/72 diagrams.
 
 
 ### Q06 formal promotion
@@ -1155,7 +1155,7 @@ Therefore the executable canonical registry now records:
 Q06_full -> Q06_final91
 ```
 
-Formal master-basis progress is now 13/45 canonical families and 26/72 diagrams.
+Formal master-basis progress is now 14/45 canonical families and 28/72 diagrams.
 
 
 ### Q11 formal promotion
@@ -1185,4 +1185,51 @@ Therefore the executable canonical registry now records:
 Q11_full -> Q11_final129
 ```
 
-Formal master-basis progress is now 13/45 canonical families and 26/72 diagrams.
+Formal master-basis progress is now 14/45 canonical families and 28/72 diagrams.
+
+
+### Q13 formal promotion
+
+Q13_full covers Q13/Q33. The first masters-first common-context candidate was
+230 masters at envelope `r9s4d2`. Its closure exposed a genuine strict-subset
+refinement:
+
+```text
+r10s4d2 -> 229 masters, retained 229/230, new=0
+r9s5d2  -> 229 masters, retained 229/230, new=0
+r9s4d3  -> 230 masters, retained 230/230, new=0
+```
+
+The controller therefore refined the candidate from 230 to 229 masters and
+advanced the common envelope to `r10s4d2` instead of immediately falling back
+to FireFly.
+
+The refined 229-master candidate then passed closure at all three one-axis
+extensions:
+
+```text
+r11s4d2 -> 229 masters, retained 229/229, new=0
+r10s5d2 -> 229 masters, retained 229/229, new=0
+r10s4d3 -> 229 masters, retained 229/229, new=0
+```
+
+Aggregate result:
+
+```text
+stable under tested one-axis extensions: True
+internal audit errors: 0
+PASS
+```
+
+Therefore the executable canonical registry now records:
+
+```text
+Q13_full -> Q13_final229
+```
+
+Q13 also validates iterative initiate-only candidate refinement in production.
+The refined closure is computationally heavy, particularly the s+1 direction,
+so future performance work should consider whether every refinement round needs
+all three full boundary jobs without weakening the scientific closure criterion.
+
+Formal master-basis progress is now 14/45 canonical families and 28/72 diagrams.
