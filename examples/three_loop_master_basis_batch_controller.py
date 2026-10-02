@@ -460,12 +460,112 @@ def _run_union_rescue_firefly(family: str, baseline_tag: str) -> int:
     return 27
 
 
-def _run_union_rescue(family: str, baseline_tag: str) -> int:
-    """Masters-first union/closure rescue with FireFly fallback.
+def _refine_masters_candidate_from_closure(
+    family: str,
+    baseline_tag: str,
+    closure_path: Path,
+    closure: dict,
+    current_count: int,
+) -> tuple[Path | None, dict]:
+    """Promote a strict initiate-only boundary subset to the next candidate."""
+    eligible = []
+    for row in closure.get("boundary_rows", []):
+        if not isinstance(row, dict) or not row.get("refinement_candidate"):
+            continue
+        if row.get("new_masters"):
+            continue
+        try:
+            count = int(row.get("master_count", 0))
+        except Exception:
+            continue
+        if count <= 0 or count >= current_count:
+            continue
+        seed_tag = str(row.get("seed") or "")
+        project = Path(str(row.get("project") or ""))
+        if not seed_tag or not project.exists():
+            continue
+        eligible.append((count, seed_tag, project, row))
 
-    Reuse any completed initiate-only artifacts first. FireFly is retained as
-    the authoritative fallback when initiate-only closure does not stabilize.
-    """
+    if not eligible:
+        return None, {}
+
+    # If more than one boundary exposes a refinement, prefer the smallest set;
+    # ties are deterministic by seed tag.
+    count, seed_tag, project, row = min(eligible, key=lambda item: (item[0], item[1]))
+
+    envelope = str(closure.get("candidate_envelope") or "")
+    manifest = AUDIT_DIR / (
+        f"three_loop_{family.lower()}_masters_{baseline_tag}_"
+        f"candidate_{envelope}_closure_manifest.json"
+    )
+    manifest_data = _read_json(manifest)
+    closure_targets = manifest_data.get("closure_targets", [])
+    if not isinstance(closure_targets, list) or not closure_targets:
+        print(f"REFINE STOP: missing closure targets in {manifest}", flush=True)
+        return None, {}
+
+    try:
+        masters_path, masters, source_mode = master_basis_api.find_or_infer_masters(
+            project,
+            family,
+            mandatory_targets=[str(x) for x in closure_targets],
+        )
+    except Exception as exc:
+        print(f"REFINE STOP: cannot recover {family} {seed_tag} masters: {exc}", flush=True)
+        return None, {}
+
+    if len(masters) != count:
+        print(
+            f"REFINE STOP: {family} {seed_tag} expected {count} masters "
+            f"but recovered {len(masters)}",
+            flush=True,
+        )
+        return None, {}
+
+    copy_path = AUDIT_DIR / (
+        f"{family.lower()}_masters_{baseline_tag}_union_{seed_tag}_refined_masters.txt"
+    )
+    copy_path.write_text("\n".join(masters) + "\n", encoding="utf-8", newline="\n")
+
+    source_targets = str(closure.get("source_union_target_file") or "")
+    target_count = int(closure.get("union_target_count") or 0)
+    if not source_targets or target_count <= 0:
+        return None, {}
+
+    path = AUDIT_DIR / (
+        f"three_loop_{family.lower()}_masters_{baseline_tag}_union_{seed_tag}_"
+        "refinement_reduction_audit.json"
+    )
+    payload = {
+        "schema_version": 1,
+        "stage": "master_basis_candidate_refinement",
+        "family": family,
+        "baseline_seed": baseline_tag,
+        "solver": "masters",
+        "source_target_file": source_targets,
+        "mandatory_target_count": target_count,
+        "required_envelope": seed_tag,
+        "candidate_master_count": len(masters),
+        "candidate_masters": masters,
+        "candidate_master_copy": str(copy_path),
+        "refined_from_closure_audit": str(closure_path),
+        "refined_from_boundary_seed": seed_tag,
+        "refined_from_master_source": str(masters_path),
+        "master_source_mode": source_mode,
+        "audit_pass": True,
+    }
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(
+        f"MASTERS REFINE CANDIDATE: {family} {current_count} -> {len(masters)} "
+        f"masters at envelope {seed_tag}",
+        flush=True,
+    )
+    print(f"masters refinement audit: {path}", flush=True)
+    return path, payload
+
+
+def _run_union_rescue(family: str, baseline_tag: str) -> int:
+    """Masters-first union/closure rescue with iterative refinement and FireFly fallback."""
     union_path, union = _single_audit(
         f"three_loop_{family.lower()}_masters_{baseline_tag}_union_*_reduction_audit.json"
     )
@@ -495,56 +595,76 @@ def _run_union_rescue(family: str, baseline_tag: str) -> int:
         )
         return _run_union_rescue_firefly(family, baseline_tag)
 
-    current_count = int(union.get("candidate_master_count", 0))
-    source = str(union.get("candidate_master_copy") or "")
-    if current_count <= 0 or not source:
-        print(
-            f"{family}: invalid initiate-only union candidate metadata; falling back to FireFly.",
-            flush=True,
-        )
-        return _run_union_rescue_firefly(family, baseline_tag)
-
-    closure_path, closure = _single_audit(
-        f"three_loop_{family.lower()}_masters_{baseline_tag}_candidate_*_closure_audit.json"
-    )
-    if not (
-        closure_path
-        and closure.get("audit_pass")
-        and closure.get("stable_under_one_axis_extensions")
-    ):
-        code = _run_bat_stage(
-            family,
-            baseline_tag,
-            bat_name="run_three_loop_master_basis_candidate_closure.bat",
-            phase="candidate-closure",
-            phase_class="closure",
-            solver="masters",
-            tolerate_nonzero=True,
-        )
-        closure_path, closure = _single_audit(
-            f"three_loop_{family.lower()}_masters_{baseline_tag}_candidate_*_closure_audit.json"
-        )
-        if code or not (
-            closure_path
-            and closure.get("audit_pass")
-            and closure.get("stable_under_one_axis_extensions")
-        ):
+    for refinement_round in range(1, 8):
+        current_count = int(union.get("candidate_master_count", 0))
+        source = str(union.get("candidate_master_copy") or "")
+        if current_count <= 0 or not source:
             print(
-                f"{family}: initiate-only candidate closure did not stabilize; "
-                "falling back to FireFly rescue.",
+                f"{family}: invalid initiate-only candidate metadata; falling back to FireFly.",
                 flush=True,
             )
             return _run_union_rescue_firefly(family, baseline_tag)
 
-    _record_promotion_ready(
-        family,
-        baseline_tag,
-        basis_count=current_count,
-        basis_source=source,
-        proof_mode="masters-initiate-union-plus-one-axis-closure",
-        proof_audit=str(closure_path),
-    )
-    return 0
+        envelope = str(union.get("required_envelope") or "")
+        closure_path, closure = _single_audit(
+            f"three_loop_{family.lower()}_masters_{baseline_tag}_"
+            f"candidate_{envelope}_closure_audit.json"
+        )
+        if not (
+            closure_path
+            and closure.get("audit_pass")
+            and closure.get("stable_under_one_axis_extensions")
+        ):
+            code = _run_bat_stage(
+                family,
+                baseline_tag,
+                bat_name="run_three_loop_master_basis_candidate_closure.bat",
+                phase=f"candidate-closure-r{refinement_round}",
+                phase_class="closure",
+                solver="masters",
+                tolerate_nonzero=True,
+            )
+            closure_path, closure = _single_audit(
+                f"three_loop_{family.lower()}_masters_{baseline_tag}_"
+                f"candidate_{envelope}_closure_audit.json"
+            )
+
+            if not (
+                closure_path
+                and closure.get("audit_pass")
+                and closure.get("stable_under_one_axis_extensions")
+            ):
+                if closure_path:
+                    refined_path, refined = _refine_masters_candidate_from_closure(
+                        family,
+                        baseline_tag,
+                        closure_path,
+                        closure,
+                        current_count,
+                    )
+                    if refined_path:
+                        union_path, union = refined_path, refined
+                        continue
+
+                print(
+                    f"{family}: initiate-only candidate closure did not stabilize "
+                    "and exposed no usable strict-subset refinement; falling back to FireFly.",
+                    flush=True,
+                )
+                return _run_union_rescue_firefly(family, baseline_tag)
+
+        _record_promotion_ready(
+            family,
+            baseline_tag,
+            basis_count=current_count,
+            basis_source=source,
+            proof_mode="masters-initiate-union-plus-iterative-one-axis-closure",
+            proof_audit=str(closure_path),
+        )
+        return 0
+
+    print(f"STOP: masters candidate refinement exceeded 7 rounds for {family}", flush=True)
+    return 28
 
 
 def _promotion_ready_path(family: str) -> Path:
