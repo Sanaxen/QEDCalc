@@ -353,7 +353,31 @@ def _refine_candidate_from_reaudit(
     return path, payload
 
 
+def _ensure_firefly_union_targets(family: str, baseline_tag: str) -> None:
+    """Seed FireFly fallback with the already-audited masters union target list."""
+    firefly = AUDIT_DIR / (
+        f"{family.lower()}_firefly_{baseline_tag}_master_union_targets.txt"
+    )
+    if firefly.exists():
+        return
+    masters = AUDIT_DIR / (
+        f"{family.lower()}_masters_{baseline_tag}_master_union_targets.txt"
+    )
+    if not masters.exists():
+        return
+    firefly.write_text(
+        masters.read_text(encoding="utf-8", errors="replace"),
+        encoding="utf-8",
+        newline="\n",
+    )
+    print(
+        f"{family}: copied masters union targets for FireFly fallback: {firefly}",
+        flush=True,
+    )
+
+
 def _run_union_rescue_firefly(family: str, baseline_tag: str) -> int:
+    _ensure_firefly_union_targets(family, baseline_tag)
     refinement_path, refinement = _latest_refinement_audit(family, baseline_tag)
 
     if refinement_path:
