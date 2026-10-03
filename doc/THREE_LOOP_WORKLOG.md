@@ -676,8 +676,8 @@ Raw checkpoint history is preserved for provenance.
 Current formal master-basis status:
 
 ```text
-16/45 canonical families complete
-32/72 diagrams covered
+17/45 canonical families complete
+34/72 diagrams covered
 Q03_full -> Q03_final136 formally promoted
 next auto-resume family: Q04_full
 ```
@@ -1095,7 +1095,7 @@ closure with the same 136-master set at `r10s4d2`, `r9s5d2`, and
 Q03_full -> Q03_final136
 ```
 
-Formal master-basis progress is now 16/45 canonical families and 32/72 diagrams.
+Formal master-basis progress is now 17/45 canonical families and 34/72 diagrams.
 
 
 ### Q04 formal promotion
@@ -1125,7 +1125,7 @@ Therefore the executable canonical registry now records:
 Q04_full -> Q04_final92
 ```
 
-Formal master-basis progress is now 16/45 canonical families and 32/72 diagrams.
+Formal master-basis progress is now 17/45 canonical families and 34/72 diagrams.
 
 
 ### Q06 formal promotion
@@ -1155,7 +1155,7 @@ Therefore the executable canonical registry now records:
 Q06_full -> Q06_final91
 ```
 
-Formal master-basis progress is now 16/45 canonical families and 32/72 diagrams.
+Formal master-basis progress is now 17/45 canonical families and 34/72 diagrams.
 
 
 ### Q11 formal promotion
@@ -1185,7 +1185,7 @@ Therefore the executable canonical registry now records:
 Q11_full -> Q11_final129
 ```
 
-Formal master-basis progress is now 16/45 canonical families and 32/72 diagrams.
+Formal master-basis progress is now 17/45 canonical families and 34/72 diagrams.
 
 
 ### Q13 formal promotion
@@ -1232,7 +1232,7 @@ The refined closure is computationally heavy, particularly the s+1 direction,
 so future performance work should consider whether every refinement round needs
 all three full boundary jobs without weakening the scientific closure criterion.
 
-Formal master-basis progress is now 16/45 canonical families and 32/72 diagrams.
+Formal master-basis progress is now 17/45 canonical families and 34/72 diagrams.
 
 
 ### Q14 formal promotion
@@ -1262,7 +1262,7 @@ Therefore the executable canonical registry now records:
 Q14_full -> Q14_final202
 ```
 
-Formal master-basis progress is now 16/45 canonical families and 32/72 diagrams.
+Formal master-basis progress is now 17/45 canonical families and 34/72 diagrams.
 
 
 ### Q15 formal promotion
@@ -1292,4 +1292,38 @@ Therefore the executable canonical registry now records:
 Q15_full -> Q15_final86
 ```
 
-Formal master-basis progress is now 16/45 canonical families and 32/72 diagrams.
+Formal master-basis progress is now 17/45 canonical families and 34/72 diagrams.
+
+
+### Q16 formal promotion
+
+Q16_full covers Q16/Q34. Its masters-first path required iterative refinement.
+The final candidate was 203 masters at envelope `r10s4d2`.
+
+The refined candidate closure passed at all three one-axis extensions:
+
+```text
+r11s4d2 -> 203 masters, retained 203/203, new=0
+r10s5d2 -> 203 masters, retained 203/203, new=0
+r10s4d3 -> 203 masters, retained 203/203, new=0
+```
+
+Aggregate closure result:
+
+```text
+stable under tested one-axis extensions: True
+internal audit errors: 0
+PASS
+```
+
+The final refinement closure itself took about 5h32m, while the user's total
+wall-clock time for the Q16 completion was about 12 hours. This reinforces the
+Q13 observation that refinement-round s+1 closure can dominate runtime.
+
+Therefore the executable canonical registry now records:
+
+```text
+Q16_full -> Q16_final203
+```
+
+Formal master-basis progress is now 17/45 canonical families and 34/72 diagrams.
