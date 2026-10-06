@@ -596,29 +596,83 @@ def _refine_masters_candidate_from_closure(
     return path, payload
 
 
-def _run_union_rescue(family: str, baseline_tag: str) -> int:
-    """Masters-first union/closure rescue with iterative refinement and FireFly fallback."""
-    union_path, union = _single_audit(
-        f"three_loop_{family.lower()}_masters_{baseline_tag}_union_*_reduction_audit.json"
+def _recover_masters_refinement_from_existing_closure(
+    family: str,
+    baseline_tag: str,
+) -> tuple[Path | None, dict]:
+    """Recover a refined masters candidate directly from an existing closure audit.
+
+    This is intentionally checked before any union rerun. A failed closure audit
+    may already contain the scientifically useful strict-subset signal needed to
+    advance the common envelope. Recomputing the union in that situation is both
+    expensive and unnecessary.
+    """
+    hits = sorted(
+        AUDIT_DIR.glob(
+            f"three_loop_{family.lower()}_masters_{baseline_tag}_"
+            "candidate_*_closure_audit.json"
+        ),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
     )
-    if not union_path or not union.get("audit_pass"):
-        code = _run_bat_stage(
+    for closure_path in hits:
+        closure = _read_json(closure_path)
+        try:
+            current_count = int(closure.get("candidate_master_count", 0))
+        except Exception:
+            current_count = 0
+        if current_count <= 0:
+            continue
+        refined_path, refined = _refine_masters_candidate_from_closure(
             family,
             baseline_tag,
-            bat_name="run_three_loop_master_basis_union_reduction.bat",
-            phase="union-reduction",
-            phase_class="union",
-            solver="masters",
+            closure_path,
+            closure,
+            current_count,
         )
-        if code:
+        if refined_path and refined.get("audit_pass"):
             print(
-                f"{family}: initiate-only union failed; falling back to FireFly union rescue.",
+                f"{family}: recovered masters refinement directly from existing "
+                f"closure audit: {refined_path}",
                 flush=True,
             )
-            return _run_union_rescue_firefly(family, baseline_tag)
+            return refined_path, refined
+    return None, {}
+
+
+def _run_union_rescue(family: str, baseline_tag: str) -> int:
+    """Masters-first union/closure rescue with iterative refinement and FireFly fallback."""
+
+    # Highest priority: recover any already-proven strict-subset refinement from
+    # an existing closure audit. This prevents a later union-stage rerun failure
+    # from hiding valuable closure work (e.g. VP05 64 -> 63).
+    recovered_path, recovered = _recover_masters_refinement_from_existing_closure(
+        family, baseline_tag
+    )
+    if recovered_path:
+        union_path, union = recovered_path, recovered
+    else:
         union_path, union = _single_audit(
             f"three_loop_{family.lower()}_masters_{baseline_tag}_union_*_reduction_audit.json"
         )
+        if not union_path or not union.get("audit_pass"):
+            code = _run_bat_stage(
+                family,
+                baseline_tag,
+                bat_name="run_three_loop_master_basis_union_reduction.bat",
+                phase="union-reduction",
+                phase_class="union",
+                solver="masters",
+            )
+            if code:
+                print(
+                    f"{family}: initiate-only union failed; falling back to FireFly union rescue.",
+                    flush=True,
+                )
+                return _run_union_rescue_firefly(family, baseline_tag)
+            union_path, union = _single_audit(
+                f"three_loop_{family.lower()}_masters_{baseline_tag}_union_*_reduction_audit.json"
+            )
 
     if not union_path or not union.get("audit_pass"):
         print(
