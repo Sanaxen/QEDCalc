@@ -147,9 +147,17 @@ def _single_audit(pattern: str) -> tuple[Path | None, dict]:
     hits = sorted(AUDIT_DIR.glob(pattern))
     if not hits:
         return None, {}
-    # Prefer the newest artifact if a harmless older rerun artifact exists.
-    path = max(hits, key=lambda item: item.stat().st_mtime)
-    return path, _read_json(path)
+
+    # Prefer the newest *passing* artifact. A later interrupted/failed rerun
+    # must never hide an earlier scientifically valid audit and force an
+    # unnecessary expensive Kira recomputation.
+    parsed: list[tuple[Path, dict]] = [(path, _read_json(path)) for path in hits]
+    passing = [(path, data) for path, data in parsed if data.get("audit_pass") is True]
+    if passing:
+        return max(passing, key=lambda item: item[0].stat().st_mtime)
+
+    # If nothing passes, return the newest artifact for diagnostics.
+    return max(parsed, key=lambda item: item[0].stat().st_mtime)
 
 
 def _run_bat_stage(
