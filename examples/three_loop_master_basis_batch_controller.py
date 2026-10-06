@@ -733,11 +733,17 @@ def _run_union_rescue(family: str, baseline_tag: str) -> int:
                         continue
 
                 print(
-                    f"{family}: initiate-only candidate closure did not stabilize "
-                    "and exposed no usable strict-subset refinement; falling back to FireFly.",
+                    f"STOP: {family} initiate-only candidate closure is incomplete or "
+                    "unstable and exposed no usable strict-subset refinement. "
+                    "Preserving all masters results; do not fall back to FireFly automatically.",
                     flush=True,
                 )
-                return _run_union_rescue_firefly(family, baseline_tag)
+                print(
+                    f"Retry with --resume after diagnosing the failed masters boundary; "
+                    "completed/reusable closure projects will be skipped.",
+                    flush=True,
+                )
+                return code or 29
 
         _record_promotion_ready(
             family,
