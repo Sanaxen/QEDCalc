@@ -24,6 +24,7 @@ from three_loop.master_basis_api import (
     export_kira_project,
     find_single_masters_final,
     find_or_infer_masters,
+    find_master_list,
     parse_integral,
 )
 
@@ -135,6 +136,36 @@ def _resolve(args: argparse.Namespace):
     )
 
 
+def _reusable_masters_project(
+    project: Path,
+    family_id: str,
+    closure_targets: list[str],
+) -> tuple[bool, str]:
+    """Return whether an initiate-only boundary result can be reused safely.
+
+    Kira may discover and write the masters list before finishing the later
+    mandatory equation-selection pass.  For solver=masters, closure auditing
+    only needs that master set.  Reuse it only when the exact mandatory target
+    copy still matches the current closure target set.
+    """
+    mandatory = project / MANDATORY_NAME
+    if not mandatory.exists():
+        return False, "mandatory target copy missing"
+    try:
+        prepared = _read_integrals(mandatory, family_id)
+    except Exception as exc:
+        return False, f"cannot read mandatory target copy: {exc}"
+    if prepared != closure_targets:
+        return False, "mandatory target copy differs from current closure targets"
+    try:
+        path, masters = find_master_list(project, family_id)
+    except Exception as exc:
+        return False, f"master list unavailable: {exc}"
+    if not masters:
+        return False, "master list is empty"
+    return True, f"{len(masters)} masters from {path}"
+
+
 def _stem(family_id: str, solver: str, baseline_seed: Seed, envelope: Seed) -> str:
     return (
         f"three_loop_{family_id.lower()}_{solver}_{baseline_seed.tag}_"
@@ -172,19 +203,38 @@ def prepare(args: argparse.Namespace) -> None:
     top_level_sectors = _maximal_sectors([spec.top_sector, *reduce_sectors])
     for seed in envelope.one_axis_extensions():
         project = _project(spec.family_id, args.solver, baseline_seed, seed)
-        export_kira_project(
-            spec,
-            project,
-            seed=seed,
-            solver=args.solver,
-            mandatory_file=MANDATORY_NAME,
-            reduce_sectors=reduce_sectors,
-            top_level_sectors=top_level_sectors,
-            clean=True,
-        )
-        mandatory = project / MANDATORY_NAME
-        mandatory.write_text("\n".join(closure) + "\n", encoding="utf-8", newline="\n")
-        projects.append({"seed": seed.tag, "project": str(project), "mandatory_file": str(mandatory)})
+        reusable = False
+        reuse_note = ""
+        if args.solver == "masters" and project.exists():
+            reusable, reuse_note = _reusable_masters_project(
+                project, spec.family_id, closure
+            )
+        if not reusable:
+            export_kira_project(
+                spec,
+                project,
+                seed=seed,
+                solver=args.solver,
+                mandatory_file=MANDATORY_NAME,
+                reduce_sectors=reduce_sectors,
+                top_level_sectors=top_level_sectors,
+                clean=True,
+            )
+            mandatory = project / MANDATORY_NAME
+            mandatory.write_text("\n".join(closure) + "\n", encoding="utf-8", newline="\n")
+        else:
+            mandatory = project / MANDATORY_NAME
+            print(
+                f"REUSE MASTER RESULT {seed.tag}: {reuse_note}",
+                flush=True,
+            )
+        projects.append({
+            "seed": seed.tag,
+            "project": str(project),
+            "mandatory_file": str(mandatory),
+            "reused_master_result": reusable,
+            "reuse_note": reuse_note,
+        })
 
     manifest = {
         "schema_version": 1,
@@ -231,10 +281,32 @@ def prepare(args: argparse.Namespace) -> None:
 
 def print_projects(args: argparse.Namespace) -> None:
     (
-        spec, baseline_seed, _, envelope, _, _, _, _, _
+        spec, baseline_seed, _, envelope, _, _, _, _, closure
     ) = _resolve(args)
     for seed in envelope.one_axis_extensions():
-        print(str(_project(spec.family_id, args.solver, baseline_seed, seed)))
+        project = _project(spec.family_id, args.solver, baseline_seed, seed)
+        if args.solver == "masters":
+            reusable, _ = _reusable_masters_project(
+                project, spec.family_id, closure
+            )
+            if reusable:
+                continue
+        print(str(project))
+
+
+def check_project(args: argparse.Namespace) -> None:
+    (
+        spec, baseline_seed, _, _, _, _, _, _, closure
+    ) = _resolve(args)
+    project = Path(args.check_project)
+    reusable, note = _reusable_masters_project(
+        project, spec.family_id, closure
+    )
+    if reusable:
+        print(f"REUSABLE MASTER RESULT: {project}: {note}")
+        return
+    print(f"NOT REUSABLE: {project}: {note}")
+    raise SystemExit(1)
 
 
 def _reduction_files(project: Path, family_id: str) -> list[Path]:
@@ -474,11 +546,14 @@ def main() -> None:
     group.add_argument("--prepare", action="store_true")
     group.add_argument("--finalize", action="store_true")
     group.add_argument("--print-projects", action="store_true")
+    group.add_argument("--check-project", type=Path)
     args = parser.parse_args()
     if args.prepare:
         prepare(args)
     elif args.finalize:
         finalize(args)
+    elif args.check_project is not None:
+        check_project(args)
     else:
         print_projects(args)
 
