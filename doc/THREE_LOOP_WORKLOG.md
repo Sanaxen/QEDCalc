@@ -1621,3 +1621,173 @@ VP02_full -> VP02_final30
 ```
 
 Formal master-basis progress is now 26/45 canonical families and 52/72 diagrams.
+
+
+## 2026-10-07 VP05 masters-first refinement / WSL handoff
+
+Current formal master-basis progress remains:
+
+```text
+26 / 45 canonical families
+52 / 72 diagrams
+```
+
+VP05_full covers VP05/VP06.
+
+### Union-reduction result
+
+For baseline `r8s3d0`, the mandatory union contains 530 targets and requires
+envelope `r8s4d2`.
+
+The masters initiate-only union run once returned a non-zero Kira exit after
+the useful master list had already been written. Reusing
+`results/VP05_full/masters` and running finalize without rerunning Kira gave:
+
+```text
+mandatory targets: 530
+required envelope: r8s4d2
+candidate master count: 64
+audit PASS
+```
+
+Therefore the valid first candidate is 64 masters at `r8s4d2`.
+
+### 64-master candidate closure
+
+The one-axis closure result is:
+
+```text
+r9s4d2 -> 63 masters, retained 63/64, missing=1, new=0, refinement=True
+r8s5d2 -> 63 masters, retained 63/64, missing=1, new=0, refinement=True
+r8s4d3 -> 64 masters, retained 64/64, missing=0, new=0, stable=True
+```
+
+Thus the 64-master candidate is not final. Two independent one-axis extensions
+expose the same strict-subset size, so VP05 has a valid 64 -> 63 iterative
+refinement signal.
+
+The controller now recovers such a refinement directly from the existing
+closure audit instead of rerunning the union stage.
+
+### 63-master closure and heavy r8s6d2 boundary
+
+The next candidate closure includes a heavy `r8s6d2` boundary. This boundary
+became much slower than previous VP05 runs, with individual
+`Generate equations for topology VP05_full, sector ...` lines taking several
+minutes in some sectors.
+
+One attempt terminated before a reusable master list was created. The log ended
+after:
+
+```text
+Kira starts the reduction of the topology: VP05_full
+
+***** Select equations recursively ************************
+length of mandatory list: 530
+Algebraic reconstruction is switched off.
+```
+
+Since no initiate-only master list existed for that attempt, the boundary could
+not be reused scientifically.
+
+The masters-only closure runner was changed so that one failed boundary no
+longer immediately aborts the remaining closure boundaries. It preserves the
+failed boundary, continues the other boundaries, and leaves the aggregate audit
+to decide whether another direction exposes a further strict-subset refinement.
+
+The controller was also changed so that an incomplete masters closure does not
+automatically fall back to FireFly union reduction.
+
+Relevant commits on `feature/master-basis-initiate-only`:
+
+```text
+d78484947a8b44df032b0e00267ec9c7966bf51c
+  reuse completed initiate-only master lists after late Kira exit
+
+f7b6a9986d121a5f77eabd8d4abf065a1b9b1d2c
+  resume masters closure from reusable boundary results
+
+2395cf2aca172b976937551f9b43b4b557ebf04d
+  prefer passing master-basis audits over failed reruns
+
+d5a2d137f17ab96921c48f15e7fdf9340dba365c
+  recover masters refinement from closure before union rerun
+
+256b32801df05380597e351f412a86d72f82fa1e
+  stop on incomplete masters closure instead of FireFly fallback
+
+94e98c5077a01562b180fde5a596d5fe3812cf2b
+  continue remaining masters closure boundaries after individual failure
+```
+
+Important local-state note: one unwanted FireFly/union fallback occurred before
+the final `94e98c5` changes had been pulled locally. A later `git pull`
+fast-forwarded the local branch from `d5a2d13` to `94e98c5`; the local files
+were then verified to contain both:
+
+```text
+Preserving all masters results; do not fall back to FireFly automatically.
+Preserving this failed boundary and continuing remaining masters closures.
+```
+
+Therefore any earlier post-failure return to union reduction should not be used
+as evidence of the current controller behavior.
+
+### WSL resource correction
+
+A separate configuration mistake was found in `%USERPROFILE%/.wslconfig`.
+
+The previous setting was:
+
+```ini
+[wsl2]
+memory=32GB
+swap=10485760000
+```
+
+The bare numeric swap value is only about 10 GB, not 100 GB. Runtime inspection
+confirmed about 9.8 GiB swap.
+
+The file was edited directly to request 100 GB swap, WSL was shut down and
+restarted, and the active configuration was verified as:
+
+```text
+Mem:  about 31 GiB
+Swap: 100 GiB
+```
+
+The Windows WSL Settings UI had not produced the intended swap size, so the
+direct `.wslconfig` edit is the authoritative setup for this run.
+
+The dmesg captured after restart contained WSLg/dxgkrnl warnings and journal
+recovery messages, but no preserved OOM evidence from the earlier failed Kira
+run. Because WSL had restarted, the previous kernel log cannot be used to rule
+OOM in or out for that earlier attempt.
+
+### Resume point
+
+Use the current branch without switching:
+
+```text
+feature/master-basis-initiate-only
+```
+
+The next normal entry point is:
+
+```powershell
+.\run_three_loop_master_basis_all.bat resume 1
+```
+
+Expected logic:
+
+1. reuse the existing VP05 64 -> 63 refinement evidence;
+2. do not rerun the already-valid 530-target union merely because a later closure boundary failed;
+3. continue the 63-master candidate closure;
+4. reuse any boundary that already has a validated initiate-only master list;
+5. if one boundary fails before producing a master list, preserve it and continue the remaining boundaries;
+6. if another boundary exposes a strict subset, promote that subset and continue iterative refinement;
+7. promote VP05 only after a candidate is stable under all required one-axis checks.
+
+Do not formally register `VP05_finalN` yet. The valid state at handoff is:
+64-master union candidate -> proven 63-master refinement -> 63-master closure
+still in progress.
