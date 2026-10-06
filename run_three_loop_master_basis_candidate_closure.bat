@@ -49,6 +49,7 @@ if not "%LIST_ERR%"=="0" (
 )
 
 set "PROJECT_COUNT=0"
+set "MASTERS_BOUNDARY_FAILURE=0"
 for /f "usebackq delims=" %%P in ("%PROJECT_LIST%") do (
   set /a PROJECT_COUNT+=1
   set "WIN_PROJECT=%%P"
@@ -76,9 +77,10 @@ for /f "usebackq delims=" %%P in ("%PROJECT_LIST%") do (
         echo WARNING: Kira exited with code !KIRA_ERR! after producing a reusable initiate-only master list.
         echo          Continuing because masters closure auditing only requires that validated master set.
       ) else (
-        echo ERROR: Kira exited with code !KIRA_ERR! before producing a reusable master result.
-        if exist "%PROJECT_LIST%" del /q "%PROJECT_LIST%" >nul 2>&1
-        exit /b !KIRA_ERR!
+        echo WARNING: Kira exited with code !KIRA_ERR! before producing a reusable master result.
+        echo          Preserving this failed boundary and continuing remaining masters closures.
+        echo          Final aggregate audit will decide whether another boundary exposes a strict-subset refinement.
+        set "MASTERS_BOUNDARY_FAILURE=1"
       )
     ) else (
       echo ERROR: Kira exited with code !KIRA_ERR!.
@@ -96,6 +98,10 @@ echo Existing reusable masters projects are skipped and audited below.
 ".venv\Scripts\python.exe" -m examples.three_loop_master_basis_candidate_closure --family "%FAMILY%" --baseline-seed "%BASELINE_SEED%" --solver "%SOLVER%" --finalize
 set "AUDIT_ERR=%ERRORLEVEL%"
 if not "%AUDIT_ERR%"=="0" exit /b %AUDIT_ERR%
+if "%MASTERS_BOUNDARY_FAILURE%"=="1" (
+  echo ERROR: one or more masters closure boundaries failed without a reusable master list.
+  exit /b 15
+)
 
 endlocal
 exit /b 0
