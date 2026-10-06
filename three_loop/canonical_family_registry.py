@@ -65,6 +65,8 @@ VP04_MASTER_BASIS = "VP04_final15"
 VP04_CANONICAL_FAMILY = "VP04_full"
 VP01_MASTER_BASIS = "VP01_final28"
 VP01_CANONICAL_FAMILY = "VP01_full"
+VP02_MASTER_BASIS = "VP02_final30"
+VP02_CANONICAL_FAMILY = "VP02_full"
 
 
 def _master_basis_id(family_id: str) -> str | None:
@@ -118,6 +120,8 @@ def _master_basis_id(family_id: str) -> str | None:
         return VP04_MASTER_BASIS
     if family_id == VP01_CANONICAL_FAMILY:
         return VP01_MASTER_BASIS
+    if family_id == VP02_CANONICAL_FAMILY:
+        return VP02_MASTER_BASIS
     return None
 
 
