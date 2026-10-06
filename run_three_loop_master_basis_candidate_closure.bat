@@ -70,18 +70,28 @@ for /f "usebackq delims=" %%P in ("%PROJECT_LIST%") do (
   wsl.exe --cd "!WIN_PROJECT!" bash -lc "set -o pipefail; command -v kira >/dev/null 2>&1 || { echo 'ERROR: kira not found in WSL PATH'; exit 127; }; export FERMATPATH=$HOME/fermat/Ferl7/fer64; rm -rf results sectormappings tmp firefly_saves ff_save firefly_saves_alt pyred; echo FERMATPATH=$FERMATPATH; kira jobs.yaml 2>&1 | tee kira_%SOLVER%_candidate_closure.log"
   set "KIRA_ERR=!ERRORLEVEL!"
   if not "!KIRA_ERR!"=="0" (
-    echo ERROR: Kira exited with code !KIRA_ERR!.
-    if exist "%PROJECT_LIST%" del /q "%PROJECT_LIST%" >nul 2>&1
-    exit /b !KIRA_ERR!
+    if /I "%SOLVER%"=="masters" (
+      ".venv\Scripts\python.exe" -m examples.three_loop_master_basis_candidate_closure --family "%FAMILY%" --baseline-seed "%BASELINE_SEED%" --solver "%SOLVER%" --check-project "!WIN_PROJECT!"
+      if not errorlevel 1 (
+        echo WARNING: Kira exited with code !KIRA_ERR! after producing a reusable initiate-only master list.
+        echo          Continuing because masters closure auditing only requires that validated master set.
+      ) else (
+        echo ERROR: Kira exited with code !KIRA_ERR! before producing a reusable master result.
+        if exist "%PROJECT_LIST%" del /q "%PROJECT_LIST%" >nul 2>&1
+        exit /b !KIRA_ERR!
+      )
+    ) else (
+      echo ERROR: Kira exited with code !KIRA_ERR!.
+      if exist "%PROJECT_LIST%" del /q "%PROJECT_LIST%" >nul 2>&1
+      exit /b !KIRA_ERR!
+    )
   )
 )
 
 if exist "%PROJECT_LIST%" del /q "%PROJECT_LIST%" >nul 2>&1
 
-if not "%PROJECT_COUNT%"=="3" (
-  echo ERROR: expected exactly 3 candidate-closure projects, got %PROJECT_COUNT%.
-  exit /b 5
-)
+echo Candidate-closure Kira projects executed this invocation: %PROJECT_COUNT%
+echo Existing reusable masters projects are skipped and audited below.
 
 ".venv\Scripts\python.exe" -m examples.three_loop_master_basis_candidate_closure --family "%FAMILY%" --baseline-seed "%BASELINE_SEED%" --solver "%SOLVER%" --finalize
 set "AUDIT_ERR=%ERRORLEVEL%"
