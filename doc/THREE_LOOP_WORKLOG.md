@@ -676,8 +676,8 @@ Raw checkpoint history is preserved for provenance.
 Current formal master-basis status:
 
 ```text
-22/45 canonical families complete
-44/72 diagrams covered
+23/45 canonical families complete
+46/72 diagrams covered
 Q03_full -> Q03_final136 formally promoted
 next auto-resume family: Q04_full
 ```
@@ -1095,7 +1095,7 @@ closure with the same 136-master set at `r10s4d2`, `r9s5d2`, and
 Q03_full -> Q03_final136
 ```
 
-Formal master-basis progress is now 22/45 canonical families and 44/72 diagrams.
+Formal master-basis progress is now 23/45 canonical families and 46/72 diagrams.
 
 
 ### Q04 formal promotion
@@ -1125,7 +1125,7 @@ Therefore the executable canonical registry now records:
 Q04_full -> Q04_final92
 ```
 
-Formal master-basis progress is now 22/45 canonical families and 44/72 diagrams.
+Formal master-basis progress is now 23/45 canonical families and 46/72 diagrams.
 
 
 ### Q06 formal promotion
@@ -1155,7 +1155,7 @@ Therefore the executable canonical registry now records:
 Q06_full -> Q06_final91
 ```
 
-Formal master-basis progress is now 22/45 canonical families and 44/72 diagrams.
+Formal master-basis progress is now 23/45 canonical families and 46/72 diagrams.
 
 
 ### Q11 formal promotion
@@ -1185,7 +1185,7 @@ Therefore the executable canonical registry now records:
 Q11_full -> Q11_final129
 ```
 
-Formal master-basis progress is now 22/45 canonical families and 44/72 diagrams.
+Formal master-basis progress is now 23/45 canonical families and 46/72 diagrams.
 
 
 ### Q13 formal promotion
@@ -1232,7 +1232,7 @@ The refined closure is computationally heavy, particularly the s+1 direction,
 so future performance work should consider whether every refinement round needs
 all three full boundary jobs without weakening the scientific closure criterion.
 
-Formal master-basis progress is now 22/45 canonical families and 44/72 diagrams.
+Formal master-basis progress is now 23/45 canonical families and 46/72 diagrams.
 
 
 ### Q14 formal promotion
@@ -1262,7 +1262,7 @@ Therefore the executable canonical registry now records:
 Q14_full -> Q14_final202
 ```
 
-Formal master-basis progress is now 22/45 canonical families and 44/72 diagrams.
+Formal master-basis progress is now 23/45 canonical families and 46/72 diagrams.
 
 
 ### Q15 formal promotion
@@ -1292,7 +1292,7 @@ Therefore the executable canonical registry now records:
 Q15_full -> Q15_final86
 ```
 
-Formal master-basis progress is now 22/45 canonical families and 44/72 diagrams.
+Formal master-basis progress is now 23/45 canonical families and 46/72 diagrams.
 
 
 ### Q16 formal promotion
@@ -1326,7 +1326,7 @@ Therefore the executable canonical registry now records:
 Q16_full -> Q16_final203
 ```
 
-Formal master-basis progress is now 22/45 canonical families and 44/72 diagrams.
+Formal master-basis progress is now 23/45 canonical families and 46/72 diagrams.
 
 
 ### Q19 formal promotion
@@ -1356,7 +1356,7 @@ Therefore the executable canonical registry now records:
 Q19_full -> Q19_final121
 ```
 
-Formal master-basis progress is now 22/45 canonical families and 44/72 diagrams.
+Formal master-basis progress is now 23/45 canonical families and 46/72 diagrams.
 
 
 ### Q24 formal promotion
@@ -1399,7 +1399,7 @@ Therefore the executable canonical registry now records:
 Q24_full -> Q24_final271
 ```
 
-Formal master-basis progress is now 22/45 canonical families and 44/72 diagrams.
+Formal master-basis progress is now 23/45 canonical families and 46/72 diagrams.
 
 
 ### VP03 formal promotion
@@ -1430,7 +1430,7 @@ Therefore the executable canonical registry now records:
 VP03_full -> VP03_final17
 ```
 
-Formal master-basis progress is now 22/45 canonical families and 44/72 diagrams.
+Formal master-basis progress is now 23/45 canonical families and 46/72 diagrams.
 
 
 ### VP04 formal promotion
@@ -1457,7 +1457,7 @@ Therefore the executable canonical registry now records:
 VP04_full -> VP04_final15
 ```
 
-Formal master-basis progress is now 22/45 canonical families and 44/72 diagrams.
+Formal master-basis progress is now 23/45 canonical families and 46/72 diagrams.
 
 
 ### VP01 formal promotion
@@ -1487,4 +1487,39 @@ Therefore the executable canonical registry now records:
 VP01_full -> VP01_final28
 ```
 
-Formal master-basis progress is now 22/45 canonical families and 44/72 diagrams.
+Formal master-basis progress is now 23/45 canonical families and 46/72 diagrams.
+
+
+### Q22 formal promotion
+
+Q22_full covers Q22/Q25. The reviewed FireFly iterative refinement artifact
+proposes `Q22_final14` at envelope `r8s3d2`.
+
+The no-rerun closure re-audit verifies all three one-axis extensions with the
+same 14-master candidate and exact mandatory-list agreement:
+
+```text
+r9s3d2 -> 14 masters, stable=True
+r8s4d2 -> 14 masters, stable=True
+r8s3d3 -> 14 masters, stable=True
+missing candidate masters: 0
+extra masters: 0
+missing mandatory targets: 0
+extra mandatory targets: 0
+resolved nonmasters: 54 at each boundary
+stable under one-axis extensions: True
+errors: []
+audit_pass: True
+```
+
+Therefore the executable canonical registry now records:
+
+```text
+Q22_full -> Q22_final14
+```
+
+Formal master-basis progress is now 23/45 canonical families and 46/72 diagrams.
+
+Q18_full and Q20_full remain promotion-ready but are intentionally not promoted
+in this review step until their referenced closure re-audit payloads are
+inspected directly.
