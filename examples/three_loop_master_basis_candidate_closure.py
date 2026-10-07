@@ -2,9 +2,11 @@
 
 After a seed-dependent family has been reduced through a common mandatory-union
 context, this helper takes the resulting candidate master basis and proves it at
-the three one-axis extensions of the common r/s/d envelope.  The exact same
-mandatory target set is used at every boundary: original union targets plus the
-candidate master forms, deduplicated deterministically.
+the three one-axis extensions of the common r/s/d envelope.  The initial
+candidate closure preserves the full union target context.  Once a strict-subset
+candidate refinement has already been proven, later stability checks use only
+the refined candidate masters as mandatory targets; the original union reduction
+remains the proof that the full target set reduces into that candidate basis.
 
 The companion BAT file launches Kira/FireFly.  This module only prepares the
 projects and audits completed reductions.
@@ -117,12 +119,22 @@ def _resolve(args: argparse.Namespace):
     union_targets = _read_integrals(source_targets, spec.family_id)
     candidate = _read_integrals(candidate_file, spec.family_id)
 
+    audit_stage = str(audit.get("stage") or "")
+    refined_candidate_only = audit_stage == "master_basis_candidate_refinement"
+
     closure: list[str] = []
     seen: set[str] = set()
-    for item in [*union_targets, *candidate]:
+    closure_source = candidate if refined_candidate_only else [*union_targets, *candidate]
+    for item in closure_source:
         if item not in seen:
             seen.add(item)
             closure.append(item)
+
+    closure_mode = (
+        "refined-candidate-only"
+        if refined_candidate_only
+        else "union-plus-candidate"
+    )
     return (
         spec,
         baseline_seed,
@@ -133,6 +145,7 @@ def _resolve(args: argparse.Namespace):
         candidate_file,
         candidate,
         closure,
+        closure_mode,
     )
 
 
@@ -195,6 +208,7 @@ def prepare(args: argparse.Namespace) -> None:
         candidate_file,
         candidate,
         closure,
+        closure_mode,
     ) = _resolve(args)
     AUDIT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -251,6 +265,7 @@ def prepare(args: argparse.Namespace) -> None:
         "candidate_master_file": str(candidate_file),
         "candidate_master_count": len(candidate),
         "candidate_masters": candidate,
+        "closure_mode": closure_mode,
         "closure_target_count": len(closure),
         "closure_targets": closure,
         "reduce_sectors": reduce_sectors,
@@ -270,6 +285,7 @@ def prepare(args: argparse.Namespace) -> None:
     print(f"candidate envelope: {envelope.tag}")
     print(f"union targets: {len(union_targets)}")
     print(f"candidate masters: {len(candidate)}")
+    print(f"closure mode: {closure_mode}")
     print(f"closure targets: {len(closure)}")
     print(f"mandatory target sectors: {reduce_sectors}")
     print(f"Kira top-level sectors: {top_level_sectors}")
@@ -281,7 +297,7 @@ def prepare(args: argparse.Namespace) -> None:
 
 def print_projects(args: argparse.Namespace) -> None:
     (
-        spec, baseline_seed, _, envelope, _, _, _, _, closure
+        spec, baseline_seed, _, envelope, _, _, _, _, closure, _
     ) = _resolve(args)
     for seed in envelope.one_axis_extensions():
         project = _project(spec.family_id, args.solver, baseline_seed, seed)
@@ -296,7 +312,7 @@ def print_projects(args: argparse.Namespace) -> None:
 
 def check_project(args: argparse.Namespace) -> None:
     (
-        spec, baseline_seed, _, _, _, _, _, _, closure
+        spec, baseline_seed, _, _, _, _, _, _, closure, _
     ) = _resolve(args)
     project = Path(args.check_project)
     reusable, note = _reusable_masters_project(
@@ -478,6 +494,7 @@ def finalize(args: argparse.Namespace) -> None:
         "candidate_envelope": envelope.tag,
         "candidate_master_file": str(candidate_file),
         "candidate_master_count": len(candidate),
+        "closure_mode": closure_mode,
         "closure_target_count": len(closure),
         "boundary_rows": rows,
         "stable_under_one_axis_extensions": stable_all,
