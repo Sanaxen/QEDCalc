@@ -1897,3 +1897,50 @@ r8s5d3 -> 63 masters
 If all three are stable, VP05 can then be considered for formal promotion to a
 63-master final basis. Until that verification completes, do not register
 `VP05_final63`.
+
+
+### 2026-10-08 VP05 63-master closure: one boundary passes, two resource-exhausted
+
+The optimized 63-target closure was executed for the refined VP05 candidate.
+
+Aggregate audit:
+
+```text
+family: VP05_full
+candidate envelope: r8s5d2
+union targets: 530
+candidate masters: 63
+closure targets: 63
+
+r9s5d2: masters=63 stable=True
+  retained candidate: 63/63
+  missing candidate masters: 0
+  new masters: 0
+  refinement candidate: False
+
+r8s6d2: no masters.final, initiate-only master list, or verified no-reduction master set found
+r8s5d3: no masters.final, initiate-only master list, or verified no-reduction master set found
+
+stable under tested one-axis extensions: False
+internal audit errors: 2
+```
+
+Interpretation:
+
+- r9s5d2 is a completed positive stability check for the 63-master candidate.
+- r8s6d2 and r8s5d3 are NOT mathematical instability results. They are incomplete
+  Kira computations with no reusable master list, so those directions remain
+  unproven.
+- During the heavy run, swap usage exceeded 180 GB while CPU utilization remained
+  very low. Therefore simply repeating the same full Kira closure at r8s6d2 or
+  r8s5d3 is not an acceptable strategy on the current machine.
+- The 530 -> 63 mandatory-target optimization reduced the target count and sector
+  count, but the r8s6d2/r8s5d3 envelopes themselves still generate an
+  impractically large IBP system.
+
+Do not register VP05_final63 yet.
+
+Next development objective: obtain the missing s- and d-direction stability
+evidence for the 63-master candidate without replaying the full
+equation-generation workload at r8s6d2 and r8s5d3. Prefer a targeted masters/rank
+or candidate-only proof over increasing swap or rerunning the same closure.
