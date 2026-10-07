@@ -398,6 +398,7 @@ def finalize(args: argparse.Namespace) -> None:
         candidate_file,
         candidate,
         closure,
+        closure_mode,
     ) = _resolve(args)
     manifest_path = _manifest_path(spec.family_id, args.solver, baseline_seed, envelope)
     if not manifest_path.exists():
