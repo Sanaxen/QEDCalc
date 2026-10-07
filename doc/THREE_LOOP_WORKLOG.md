@@ -1791,3 +1791,109 @@ Expected logic:
 Do not formally register `VP05_finalN` yet. The valid state at handoff is:
 64-master union candidate -> proven 63-master refinement -> 63-master closure
 still in progress.
+
+
+### 2026-10-07 VP05 closure-target optimization: 530 -> 63
+
+A key performance/interpretation correction was made after reviewing the VP05
+history around the 64 -> 63 refinement.
+
+Observed evidence:
+
+```text
+initial candidate at r8s4d2: 64 masters
+r9s4d2: 63/64 retained, one candidate disappears
+r8s5d2: 63/64 retained, one candidate disappears
+r8s4d3: 64/64 retained
+```
+
+The resulting refined candidate file contains exactly 63 masters.
+
+The later closure jobs had still been using the original 530 union targets as
+their mandatory list. This caused very large Kira equation-generation jobs and
+made it difficult to distinguish a true mathematical instability from an
+incomplete run caused by resource exhaustion or the earlier WSL swap
+misconfiguration.
+
+The important interpretation change is:
+
+- the 530-target union reduction remains the proof that the original union target
+  set reduces into the candidate basis;
+- after a strict-subset refinement has already been established, the next
+  one-axis stability test only needs to check whether the refined candidate
+  masters remain masters in the stronger envelopes;
+- therefore the refinement-stage candidate closure should use the refined
+  candidate list itself as the mandatory list instead of replaying all 530 union
+  targets.
+
+Implementation change on branch
+`feature/master-basis-initiate-only`:
+
+```text
+examples/three_loop_master_basis_candidate_closure.py
+```
+
+The resolver now selects:
+
+```text
+initial union candidate closure:
+  closure_mode = union-plus-candidate
+
+refinement-stage closure:
+  closure_mode = refined-candidate-only
+```
+
+Relevant commits:
+
+```text
+bbeeef559db5271db242f299ee0eac2f33c44131
+  optimize refined master-basis closure targets
+
+f89b24352c9074c11aa53d1e3ed477e5bcbb828a
+  fix refined closure mode propagation
+```
+
+The VP05 prepare step was rerun successfully and verified:
+
+```text
+family: VP05_full
+candidate envelope: r8s5d2
+union targets: 530
+candidate masters: 63
+closure mode: refined-candidate-only
+closure targets: 63
+mandatory target sectors:
+[73, 78, 79, 101, 109, 116, 117, 118, 126, 127, 199, 201, 202, 203,
+ 204, 205, 206, 207, 228, 229, 230, 231, 234, 237, 238, 239]
+Kira top-level sectors: [255]
+boundaries:
+  r9s5d2
+  r8s6d2
+  r8s5d3
+```
+
+This is a major turning point for VP05. The previous heavy r8s6d2 run used 530
+mandatory targets and reached severe paging/swap pressure. The new run will test
+the same three refinement boundaries using only the 63 refined masters.
+
+Do not use the earlier incomplete r8s5d2/r9s5d2/r8s6d2 runs as evidence of
+mathematical instability. They were incomplete Kira runs, not completed closure
+proofs.
+
+Current next step:
+
+```powershell
+.\run_three_loop_master_basis_candidate_closure.bat VP05_full r8s3d0 masters
+```
+
+Expected validation target:
+
+```text
+r9s5d2 -> 63 masters
+r8s6d2 -> 63 masters
+r8s5d3 -> 63 masters
+```
+
+If all three are stable, VP05 can then be considered for formal promotion to a
+63-master final basis. Until that verification completes, do not register
+`VP05_final63`.
