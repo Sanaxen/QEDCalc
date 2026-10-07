@@ -214,7 +214,18 @@ def prepare(args: argparse.Namespace) -> None:
 
     projects: list[dict[str, str]] = []
     reduce_sectors = _target_sectors(closure)
-    top_level_sectors = _maximal_sectors([spec.top_sector, *reduce_sectors])
+    if closure_mode == "refined-candidate-only":
+        # At refinement stage the full union reduction has already established
+        # that every original union target reduces into the candidate basis.
+        # The remaining task is only to test whether those candidate masters
+        # stay masters at stronger one-axis envelopes.  Restrict Kira's family
+        # top-level sectors to the maximal sectors that actually contain the
+        # refined candidates instead of forcing the original full top sector.
+        top_level_sectors = _maximal_sectors(reduce_sectors)
+        top_level_mode = "refined-candidate-maximal-sectors"
+    else:
+        top_level_sectors = _maximal_sectors([spec.top_sector, *reduce_sectors])
+        top_level_mode = "full-family-top-sector"
     for seed in envelope.one_axis_extensions():
         project = _project(spec.family_id, args.solver, baseline_seed, seed)
         reusable = False
@@ -269,6 +280,7 @@ def prepare(args: argparse.Namespace) -> None:
         "closure_target_count": len(closure),
         "closure_targets": closure,
         "reduce_sectors": reduce_sectors,
+        "top_level_mode": top_level_mode,
         "top_level_sectors": top_level_sectors,
         "boundaries": projects,
     }
@@ -288,6 +300,7 @@ def prepare(args: argparse.Namespace) -> None:
     print(f"closure mode: {closure_mode}")
     print(f"closure targets: {len(closure)}")
     print(f"mandatory target sectors: {reduce_sectors}")
+    print(f"top-level mode: {top_level_mode}")
     print(f"Kira top-level sectors: {top_level_sectors}")
     for row in projects:
         print(f"boundary {row['seed']}: {row['project']}")
