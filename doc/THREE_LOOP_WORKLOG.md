@@ -1944,3 +1944,67 @@ Next development objective: obtain the missing s- and d-direction stability
 evidence for the 63-master candidate without replaying the full
 equation-generation workload at r8s6d2 and r8s5d3. Prefer a targeted masters/rank
 or candidate-only proof over increasing swap or rerunning the same closure.
+
+
+### 2026-10-08 VP05 refined-sector closure still stalls at sector 204
+
+The refinement-stage closure was rerun after two reductions in workload:
+
+1. mandatory targets reduced from 530 to the 63 refined candidate masters;
+2. Kira top-level sectors reduced from the full family top sector `[255]` to
+   the refined candidate maximal sectors `[127, 239]`.
+
+The run correctly started with:
+
+```text
+length of mandatory list: 63
+Generate equations for topology VP05_full, sector 73 (1 of 91)
+```
+
+This reduced the number of generated sectors from the earlier 94/142-scale
+runs, and initially swap usage stabilized around 75 GB.
+
+However the run later stalled at:
+
+```text
+Generate equations for topology VP05_full, sector 204 (28 of 91)
+```
+
+with no progress for about 2.5 hours.
+
+Resource observation at that point:
+
+```text
+WSL memory: ~31 GB, effectively at limit
+configured memory limit: 30 GB
+swap: ~130 GB and still elevated
+configured swap limit: 200 GB
+CPU utilization: ~5%
+```
+
+The swap curve rose from roughly 75 GB to roughly 130 GB while the same sector
+remained active, indicating paging/thrashing rather than productive CPU-bound
+reduction.
+
+Conclusion:
+
+- the 530 -> 63 target reduction helped but was not sufficient;
+- restricting top-level sectors to [127,239] also helped but was not sufficient;
+- sector 204 in the r8s6d2-style refinement envelope remains pathological on
+  the current machine;
+- simply increasing swap further or repeating the same Kira closure is not an
+  acceptable path.
+
+Current scientifically valid status remains:
+
+```text
+r9s5d2 -> 63 masters, stable=True
+r8s6d2 -> unproven (resource-incomplete)
+r8s5d3 -> unproven (resource-incomplete)
+```
+
+Do not register `VP05_final63` yet.
+
+Next objective: replace the remaining full-envelope Kira closure with a more
+targeted stability proof for the 63 candidate masters, preferably avoiding
+full recursive equation generation through the pathological sector 204.
