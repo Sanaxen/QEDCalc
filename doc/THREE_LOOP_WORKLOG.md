@@ -2068,3 +2068,54 @@ the same method be applied to the resource-blocked `r8s6d2` and `r8s5d3`
 directions.
 
 VP05 is still not formally promotable at this point.
+
+
+### 2026-10-08 sector-local validation failed without preferred masters
+
+The first sector-local validation was intentionally run on the already-known
+stable boundary `r9s5d2`.
+
+Result:
+
+```text
+candidate masters: 63
+candidate sectors: 26
+retained candidate total: 50/63
+missing candidate masters: 13
+stable under sector-local closure: False
+internal audit errors: 11
+```
+
+This does NOT overturn the existing full-closure result
+`r9s5d2 -> 63/63 stable=True`.
+
+Interpretation: independently initiated sector-local Kira projects are free to
+choose different but equivalent master bases. Therefore literal membership of
+the original candidate integrals in each local `masters` list is not a valid
+stability criterion unless the basis choice is fixed.
+
+The sector-local method in its initial form is rejected as a proof method.
+
+Kira supports `preferred_masters`, which must be supplied before the reduction
+and is specifically intended to prefer a chosen master basis. The local
+strategy is therefore revised as follows:
+
+- each exact-sector project still contains only that sector's refined candidate
+  targets;
+- the same target list is also written as a `preferred_masters` file;
+- the generated Kira job points to that file before `run_initiate`;
+- the method must again reproduce the known `r9s5d2 = 63/63` result before it
+  can be used for `r8s6d2` or `r8s5d3`.
+
+Implementation commits:
+
+```text
+3374e0ea73a4761461144f5f1ae5c22c56ba40ee
+  Support preferred masters in Kira project export
+
+56120861c719aefb8d2fb53e06a1e23592725b57
+  Pin sector-local closure to preferred candidate masters
+```
+
+Do not use the earlier 50/63 sector-local audit as mathematical evidence against
+the 63-master candidate.
