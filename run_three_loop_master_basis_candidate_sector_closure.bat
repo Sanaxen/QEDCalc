@@ -28,6 +28,8 @@ if not "%LIST_ERR%"=="0" (
 )
 
 set "PROJECT_COUNT=0"
+for /f %%N in ('find /v /c "" ^< "%PROJECT_LIST%"') do set "PROJECT_TOTAL=%%N"
+
 for /f "usebackq delims=" %%P in ("%PROJECT_LIST%") do (
   set /a PROJECT_COUNT+=1
   set "WIN_PROJECT=%%P"
@@ -39,7 +41,7 @@ for /f "usebackq delims=" %%P in ("%PROJECT_LIST%") do (
   )
 
   echo.
-  echo [!PROJECT_COUNT!] Kira project: !WIN_PROJECT!
+  echo [!PROJECT_COUNT!/!PROJECT_TOTAL!] Kira project: !WIN_PROJECT!
   wsl.exe --cd "!WIN_PROJECT!" bash -lc "set -o pipefail; command -v kira >/dev/null 2>&1 || { echo 'ERROR: kira not found in WSL PATH'; exit 127; }; export FERMATPATH=$HOME/fermat/Ferl7/fer64; rm -rf results sectormappings tmp firefly_saves ff_save firefly_saves_alt pyred; echo FERMATPATH=$FERMATPATH; kira jobs.yaml 2>&1 | tee kira_masters_candidate_sector_closure.log"
   set "KIRA_ERR=!ERRORLEVEL!"
   if not "!KIRA_ERR!"=="0" (
