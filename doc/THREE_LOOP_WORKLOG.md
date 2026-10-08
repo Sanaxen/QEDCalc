@@ -2008,3 +2008,63 @@ Do not register `VP05_final63` yet.
 Next objective: replace the remaining full-envelope Kira closure with a more
 targeted stability proof for the 63 candidate masters, preferably avoiding
 full recursive equation generation through the pathological sector 204.
+
+
+### 2026-10-08 VP05 targeted sector-local closure strategy
+
+After the refined 63-target closure still stalled at sector 204 with heavy
+paging, the remaining proof strategy was changed again.
+
+New method:
+
+- keep the already-proven full-union reduction and the 64 -> 63 refinement;
+- group the 63 refined candidate masters by their exact sector;
+- for one stronger seed, create one small initiate-only Kira project per exact
+  candidate sector;
+- use only that sector's candidate integrals as mandatory targets;
+- set both `reduce_sectors` and the family `top_level_sectors` to that exact
+  sector;
+- aggregate the retained candidate masters across all sector-local projects.
+
+This avoids asking one Kira process to construct the full recursive system for
+all candidate sectors at once, especially the pathological sector-204 branch.
+
+New files:
+
+```text
+examples/three_loop_master_basis_candidate_sector_closure.py
+run_three_loop_master_basis_candidate_sector_closure.bat
+```
+
+Relevant commits:
+
+```text
+235facd2d3f0272e5d329c731f3d890a037a4ebf
+  Add sector-local refined master closure
+
+625736eec3ab480b1967019d2c20c39c1c5a26bf
+  Add sector-local closure runner
+```
+
+Validation rule:
+
+Do NOT use the sector-local result as new evidence immediately. First validate
+the method on `r9s5d2`, where the previous full closure already established:
+
+```text
+63 masters
+retained 63/63
+stable=True
+```
+
+Run:
+
+```powershell
+.\run_three_loop_master_basis_candidate_sector_closure.bat VP05_full r8s3d0 r9s5d2
+```
+
+Only if the sector-local audit independently retains all 63 candidates should
+the same method be applied to the resource-blocked `r8s6d2` and `r8s5d3`
+directions.
+
+VP05 is still not formally promotable at this point.
