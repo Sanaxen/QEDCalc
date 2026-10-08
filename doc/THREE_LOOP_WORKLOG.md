@@ -2162,3 +2162,31 @@ internal audit errors: 0
 
 then all three one-axis extensions will have positive stability evidence and
 VP05 can proceed to formal promotion as a 63-master basis.
+
+
+### 2026-10-09 resource behavior of validated r9s5d2 sector-local run
+
+The successful preferred-masters sector-local validation run for `r9s5d2`
+also showed substantially improved memory behavior compared with the previous
+monolithic closure.
+
+Observed from the WSL memory/swap monitor:
+
+```text
+configured WSL memory limit: 30 GB
+memory peak: ~29.37 GB
+configured swap limit: 200 GB
+swap peak: ~6.97 GB
+swap at end: ~0 GB
+```
+
+The physical-memory curve repeatedly rises and falls between per-sector Kira
+projects instead of remaining pinned while swap accumulates.  Swap usage stays
+small and is released again.
+
+This is qualitatively different from the failed monolithic closure, where swap
+grew to roughly 130 GB while sector 204 remained stalled for hours.
+
+Conclusion: the preferred-masters sector-local decomposition is not only
+validated against the known 63/63 master result, but also removes the severe
+paging/thrashing behavior on the current machine.
