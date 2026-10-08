@@ -2119,3 +2119,46 @@ Implementation commits:
 
 Do not use the earlier 50/63 sector-local audit as mathematical evidence against
 the 63-master candidate.
+
+
+### 2026-10-09 preferred-masters sector-local validation succeeds
+
+The revised sector-local closure with Kira `preferred_masters` was rerun on the
+already-known stable boundary `r9s5d2`.
+
+Result:
+
+```text
+retained candidate total: 63/63
+missing candidate masters: 0
+stable under sector-local closure: True
+internal audit errors: 0
+```
+
+This exactly reproduces the previous full-closure result for `r9s5d2`.
+
+Therefore the preferred-masters sector-local method is now validated as a
+scientifically acceptable lightweight closure test for the refined 63-master
+candidate.
+
+The earlier 50/63 result from the unpinned sector-local run was a basis-choice
+artifact, not evidence of true instability.
+
+Next proof steps are now authorized:
+
+```powershell
+.\run_three_loop_master_basis_candidate_sector_closure.bat VP05_full r8s3d0 r8s6d2
+.\run_three_loop_master_basis_candidate_sector_closure.bat VP05_full r8s3d0 r8s5d3
+```
+
+If both directions also return:
+
+```text
+retained candidate total: 63/63
+missing candidate masters: 0
+stable under sector-local closure: True
+internal audit errors: 0
+```
+
+then all three one-axis extensions will have positive stability evidence and
+VP05 can proceed to formal promotion as a 63-master basis.
