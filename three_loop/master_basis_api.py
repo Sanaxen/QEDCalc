@@ -317,6 +317,7 @@ def render_jobs_yaml(
     solver: str = "ordinary",
     mandatory_file: str | None = None,
     reduce_sectors: Sequence[int] | None = None,
+    preferred_masters_file: str | None = None,
 ) -> str:
     if solver not in {"ordinary", "firefly", "masters"}:
         raise ValueError(f"unsupported solver: {solver}")
@@ -343,13 +344,18 @@ def render_jobs_yaml(
     if not sectors:
         raise ValueError("reduce_sectors must not be empty")
     sector_text = ", ".join(str(int(x)) for x in sectors)
+    preferred = (
+        f'      preferred_masters: "{preferred_masters_file}"\n'
+        if preferred_masters_file
+        else ""
+    )
     return f"""jobs:
   - reduce_sectors:
       reduce:
         - {{topologies: [{spec.family_id}], sectors: [{sector_text}], r: {seed.r}, s: {seed.s}, d: {seed.d}}}
       select_integrals:
 {selection}
-      run_symmetries: true
+{preferred}      run_symmetries: true
       run_initiate: true
       run_triangular: {triangular}
       run_back_substitution: {back}
@@ -387,6 +393,7 @@ def export_kira_project(
     mandatory_file: str | None = None,
     reduce_sectors: Sequence[int] | None = None,
     top_level_sectors: Sequence[int] | None = None,
+    preferred_masters_file: str | None = None,
     clean: bool = True,
 ) -> Path:
     root = Path(root)
@@ -411,6 +418,7 @@ def export_kira_project(
             solver=solver,
             mandatory_file=mandatory_file,
             reduce_sectors=reduce_sectors,
+            preferred_masters_file=preferred_masters_file,
         ),
         encoding="utf-8", newline="\n",
     )
@@ -421,6 +429,7 @@ def export_kira_project(
         "seed": asdict(seed),
         "solver": solver,
         "mandatory_file": mandatory_file,
+        "preferred_masters_file": preferred_masters_file,
     }
     (root / "qedcalc_master_basis_manifest.json").write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8", newline="\n"
