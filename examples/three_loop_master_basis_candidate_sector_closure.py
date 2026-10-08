@@ -37,6 +37,7 @@ from examples.three_loop_master_basis_candidate_closure import (
 )
 
 MANDATORY_NAME = "mandatory_candidate_sector_closure_targets.txt"
+PREFERRED_NAME = "preferred_candidate_sector_masters.txt"
 
 
 def _sector(target: str) -> int:
@@ -137,16 +138,20 @@ def prepare(args: argparse.Namespace) -> None:
             mandatory_file=MANDATORY_NAME,
             reduce_sectors=[sector],
             top_level_sectors=[sector],
+            preferred_masters_file=PREFERRED_NAME,
             clean=True,
         )
         mandatory = project / MANDATORY_NAME
         mandatory.write_text("\n".join(targets) + "\n", encoding="utf-8", newline="\n")
+        preferred = project / PREFERRED_NAME
+        preferred.write_text("\n".join(targets) + "\n", encoding="utf-8", newline="\n")
         rows.append({
             "sector": sector,
             "target_count": len(targets),
             "targets": targets,
             "project": str(project),
             "mandatory_file": str(mandatory),
+            "preferred_masters_file": str(preferred),
         })
 
     manifest = {
@@ -161,6 +166,7 @@ def prepare(args: argparse.Namespace) -> None:
         "union_target_count": len(union_targets),
         "candidate_master_file": str(candidate_file),
         "candidate_master_count": len(candidate),
+        "basis_selection": "preferred_masters",
         "sector_count": len(groups),
         "sectors": rows,
     }
@@ -173,6 +179,7 @@ def prepare(args: argparse.Namespace) -> None:
     print(f"candidate envelope: {envelope.tag}")
     print(f"test seed: {seed.tag}")
     print(f"candidate masters: {len(candidate)}")
+    print("basis selection: preferred_masters")
     print(f"candidate sectors: {len(groups)}")
     for sector, targets in groups.items():
         print(f"sector {sector}: targets={len(targets)} project={_project(spec.family_id, baseline, seed, sector)}")
