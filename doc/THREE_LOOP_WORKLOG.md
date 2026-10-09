@@ -2489,3 +2489,52 @@ already-covered `r8s5d2` envelope, and feed those additional relations into a
 user-defined / externally prepared linear system (or an equivalent targeted
 rank test).  The old s<=5 system should be treated as already established
 context rather than regenerated.
+
+
+### 2026-10-09 incremental s=6 shell audit implemented
+
+The direct single-candidate Kira reduction still regenerated the same pathological
+sector-197 system, so the next step now avoids Kira entirely at first.
+
+A QEDCalc-side incremental shell enumerator was added to compare two seed
+envelopes and list only integrals newly admitted by the stronger seed.
+
+For the blocked boundary:
+
+```text
+r8s5d2 -> r8s6d2
+```
+
+this isolates the new `s=6` shell while treating the previously established
+`s<=5` domain as existing context.
+
+New files:
+
+```text
+examples/three_loop_master_basis_incremental_shell.py
+run_three_loop_master_basis_incremental_shell.bat
+```
+
+Commits:
+
+```text
+83f34f4fe3955eae7afc028f11880cb6bafe1055
+  Add incremental seed-shell audit
+
+a68e2e5856d0e020c367a3e1d062d6e9d0d61c17
+  Add incremental seed-shell runner
+```
+
+First diagnostic run:
+
+```powershell
+.\run_three_loop_master_basis_incremental_shell.bat VP05_full r8s5d2 r8s6d2 199
+```
+
+This does not launch Kira. It enumerates the new shell for sector 199 and all of
+its subsectors using the same QEDCalc r/s/d complexity convention and writes a
+JSON/TXT audit.
+
+The immediate goal is to measure the actual size and sector distribution of the
+new s=6 shell before designing an external/user-defined rank system.  No further
+large Kira run should be started until this audit is inspected.
