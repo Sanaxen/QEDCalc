@@ -2381,3 +2381,71 @@ Next strategy: avoid generating the full initiate system for the exact-sector-19
 candidate.  Build a direct reducibility test for the single candidate integral,
 using the minimum necessary relation/target context, and use that to determine
 whether it remains independent at the `r8s6d2` envelope.
+
+
+### 2026-10-09 direct single-candidate reducibility probe
+
+After ordering 5 and 6 both stalled in the same exact-sector-199 branch, the
+strategy was changed from "discover the complete local master set" to "directly
+test the one blocking candidate".
+
+The new direct probe:
+
+- identifies the single refined candidate in exact sector 199;
+- selects only that integral as the mandatory reduction target;
+- deliberately excludes that target from `preferred_masters`;
+- keeps only already-known refined candidate masters from proper subsectors of
+  sector 199 as preferred masters;
+- runs an ordinary Kira reduction, so a successful reduction produces an
+  explicit relation rather than merely a master-list membership test.
+
+This changes the question from:
+
+```text
+What is the entire master set of sector 199 at r8s6d2?
+```
+
+to:
+
+```text
+Does this one sector-199 candidate reduce to the already-known lower-sector
+candidate basis at r8s6d2?
+```
+
+New files:
+
+```text
+examples/three_loop_master_basis_candidate_direct_reducibility.py
+run_three_loop_master_basis_candidate_direct_reducibility.bat
+```
+
+Commits:
+
+```text
+2676837f8de310b3c4e87f7b58c55d97f2d13353
+  Add direct single-candidate reducibility probe
+
+5225a400a079a957bde5a0fa252dcc84b34747cd
+  Add direct reducibility runner
+```
+
+First run:
+
+```powershell
+.\run_three_loop_master_basis_candidate_direct_reducibility.bat VP05_full r8s3d0 r8s6d2 199 5
+```
+
+Ordering 5 is retained for the first direct test because it progressed farther
+than the default ordering in the previous initiate-only probe.  The important
+change is not the ordering; it is the removal of the target itself from the
+preferred basis and the restriction of preferred masters to proper subsectors.
+
+Interpretation:
+
+- `conclusion: reducible` means the sector-199 candidate is not a master in
+  this stronger envelope and the 63-master basis needs refinement.
+- `conclusion: retained-master` after a completed reduction means it remains
+  independent in this direct proper-subsector context.
+- if equation generation still reaches the same paging-dominated sector-197
+  bottleneck, this approach is insufficient and the next step must be shell /
+  user-defined-system generation rather than another long Kira run.
