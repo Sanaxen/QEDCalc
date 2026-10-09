@@ -20,6 +20,7 @@ import sympy as sp
 from qedcalc.operations.ibp import (
     IntegralIndex,
     bounded_seed_domain,
+    compile_ibp_templates,
     generate_ibp_system,
     laporta_forward_eliminate,
     prune_zero_sectors,
@@ -87,21 +88,32 @@ def main() -> None:
     protected = {_idx(x) for x in candidate if x != target_text}
     seeds = bounded_seed_domain(target, max_extra_degree=args.degree)
 
+    print(f"[native-ibp] build family: {spec.family_id}", flush=True)
     family = build_native_ibp_family(spec.family_id)
-    equations = generate_ibp_system(family, seeds)
+    print(f"[native-ibp] compile templates: loops={len(family.loop_momenta)} vectors={len(family.loop_momenta) + len(family.external_momenta)}", flush=True)
+    templates = compile_ibp_templates(family)
+    print(f"[native-ibp] templates ready: {len(templates)}", flush=True)
+    print(f"[native-ibp] seed count: {len(seeds)}", flush=True)
+    print("[native-ibp] generate equations...", flush=True)
+    equations = generate_ibp_system(family, seeds, templates=templates)
+    print(f"[native-ibp] raw equations: {len(equations)}", flush=True)
     equations = prune_zero_sectors(family, equations)
     all_integrals = {i for eq in equations for i in eq.terms}
+    print(f"[native-ibp] after zero-sector prune: equations={len(equations)} integrals={len(all_integrals)}", flush=True)
 
     rows = []
     all_reducible_to_protected = True
     for n, point in enumerate(_probe_points(), start=1):
+        print(f"[native-ibp] probe {n}: specialize...", flush=True)
         peqs = specialize_ibp_system(equations, point)
+        print(f"[native-ibp] probe {n}: eliminate {len(peqs)} equations...", flush=True)
         rules = laporta_forward_eliminate(
             peqs,
             family=None,
             protected=protected,
             prune_scaleless=False,
         )
+        print(f"[native-ibp] probe {n}: rules={len(rules)}", flush=True)
         solved = {r.lhs for r in rules}
         target_solved = target in solved
         reduced = reduce_integral(target, rules)
