@@ -2717,3 +2717,54 @@ Start conservatively with degree 3:
 Do not jump directly to degree 6.  Inspect seed/equation/integral counts and
 target status first, then raise the degree only as justified by the observed
 growth.
+
+
+### 2026-10-10 native IBP degree-3 probe was CPU-bound for >11 hours
+
+The first native-QEDCalc IBP probe at degree 3 was observed after more than
+11 hours with no console progress.
+
+Windows process state showed:
+
+```text
+python.exe still running
+CPU time: ~11h42m
+threads: 1
+private memory: ~2.2 GB
+overall CPU: <1% to a few percent on a many-core machine
+```
+
+This indicates a live but effectively single-threaded symbolic bottleneck, not
+paging/thrashing.
+
+Code inspection found a major avoidable cost in
+`qedcalc.operations.ibp.generate_ibp_system`: the reduced directional
+derivative `v.dD_a/dk`, which is independent of the seed integral powers, was
+being recomputed by SymPy for every seed.
+
+For degree 3 around the five-line target, the bounded seed domain contains about
+455 seeds.  Repeating the same denominator/loop/vector symbolic derivative work
+hundreds of times is therefore unnecessarily expensive.
+
+Optimization implemented:
+
+- add `IBPTemplate`;
+- compile all seed-independent reduced directional derivatives once per family;
+- generate each seed's IBP rows by inexpensive index shifts from those templates;
+- avoid full simplify/factor during row generation;
+- add visible progress messages for family construction, template compilation,
+  seed count, equation generation, pruning, and each generic-point elimination.
+
+Commits:
+
+```text
+e438747525253607e065e2460b60d208748a46e3
+  Compile IBP derivative templates once per family
+
+5ae45b76440e9de5f6eb99cee38525eee930fe43
+  Show native IBP probe progress
+```
+
+The old >11-hour process should be stopped.  After pulling these changes, rerun
+the same degree-3 probe.  The new progress output will identify whether the next
+bottleneck is template compilation or sparse elimination.
