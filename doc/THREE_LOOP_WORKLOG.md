@@ -2296,3 +2296,50 @@ subsectors of the declared top-level sector are preferred over outside sectors
 with the same number of lines.
 
 Do not resume the full 26-project run until this probe is evaluated.
+
+
+### 2026-10-09 sector-199 ordering-5 probe still thrashes
+
+The targeted probe for the pathological `r8s6d2`, exact-sector-199 project was
+run with Kira integral ordering 5.
+
+Compared with the default ordering, it progressed further inside the problematic
+recursive branch:
+
+```text
+default-like run: sector 197 (4 of 12)
+ordering 5 probe: sector 197 (7 of 12)
+```
+
+However the ordering-5 probe then remained at sector 197 for roughly two hours.
+
+Observed resource state:
+
+```text
+WSL memory: ~29.1 / 30 GB
+swap: ~100 GB and rising/plateaued at very high usage
+CPU: ~1.4%, peak ~7.2%
+```
+
+Conclusion:
+
+- ordering 5 improves equation-generation progress, so integral ordering does
+  matter for this pathological branch;
+- nevertheless it still becomes paging dominated and is not acceptable as the
+  production proof path;
+- stop the ordering-5 probe rather than consuming more swap.
+
+Next targeted experiment: rerun only the same exact-sector-199 project with
+integral ordering 6.  Orderings 5 and 6 share the line-count/top-level-sector
+sector ordering, while changing the dot-vs-irreducible-scalar-product
+complexity preference.  Since preferred masters are already pinned, this is
+being tested as an equation-generation/performance optimization, not as a
+change to the intended candidate basis.
+
+Command after stopping ordering 5:
+
+```powershell
+.\run_three_loop_master_basis_candidate_sector_probe.bat VP05_full r8s3d0 r8s6d2 199 6
+```
+
+Do not resume the full 26-project run yet.
