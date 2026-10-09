@@ -14,7 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from three_loop.master_basis_api import parse_integral
+from three_loop.master_basis_api import integral_complexity, parse_integral
 from examples.three_loop_master_basis_candidate_closure import (
     AUDIT_DIR,
     _parse_seed,
@@ -70,6 +70,13 @@ def main() -> None:
         )
     target = targets[0]
     _, target_idx = parse_integral(target)
+    target_complexity = integral_complexity(target_idx)
+
+    # For an s-only boundary extension (e.g. r8s5d2 -> r8s6d2), any newly
+    # admitted integral must increase total numerator degree by at least
+    # to_seed.s - target.s.  Since L1 index distance counts each added negative
+    # power, this is a rigorous lower bound on candidate-to-shell distance.
+    min_l1_from_s = max(0, args.to_seed.s - target_complexity.s)
 
     rows = []
     total_shell = 0
@@ -113,6 +120,13 @@ def main() -> None:
         "sector": args.sector,
         "radius": args.radius,
         "target": target,
+        "target_complexity": {
+            "r": target_complexity.r,
+            "s": target_complexity.s,
+            "d": target_complexity.d,
+        },
+        "minimum_l1_distance_from_s": min_l1_from_s,
+        "radius_below_s_lower_bound": args.radius < min_l1_from_s,
         "subsector_shell_integral_count": total_shell,
         "nearby_incremental_integral_count": total_near,
         "rows": rows,
@@ -128,6 +142,9 @@ def main() -> None:
         f"sector: {args.sector}",
         f"radius: {args.radius}",
         f"target: {target}",
+        f"target complexity: {target_complexity.tag}",
+        f"minimum L1 distance from s-bound: {min_l1_from_s}",
+        f"radius below s-bound: {args.radius < min_l1_from_s}",
         f"subsector shell integrals total: {total_shell}",
         f"nearby incremental integrals: {total_near}",
     ]
