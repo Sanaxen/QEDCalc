@@ -2343,3 +2343,41 @@ Command after stopping ordering 5:
 ```
 
 Do not resume the full 26-project run yet.
+
+
+### 2026-10-09 sector-199 ordering-6 probe also stalls
+
+The same targeted exact-sector-199 probe was repeated with Kira integral
+ordering 6 after ordering 5 had stalled.
+
+Observed:
+
+```text
+Generate equations for topology VP05_full, sector 197 (7 of 12)
+```
+
+remained unchanged for more than one hour.
+
+Resource state was again paging dominated:
+
+```text
+WSL memory: ~29.2 / 30 GB
+swap: ~100 GB
+CPU: ~3%, low overall utilization
+```
+
+This is essentially the same failure mode as ordering 5.  The probe was stopped.
+
+Conclusion:
+
+- changing only the Kira integral ordering is insufficient;
+- orderings 5 and 6 both reach sector 197 (7 of 12) and then become
+  memory/swap dominated;
+- do not continue with long unattended runs or simply consume more swap;
+- do not spend time brute-forcing orderings 7/8 unless later evidence suggests
+  a specific reason.
+
+Next strategy: avoid generating the full initiate system for the exact-sector-199
+candidate.  Build a direct reducibility test for the single candidate integral,
+using the minimum necessary relation/target context, and use that to determine
+whether it remains independent at the `r8s6d2` envelope.
