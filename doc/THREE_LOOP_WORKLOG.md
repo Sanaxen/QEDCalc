@@ -2594,3 +2594,53 @@ First run:
 The purpose is to determine whether the 45,144 new integrals in sectors
 197+199, and the 868,824-shell total, collapse to a small candidate-centered set
 that is practical for an exact targeted IBP relation generator.
+
+
+### 2026-10-09 candidate-neighborhood radius-2 audit was below the s-shell lower bound
+
+The first candidate-centered shell audit returned:
+
+```text
+target: VP05_full[1,1,1,0,0,0,1,1,0,0,0,0]
+radius: 2
+nearby incremental integrals: 0
+```
+
+This zero result is expected and does not imply that the new shell is
+disconnected from the candidate.
+
+The target has complexity:
+
+```text
+r5s0d0
+```
+
+while the stronger boundary differs from the already-covered domain only by:
+
+```text
+s <= 5  ->  s <= 6
+```
+
+Therefore every newly admitted integral has total negative-index degree
+`s=6`, so its L1 index distance from an `s=0` candidate is at least 6.
+A radius-2 search was below this rigorous lower bound.
+
+The neighborhood audit was updated to print the candidate complexity and the
+minimum L1 distance implied by the s-bound.
+
+Commit:
+
+```text
+a9dad27bc3a8469ef6ba57f8eca87b70f69c42fb
+  Report minimum candidate-to-shell distance
+```
+
+The next meaningful diagnostic is radius 6:
+
+```powershell
+.\run_three_loop_master_basis_candidate_neighborhood.bat VP05_full r8s3d0 r8s5d2 r8s6d2 199 6
+```
+
+Radius 6 isolates the shortest possible newly admitted s=6 shell around the
+sector-199 candidate.  This should be inspected before implementing any exact
+targeted IBP generator.
