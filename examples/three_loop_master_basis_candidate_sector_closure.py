@@ -112,6 +112,29 @@ def _context(args: argparse.Namespace):
     )
 
 
+def _reusable_project(project: Path, family_id: str, targets: list[str]) -> tuple[bool, str]:
+    """Reuse a completed exact-sector initiate-only result safely."""
+    mandatory = project / MANDATORY_NAME
+    preferred = project / PREFERRED_NAME
+    if not mandatory.exists() or not preferred.exists():
+        return False, "mandatory/preferred input copy missing"
+    try:
+        if _read_integrals(mandatory, family_id) != targets:
+            return False, "mandatory target copy differs"
+        if _read_integrals(preferred, family_id) != targets:
+            return False, "preferred master copy differs"
+        masters_path, masters, source_mode = find_or_infer_masters(
+            project,
+            family_id,
+            mandatory_targets=targets,
+        )
+    except Exception as exc:
+        return False, f"master result unavailable: {exc}"
+    if not masters:
+        return False, "master list is empty"
+    return True, f"{len(masters)} masters via {source_mode} from {masters_path}"
+
+
 def prepare(args: argparse.Namespace) -> None:
     (
         spec,
@@ -130,21 +153,29 @@ def prepare(args: argparse.Namespace) -> None:
     rows = []
     for sector, targets in groups.items():
         project = _project(spec.family_id, baseline, seed, sector)
-        export_kira_project(
-            spec,
-            project,
-            seed=seed,
-            solver="masters",
-            mandatory_file=MANDATORY_NAME,
-            reduce_sectors=[sector],
-            top_level_sectors=[sector],
-            preferred_masters_file=PREFERRED_NAME,
-            clean=True,
-        )
-        mandatory = project / MANDATORY_NAME
-        mandatory.write_text("\n".join(targets) + "\n", encoding="utf-8", newline="\n")
-        preferred = project / PREFERRED_NAME
-        preferred.write_text("\n".join(targets) + "\n", encoding="utf-8", newline="\n")
+        reusable, reuse_note = _reusable_project(
+            project, spec.family_id, targets
+        ) if project.exists() else (False, "project missing")
+        if not reusable:
+            export_kira_project(
+                spec,
+                project,
+                seed=seed,
+                solver="masters",
+                mandatory_file=MANDATORY_NAME,
+                reduce_sectors=[sector],
+                top_level_sectors=[sector],
+                preferred_masters_file=PREFERRED_NAME,
+                clean=True,
+            )
+            mandatory = project / MANDATORY_NAME
+            mandatory.write_text("\n".join(targets) + "\n", encoding="utf-8", newline="\n")
+            preferred = project / PREFERRED_NAME
+            preferred.write_text("\n".join(targets) + "\n", encoding="utf-8", newline="\n")
+        else:
+            mandatory = project / MANDATORY_NAME
+            preferred = project / PREFERRED_NAME
+            print(f"REUSE sector {sector}: {reuse_note}", flush=True)
         rows.append({
             "sector": sector,
             "target_count": len(targets),
@@ -152,6 +183,8 @@ def prepare(args: argparse.Namespace) -> None:
             "project": str(project),
             "mandatory_file": str(mandatory),
             "preferred_masters_file": str(preferred),
+            "reused_master_result": reusable,
+            "reuse_note": reuse_note,
         })
 
     manifest = {
@@ -189,8 +222,12 @@ def prepare(args: argparse.Namespace) -> None:
 
 def print_projects(args: argparse.Namespace) -> None:
     spec, baseline, _, _, _, _, _, candidate, seed = _context(args)
-    for sector in _groups(candidate):
-        print(_project(spec.family_id, baseline, seed, sector))
+    for sector, targets in _groups(candidate).items():
+        project = _project(spec.family_id, baseline, seed, sector)
+        reusable, _ = _reusable_project(project, spec.family_id, targets) if project.exists() else (False, "")
+        if reusable:
+            continue
+        print(project)
 
 
 def finalize(args: argparse.Namespace) -> None:
