@@ -2190,3 +2190,44 @@ grew to roughly 130 GB while sector 204 remained stalled for hours.
 Conclusion: the preferred-masters sector-local decomposition is not only
 validated against the known 63/63 master result, but also removes the severe
 paging/thrashing behavior on the current machine.
+
+
+### 2026-10-09 r8s6d2 sector-local run hits a new pathological branch
+
+After validating the preferred-masters sector-local method on `r9s5d2`, the
+same method was applied to `r8s6d2`.
+
+The run progressed through the first ten local projects but stalled in:
+
+```text
+[11/26] Kira project
+Generate equations for topology VP05_full, sector 197 (4 of 12)
+```
+
+with no visible progress for about one hour.
+
+Observed resource state:
+
+```text
+WSL memory: ~29.2 GB / 30 GB
+swap: ~94.6 GB / 200 GB and rising
+CPU: low
+```
+
+The memory graph remained pinned near the physical limit while swap grew
+monotonically, unlike the successful `r9s5d2` validation where swap peaked at
+only ~7 GB and was released between projects.
+
+Conclusion:
+
+- preferred-masters sector-local decomposition is valid and efficient for
+  `r9s5d2`;
+- `r8s6d2` still contains an intrinsically pathological local branch;
+- the current blocking point is inside the 11th local project, where Kira is
+  generating sector 197 as part of a 12-sector recursive system;
+- continuing by consuming more swap is not acceptable;
+- the next optimization must target this individual local project/recursive
+  branch rather than reverting to larger closure runs.
+
+The run should be stopped at this point. Completed earlier local projects should
+be preserved and reused; do not recompute them unnecessarily.
