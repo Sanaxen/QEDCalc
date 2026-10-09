@@ -222,12 +222,14 @@ def prepare(args: argparse.Namespace) -> None:
 
 def print_projects(args: argparse.Namespace) -> None:
     spec, baseline, _, _, _, _, _, candidate, seed = _context(args)
-    for sector, targets in _groups(candidate).items():
+    groups = list(_groups(candidate).items())
+    total = len(groups)
+    for index, (sector, targets) in enumerate(groups, start=1):
         project = _project(spec.family_id, baseline, seed, sector)
         reusable, _ = _reusable_project(project, spec.family_id, targets) if project.exists() else (False, "")
         if reusable:
             continue
-        print(project)
+        print(f"{index}|{total}|{project}")
 
 
 def finalize(args: argparse.Namespace) -> None:
