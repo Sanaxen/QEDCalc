@@ -2449,3 +2449,43 @@ Interpretation:
 - if equation generation still reaches the same paging-dominated sector-197
   bottleneck, this approach is insufficient and the next step must be shell /
   user-defined-system generation rather than another long Kira run.
+
+
+### 2026-10-09 direct single-candidate reduction still reaches sector-197 bottleneck
+
+The direct reducibility probe for the single exact-sector-199 candidate was run
+at `r8s6d2` with ordering 5.
+
+Despite selecting only one mandatory target and excluding that target from
+`preferred_masters`, Kira again entered the same recursive equation-generation
+branch:
+
+```text
+Generate equations for topology VP05_full, sector 197 (7 of 12)
+```
+
+Resource state at the observation point:
+
+```text
+WSL memory: ~29.3 / 30 GB
+swap: ~75 GB and rising
+CPU: ~3%
+```
+
+This shows that the bottleneck is not caused primarily by the number of mandatory
+targets or by preferred-master basis selection.  It is inside Kira's ordinary
+IBP/equation generation for the r8s6d2 sector-199 -> sector-197 branch itself.
+
+Conclusion:
+
+- stop the direct Kira reduction probe;
+- do not continue trying ordinary Kira initiate/reduction variants for this
+  branch;
+- the next implementation must avoid regenerating the full recursive sector-197
+  system.
+
+Next direction: generate only the incremental `s=6` shell relative to the
+already-covered `r8s5d2` envelope, and feed those additional relations into a
+user-defined / externally prepared linear system (or an equivalent targeted
+rank test).  The old s<=5 system should be treated as already established
+context rather than regenerated.
