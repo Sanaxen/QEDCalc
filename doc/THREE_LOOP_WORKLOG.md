@@ -2231,3 +2231,68 @@ Conclusion:
 
 The run should be stopped at this point. Completed earlier local projects should
 be preserved and reused; do not recompute them unnecessarily.
+
+
+### 2026-10-09 resume support and single-sector ordering probe
+
+After stopping the `r8s6d2` sector-local run at project 11/26, the workflow was
+hardened so completed local projects are preserved.
+
+Resume behavior:
+
+- completed exact-sector projects are detected by matching both the mandatory
+  target file and preferred-master file and by finding a usable master result;
+- reusable projects are not regenerated or cleaned;
+- only incomplete projects are printed to the BAT runner;
+- displayed progress keeps the original global index, e.g. the resumed run
+  continues at `[11/26]` rather than `[1/16]`.
+
+Implementation commits:
+
+```text
+41f4b814befb24395c46e2db94aa458b3c8eb063
+  Resume sector-local closure from completed projects
+
+5fae228d6123985a13143426cfc6483f73a0f69e
+  Preserve global sector progress indices on resume
+
+011cc9a3e6c8cf4a20cdff448f115649a8333882
+  Show global sector index when resuming local closure
+```
+
+The blocking project is exact sector 199; during its recursive equation
+generation Kira stalls in subsector 197 at the `r8s6d2` envelope.
+
+Because this local project already contains only one candidate target, further
+target splitting is impossible.  The next optimization axis is Kira integral
+ordering.  Kira provides eight predefined orderings and explicitly recommends
+testing different orderings because runtime and memory can vary strongly.
+
+A single-sector probe runner was added:
+
+```text
+run_three_loop_master_basis_candidate_sector_probe.bat
+```
+
+Commit:
+
+```text
+0f8b2cfa4f4abfa45606bab1959b313aaa4c9d0c
+  Add single-sector Kira ordering probe
+```
+
+First probe:
+
+```powershell
+.\run_three_loop_master_basis_candidate_sector_probe.bat VP05_full r8s3d0 r8s6d2 199 5
+```
+
+This cleans and reruns only the failed sector-199 project's runtime outputs.
+All already-completed sector-local projects remain untouched.
+
+Ordering 5 is chosen first because it retains the scalar-product-vs-dot
+preference of the default ordering 1 while changing sector ordering so
+subsectors of the declared top-level sector are preferred over outside sectors
+with the same number of lines.
+
+Do not resume the full 26-project run until this probe is evaluated.
