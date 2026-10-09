@@ -191,16 +191,92 @@ def generate_ibp_equation(family: IntegralFamily, index: IntegralIndex | Sequenc
     return IBPEquation(terms, f"d/d{derivative_loop} · {vector}").simplified()
 
 
-def generate_ibp_system(family: IntegralFamily, seeds: Iterable[IntegralIndex | Sequence[int]],
-                        vectors: Sequence[str] | None = None) -> tuple[IBPEquation, ...]:
-    """Generate all requested loop-derivative/vector IBPs for a seed set."""
+@dataclass(frozen=True)
+class IBPTemplate:
+    """Seed-independent compiled data for one loop-derivative/vector IBP."""
+
+    derivative_loop: str
+    vector: str
+    divergence: sp.Expr
+    denominator_terms: tuple[tuple[tuple[sp.Expr, tuple[int, ...]], ...], ...]
+
+
+def compile_ibp_templates(
+    family: IntegralFamily,
+    vectors: Sequence[str] | None = None,
+) -> tuple[IBPTemplate, ...]:
+    """Precompute all expensive directional-derivative reductions once.
+
+    The reduced polynomial v.dD_a/dk is independent of the integral powers.
+    Recomputing it for every seed is extremely expensive in SymPy, so compile
+    it once for each (derivative loop, vector, denominator) triple.
+    """
     if vectors is None:
         vectors = family.loop_momenta + family.external_momenta
+    dsymbols = family.denominator_symbols
+    templates = []
+    for loop in family.loop_momenta:
+        for vector in vectors:
+            denominator_terms = []
+            for a in range(family.size):
+                deriv = reduce_directional_derivative(family, a, loop, vector)
+                denominator_terms.append(
+                    tuple(_linear_denominator_polynomial(deriv, dsymbols))
+                )
+            templates.append(
+                IBPTemplate(
+                    derivative_loop=loop,
+                    vector=vector,
+                    divergence=family.dimension_symbol if vector == loop else sp.Integer(0),
+                    denominator_terms=tuple(denominator_terms),
+                )
+            )
+    return tuple(templates)
+
+
+def generate_ibp_equation_from_template(
+    family: IntegralFamily,
+    index: IntegralIndex | Sequence[int],
+    template: IBPTemplate,
+) -> IBPEquation:
+    """Generate one IBP row from precompiled seed-independent derivative data."""
+    idx = family.validate_index(index)
+    terms: dict[IntegralIndex, sp.Expr] = {}
+    if template.divergence != 0:
+        terms[idx] = template.divergence
+
+    for a, n_a in enumerate(idx.powers):
+        if n_a == 0:
+            continue
+        for coeff, monom in template.denominator_terms[a]:
+            shifts = {a: 1}
+            for j, power in enumerate(monom):
+                if power:
+                    shifts[j] = shifts.get(j, 0) - power
+            target = idx.shifted(shifts)
+            terms[target] = terms.get(target, 0) - sp.Integer(n_a) * coeff
+
+    # Avoid full simplify/factor on every coefficient at generation time.
+    # Coefficients are normalized later by specialize/elimination.
+    return IBPEquation(
+        {i: sp.expand(coeff) for i, coeff in terms.items() if coeff != 0},
+        f"d/d{template.derivative_loop} · {template.vector}",
+    )
+
+
+def generate_ibp_system(
+    family: IntegralFamily,
+    seeds: Iterable[IntegralIndex | Sequence[int]],
+    vectors: Sequence[str] | None = None,
+    *,
+    templates: Sequence[IBPTemplate] | None = None,
+) -> tuple[IBPEquation, ...]:
+    """Generate IBPs using seed-independent compiled derivative templates."""
+    compiled = tuple(templates) if templates is not None else compile_ibp_templates(family, vectors)
     equations = []
     for seed in seeds:
-        for loop in family.loop_momenta:
-            for vector in vectors:
-                equations.append(generate_ibp_equation(family, seed, loop, vector))
+        for template in compiled:
+            equations.append(generate_ibp_equation_from_template(family, seed, template))
     return tuple(equations)
 
 
