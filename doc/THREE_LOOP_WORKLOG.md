@@ -2538,3 +2538,59 @@ JSON/TXT audit.
 The immediate goal is to measure the actual size and sector distribution of the
 new s=6 shell before designing an external/user-defined rank system.  No further
 large Kira run should be started until this audit is inspected.
+
+
+### 2026-10-09 candidate-centered incremental-shell audit
+
+The first incremental-shell audit showed that the full `r8s5d2 -> r8s6d2`
+difference under top sector 199 is still very large:
+
+```text
+sectors with new integrals: 31
+new integrals total: 868824
+sector 197: 25740
+sector 199: 19404
+```
+
+Thus simply externalizing the whole new `s=6` shell would still create an
+unnecessarily large system.
+
+The next diagnostic narrows this shell around the single exact-sector-199
+candidate in 12-dimensional propagator-index space.  It reports only new-shell
+integrals within a chosen L1 distance of the candidate.
+
+Radius interpretation:
+
+```text
+radius 1: single-index shifts
+radius 2: also includes +e_i-e_j style two-index shifts
+```
+
+This is only a sizing/graph-neighborhood diagnostic, not yet an IBP proof.
+
+New files:
+
+```text
+examples/three_loop_master_basis_candidate_neighborhood.py
+run_three_loop_master_basis_candidate_neighborhood.bat
+```
+
+Commits:
+
+```text
+a0785b9f6b6d5a789620c5e7faf532d0b2ab2303
+  Add candidate-centered shell neighborhood audit
+
+c77a49d4e0e364c27572fe9c7e2ea2bb8dde0e85
+  Add candidate neighborhood audit runner
+```
+
+First run:
+
+```powershell
+.\run_three_loop_master_basis_candidate_neighborhood.bat VP05_full r8s3d0 r8s5d2 r8s6d2 199 2
+```
+
+The purpose is to determine whether the 45,144 new integrals in sectors
+197+199, and the 868,824-shell total, collapse to a small candidate-centered set
+that is practical for an exact targeted IBP relation generator.
