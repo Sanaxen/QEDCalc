@@ -2644,3 +2644,76 @@ The next meaningful diagnostic is radius 6:
 Radius 6 isolates the shortest possible newly admitted s=6 shell around the
 sector-199 candidate.  This should be inspected before implementing any exact
 targeted IBP generator.
+
+
+### 2026-10-09 native-QEDCalc IBP candidate probe
+
+The radius-6 candidate-centered shell audit reduced the new `s=6` domain from
+868,824 integrals to:
+
+```text
+924 nearby incremental integrals
+all in exact sector 199
+```
+
+Rather than feeding those 924 directly to Kira, the existing native QEDCalc IBP
+engine is now reused.
+
+Relevant existing functionality in `qedcalc.operations.ibp`:
+
+```text
+generate_ibp_system
+bounded_seed_domain
+specialize_ibp_system
+laporta_forward_eliminate
+reduce_integral
+```
+
+A generic bridge from canonical three-loop `FamilySpec` objects to QEDCalc's
+native `IntegralFamily` representation was added, including exact reconstruction
+of the complete scalar-product basis from the 12 Kira propagators.
+
+New files:
+
+```text
+three_loop/native_ibp_family.py
+examples/three_loop_master_basis_candidate_native_ibp_probe.py
+run_three_loop_master_basis_candidate_native_ibp_probe.bat
+```
+
+Commits:
+
+```text
+64e866babf4ee7691014405fe06dd2243d14fb9a
+  Add generic native IBP bridge for three-loop families
+
+4838de93a550a7c6e8f2fee3ef46efb8ab453975
+  Add native IBP candidate reducibility probe
+
+61bfd5cd600eb4251fceead85de6b51a6eb620ed
+  Add native IBP candidate probe runner
+```
+
+Probe logic:
+
+- target: the single refined candidate in exact sector 199;
+- the other 62 refined candidates are protected from elimination;
+- generate a bounded native-IBP neighborhood around the target;
+- specialize coefficients at two independent exact-rational generic points;
+- perform sparse forward Laporta elimination;
+- recursively reduce the target;
+- call it a positive reducibility witness only if the target reduces entirely to
+  protected refined candidates at both probe points.
+
+An unsolved target is explicitly treated as inconclusive, not as proof that the
+target is a master.
+
+Start conservatively with degree 3:
+
+```powershell
+.\run_three_loop_master_basis_candidate_native_ibp_probe.bat VP05_full r8s3d0 199 3
+```
+
+Do not jump directly to degree 6.  Inspect seed/equation/integral counts and
+target status first, then raise the degree only as justified by the observed
+growth.
