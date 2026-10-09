@@ -2468,7 +2468,7 @@ Resource state at the observation point:
 
 ```text
 WSL memory: ~29.3 / 30 GB
-swap: ~75 GB and rising
+swap: >100 GB
 CPU: ~3%
 ```
 
