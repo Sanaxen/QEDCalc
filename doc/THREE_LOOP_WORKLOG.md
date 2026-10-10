@@ -2768,3 +2768,44 @@ e438747525253607e065e2460b60d208748a46e3
 The old >11-hour process should be stopped.  After pulling these changes, rerun
 the same degree-3 probe.  The new progress output will identify whether the next
 bottleneck is template compilation or sparse elimination.
+
+
+### 2026-10-10 native IBP elimination bottleneck moved to sparse Laporta
+
+After derivative-template compilation, the degree-3 native probe progressed to:
+
+```text
+[native-ibp] probe 1: eliminate 6825 equations...
+```
+
+and then became effectively single-core CPU bound.  This confirmed that the
+dominant cost had moved from IBP equation generation to symbolic sparse Laporta
+elimination.
+
+Two optimizations were implemented:
+
+1. Numeric rational coefficients now bypass `sympy.cancel()` in the generic
+   sparse path.
+2. A dedicated finite-field sparse Laporta backend was added for generic-rank /
+   reducibility diagnostics.  Each rational probe is mapped to a large prime
+   field and eliminated with Python integer modular arithmetic.
+
+The native candidate probe now uses two independent rational probe points and
+two large primes.  A positive result is treated as a finite-field generic-rank
+reducibility witness, not yet as a symbolic coefficient identity.
+
+Commits:
+
+```text
+72534c7bc06734440000475a81c5ab67dccceda5
+  Avoid symbolic cancellation for numeric IBP probes
+
+7dd1495fbcbff256c7e723ba319e778724df02c0
+  Add finite-field sparse IBP elimination
+
+904f800e479f528aaa6b50db6162ca78290111d1
+  Use finite-field elimination in native IBP probe
+```
+
+The previous symbolic elimination run should be stopped and the same degree-3
+probe rerun after pulling these changes.
