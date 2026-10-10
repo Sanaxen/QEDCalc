@@ -485,13 +485,17 @@ def laporta_forward_eliminate_mod_prime(
     rows: Sequence[Mapping[IntegralIndex, int]],
     prime: int,
     *,
-    rank=sector_rank,
+    rank=None,
     protected: Iterable[IntegralIndex | Sequence[int]] = (),
 ) -> dict[IntegralIndex, dict[IntegralIndex, int]]:
     """Sparse forward Laporta elimination over F_p.
 
     This is intended for fast generic-rank / reducibility diagnostics.
     """
+    if rank is None:
+        # sector_rank is defined later in this module; resolve it at call time
+        # rather than at function-definition/import time.
+        rank = sector_rank
     protected_set = {
         p if isinstance(p, IntegralIndex) else IntegralIndex(p)
         for p in protected
