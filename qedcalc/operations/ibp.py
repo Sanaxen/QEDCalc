@@ -481,6 +481,45 @@ def specialize_ibp_system_mod_prime(
     return tuple(rows)
 
 
+def connected_rows_for_targets(
+    rows: Sequence[Mapping[IntegralIndex, int]],
+    targets: Iterable[IntegralIndex | Sequence[int]],
+) -> tuple[dict[IntegralIndex, int], ...]:
+    """Keep only rows in the integral-equation connected component of targets.
+
+    Build the bipartite graph (integrals <-> equations) implicitly and flood
+    from the requested targets.  Rows disconnected from the target can never
+    participate in a reduction witness for that target and are safely omitted
+    from the finite diagnostic elimination.
+    """
+    target_set = {
+        t if isinstance(t, IntegralIndex) else IntegralIndex(t)
+        for t in targets
+    }
+    work = [dict(r) for r in rows if r]
+    by_integral: dict[IntegralIndex, list[int]] = {}
+    for ridx, row in enumerate(work):
+        for integral in row:
+            by_integral.setdefault(integral, []).append(ridx)
+
+    seen_integrals = set(target_set)
+    seen_rows: set[int] = set()
+    frontier = list(target_set)
+
+    while frontier:
+        integral = frontier.pop()
+        for ridx in by_integral.get(integral, ()):
+            if ridx in seen_rows:
+                continue
+            seen_rows.add(ridx)
+            for other in work[ridx]:
+                if other not in seen_integrals:
+                    seen_integrals.add(other)
+                    frontier.append(other)
+
+    return tuple(work[i] for i in sorted(seen_rows))
+
+
 def laporta_forward_eliminate_mod_prime(
     rows: Sequence[Mapping[IntegralIndex, int]],
     prime: int,
