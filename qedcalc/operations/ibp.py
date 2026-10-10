@@ -448,6 +448,120 @@ def laporta_forward_eliminate(equations: Sequence[IBPEquation], rank=None,
     return tuple(sorted(rules, key=lambda r: rank(r.lhs), reverse=True))
 
 
+def _rational_to_mod(value: sp.Expr, prime: int) -> int:
+    """Map an exact rational coefficient to F_p."""
+    value = sp.cancel(sp.sympify(value))
+    num, den = sp.fraction(value)
+    if num.free_symbols or den.free_symbols:
+        raise ValueError(f"coefficient is not numeric after specialization: {value}")
+    n = int(num) % prime
+    d = int(den) % prime
+    if d == 0:
+        raise ZeroDivisionError(f"denominator vanished modulo prime {prime}: {value}")
+    return (n * pow(d, -1, prime)) % prime
+
+
+def specialize_ibp_system_mod_prime(
+    equations: Sequence[IBPEquation],
+    substitutions: Mapping[sp.Symbol, sp.Expr],
+    prime: int,
+) -> tuple[dict[IntegralIndex, int], ...]:
+    """Specialize sparse IBP rows to an exact rational point and map to F_p."""
+    subs = {sp.sympify(k): sp.sympify(v) for k, v in substitutions.items()}
+    rows = []
+    for eq in equations:
+        row: dict[IntegralIndex, int] = {}
+        for idx, coeff in eq.terms.items():
+            value = sp.sympify(coeff).subs(subs)
+            mod = _rational_to_mod(value, prime)
+            if mod:
+                row[idx] = mod
+        if row:
+            rows.append(row)
+    return tuple(rows)
+
+
+def laporta_forward_eliminate_mod_prime(
+    rows: Sequence[Mapping[IntegralIndex, int]],
+    prime: int,
+    *,
+    rank=sector_rank,
+    protected: Iterable[IntegralIndex | Sequence[int]] = (),
+) -> dict[IntegralIndex, dict[IntegralIndex, int]]:
+    """Sparse forward Laporta elimination over F_p.
+
+    This is intended for fast generic-rank / reducibility diagnostics.
+    """
+    protected_set = {
+        p if isinstance(p, IntegralIndex) else IntegralIndex(p)
+        for p in protected
+    }
+    work = [dict(r) for r in rows if r]
+    work.sort(
+        key=lambda row: max((rank(i) for i in row), default=(-1,)),
+        reverse=True,
+    )
+    rule_map: dict[IntegralIndex, dict[IntegralIndex, int]] = {}
+
+    for row in work:
+        while True:
+            solved = [i for i in row if i in rule_map]
+            if not solved:
+                break
+            lhs = max(solved, key=rank)
+            fac = row.pop(lhs) % prime
+            if fac == 0:
+                continue
+            for idx, coeff in rule_map[lhs].items():
+                val = (row.get(idx, 0) + fac * coeff) % prime
+                if val:
+                    row[idx] = val
+                else:
+                    row.pop(idx, None)
+
+        candidates = [i for i in row if i not in protected_set]
+        if not candidates:
+            continue
+        pivot = max(candidates, key=rank)
+        c = row.pop(pivot) % prime
+        if c == 0:
+            continue
+        inv = pow(c, -1, prime)
+        rhs = {
+            idx: (-coeff * inv) % prime
+            for idx, coeff in row.items()
+            if coeff % prime
+        }
+        rule_map[pivot] = rhs
+
+    return rule_map
+
+
+def reduce_integral_mod_prime(
+    index: IntegralIndex | Sequence[int],
+    rule_map: Mapping[IntegralIndex, Mapping[IntegralIndex, int]],
+    prime: int,
+) -> dict[IntegralIndex, int]:
+    """Recursively reduce one integral through triangular F_p rules."""
+    start = index if isinstance(index, IntegralIndex) else IntegralIndex(index)
+
+    @lru_cache(maxsize=None)
+    def rec(i: IntegralIndex):
+        if i not in rule_map:
+            return {i: 1}
+        out: dict[IntegralIndex, int] = {}
+        for j, coeff in rule_map[i].items():
+            for k, val in rec(j).items():
+                nv = (out.get(k, 0) + coeff * val) % prime
+                if nv:
+                    out[k] = nv
+                else:
+                    out.pop(k, None)
+        return out
+
+    return rec(start)
+
+
 def master_candidates(equations: Sequence[IBPEquation], rules: Sequence[ReductionRule],
                       family: IntegralFamily | None = None,
                       prune_scaleless: bool = True) -> tuple[IntegralIndex, ...]:
