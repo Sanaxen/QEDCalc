@@ -29,6 +29,7 @@ from qedcalc.operations.ibp import (
     project_rows_to_rank_floor,
     rows_at_or_above_rank,
     specialize_ibp_system_mod_prime,
+    target_pivot_search_mod_prime,
 )
 from three_loop.native_ibp_family import build_native_ibp_family
 from examples.three_loop_master_basis_candidate_closure import (
@@ -129,26 +130,26 @@ def main() -> None:
             f"nnz={after_nnz}/{before_nnz}",
             flush=True,
         )
-        print(f"[native-ibp] probe {n}: pivot search over F_{prime}...", flush=True)
-        rule_map = laporta_forward_eliminate_mod_prime(
+        print(f"[native-ibp] probe {n}: target-only pivot search over F_{prime}...", flush=True)
+        target_solved, rule_map, processed_rows = target_pivot_search_mod_prime(
             prows_rank,
             prime,
+            target,
             protected=protected,
-            stop_when_pivoted=target,
         )
-        print(f"[native-ibp] probe {n}: pivot-search rules={len(rule_map)}", flush=True)
-        target_solved = target in rule_map
-        if target_solved:
-            print(f"[native-ibp] probe {n}: target pivot found; residual basis check...", flush=True)
-        reduced = reduce_integral_mod_prime(target, rule_map, prime)
-        residual = sorted(
-            (idx, coeff) for idx, coeff in reduced.items() if coeff % prime
+        print(
+            f"[native-ibp] probe {n}: pivot-search rules={len(rule_map)} "
+            f"processed_rows={processed_rows} target_solved={target_solved}",
+            flush=True,
         )
-        residual_unprotected = [
-            (idx, coeff) for idx, coeff in residual if idx not in protected
-        ]
-        reducible_to_protected = target_solved and not residual_unprotected
-        all_reducible_to_protected &= reducible_to_protected
+
+        # This fast path establishes only target-pivot existence.  Do not
+        # interpret the incomplete echelon basis as a finished reduction to the
+        # protected master basis.
+        residual = [(target, 1)] if not target_solved else []
+        residual_unprotected = residual
+        reducible_to_protected = False
+        all_reducible_to_protected = False
         rows.append({
             "probe": n,
             "point": {str(k): str(v) for k, v in point.items()},
@@ -161,6 +162,7 @@ def main() -> None:
             "rank_projection_nnz": after_nnz,
             "rank_projection_nnz_before": before_nnz,
             "rule_count": len(rule_map),
+            "processed_row_count": processed_rows,
             "target_solved": target_solved,
             "residual_count": len(residual),
             "residual_protected_count": len(residual) - len(residual_unprotected),
@@ -175,12 +177,12 @@ def main() -> None:
             "reducible_to_protected_basis": reducible_to_protected,
         })
 
-    if all_reducible_to_protected:
-        status = "reducible-to-refined-basis"
+    if all(row["target_solved"] for row in rows):
+        status = "target-pivot-found-needs-rhs-check"
     elif any(row["target_solved"] for row in rows):
-        status = "partially-solved-inconclusive"
+        status = "target-pivot-inconsistent-across-probes"
     else:
-        status = "unsolved-in-finite-neighborhood"
+        status = "target-pivot-not-found-in-finite-neighborhood"
 
     AUDIT_DIR.mkdir(parents=True, exist_ok=True)
     stem = (
@@ -206,12 +208,12 @@ def main() -> None:
         "integral_count_symbolic": len(all_integrals),
         "probe_rows": rows,
         "status": status,
-        "audit_pass": all_reducible_to_protected,
+        "audit_pass": False,
         "interpretation": (
-            "audit_pass=True is a finite-field generic-rank reducibility witness at two "
-            "independent rational probe points/primes. It is not yet a symbolic coefficient proof. "
-            "audit_pass=False is not evidence that the target is a master; it means the "
-            "bounded native-IBP neighborhood was insufficient."
+            "This optimized stage checks only whether the target becomes a pivot at two "
+            "independent rational probe points/primes. A consistent target pivot requires a "
+            "second RHS-reduction stage before claiming reducibility to the protected refined basis. "
+            "Failure to find a pivot is not evidence that the target is a master."
         ),
         "union_reduction_audit": str(union_audit_path),
         "source_union_target_file": str(source_targets),
