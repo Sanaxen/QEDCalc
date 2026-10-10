@@ -26,6 +26,7 @@ from qedcalc.operations.ibp import (
     laporta_forward_eliminate_mod_prime,
     prune_zero_sectors,
     reduce_integral_mod_prime,
+    project_rows_to_rank_floor,
     rows_at_or_above_rank,
     specialize_ibp_system_mod_prime,
 )
@@ -114,9 +115,23 @@ def main() -> None:
         print(f"[native-ibp] probe {n}: connected equations={len(crows)}", flush=True)
         rrows = rows_at_or_above_rank(crows, target)
         print(f"[native-ibp] probe {n}: rank-floor equations={len(rrows)}", flush=True)
+        prows_rank = project_rows_to_rank_floor(
+            rrows,
+            target,
+            protected=protected,
+        )
+        before_nnz = sum(len(row) for row in rrows)
+        after_nnz = sum(len(row) for row in prows_rank)
+        before_cols = len({idx for row in rrows for idx in row})
+        after_cols = len({idx for row in prows_rank for idx in row})
+        print(
+            f"[native-ibp] probe {n}: rank projection columns={after_cols}/{before_cols} "
+            f"nnz={after_nnz}/{before_nnz}",
+            flush=True,
+        )
         print(f"[native-ibp] probe {n}: pivot search over F_{prime}...", flush=True)
         rule_map = laporta_forward_eliminate_mod_prime(
-            rrows,
+            prows_rank,
             prime,
             protected=protected,
             stop_when_pivoted=target,
@@ -141,6 +156,10 @@ def main() -> None:
             "equation_count": len(prows),
             "connected_equation_count": len(crows),
             "rank_floor_equation_count": len(rrows),
+            "rank_projection_column_count": after_cols,
+            "rank_projection_column_count_before": before_cols,
+            "rank_projection_nnz": after_nnz,
+            "rank_projection_nnz_before": before_nnz,
             "rule_count": len(rule_map),
             "target_solved": target_solved,
             "residual_count": len(residual),
