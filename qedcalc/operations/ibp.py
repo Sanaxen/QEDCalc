@@ -520,12 +520,35 @@ def connected_rows_for_targets(
     return tuple(work[i] for i in sorted(seen_rows))
 
 
+def rows_at_or_above_rank(
+    rows: Sequence[Mapping[IntegralIndex, int]],
+    floor: IntegralIndex | Sequence[int],
+    *,
+    rank=None,
+) -> tuple[dict[IntegralIndex, int], ...]:
+    """Keep rows whose hardest integral is at least as hard as the floor.
+
+    Under a descending Laporta ordering, a row whose every integral is below
+    the target rank cannot create or modify a pivot for that target or for any
+    harder integral. Such rows are irrelevant to the pivot-existence diagnostic.
+    """
+    if rank is None:
+        rank = sector_rank
+    floor_idx = floor if isinstance(floor, IntegralIndex) else IntegralIndex(floor)
+    floor_rank = rank(floor_idx)
+    out = []
+    for row in rows:
+        if row and max(rank(i) for i in row) >= floor_rank:
+            out.append(dict(row))
+    return tuple(out)
+
 def laporta_forward_eliminate_mod_prime(
     rows: Sequence[Mapping[IntegralIndex, int]],
     prime: int,
     *,
     rank=None,
     protected: Iterable[IntegralIndex | Sequence[int]] = (),
+    stop_when_pivoted: IntegralIndex | Sequence[int] | None = None,
 ) -> dict[IntegralIndex, dict[IntegralIndex, int]]:
     """Sparse forward Laporta elimination over F_p.
 
@@ -539,6 +562,13 @@ def laporta_forward_eliminate_mod_prime(
         p if isinstance(p, IntegralIndex) else IntegralIndex(p)
         for p in protected
     }
+    stop_target = (
+        stop_when_pivoted
+        if isinstance(stop_when_pivoted, IntegralIndex)
+        else IntegralIndex(stop_when_pivoted)
+        if stop_when_pivoted is not None
+        else None
+    )
     work = [dict(r) for r in rows if r]
     work.sort(
         key=lambda row: max((rank(i) for i in row), default=(-1,)),
@@ -576,6 +606,8 @@ def laporta_forward_eliminate_mod_prime(
             if coeff % prime
         }
         rule_map[pivot] = rhs
+        if stop_target is not None and pivot == stop_target:
+            break
 
     return rule_map
 
