@@ -21,6 +21,7 @@ from qedcalc.operations.ibp import (
     IntegralIndex,
     bounded_seed_domain,
     compile_ibp_templates,
+    connected_rows_for_targets,
     generate_ibp_system,
     laporta_forward_eliminate_mod_prime,
     prune_zero_sectors,
@@ -107,9 +108,12 @@ def main() -> None:
     for n, (point, prime) in enumerate(zip(_probe_points(), primes), start=1):
         print(f"[native-ibp] probe {n}: specialize to F_{prime}...", flush=True)
         prows = specialize_ibp_system_mod_prime(equations, point, prime)
-        print(f"[native-ibp] probe {n}: eliminate {len(prows)} equations over F_{prime}...", flush=True)
+        print(f"[native-ibp] probe {n}: target-connected prune from {len(prows)} equations...", flush=True)
+        crows = connected_rows_for_targets(prows, (target,))
+        print(f"[native-ibp] probe {n}: connected equations={len(crows)}", flush=True)
+        print(f"[native-ibp] probe {n}: eliminate {len(crows)} equations over F_{prime}...", flush=True)
         rule_map = laporta_forward_eliminate_mod_prime(
-            prows,
+            crows,
             prime,
             protected=protected,
         )
@@ -129,6 +133,7 @@ def main() -> None:
             "point": {str(k): str(v) for k, v in point.items()},
             "prime": prime,
             "equation_count": len(prows),
+            "connected_equation_count": len(crows),
             "rule_count": len(rule_map),
             "target_solved": target_solved,
             "residual_count": len(residual),
