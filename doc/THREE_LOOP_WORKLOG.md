@@ -2923,3 +2923,52 @@ After pulling, rerun degree 4 and inspect:
 If the connected count remains close to 27300, this graph-component pruning is
 insufficient and the next optimization must reduce the elimination algorithm
 itself rather than the row set.
+
+
+### 2026-10-10 connected-component pruning did not reduce degree-4 system
+
+The target-connected graph pruning was tested on the degree-4 finite-field
+system and returned:
+
+```text
+target-connected prune from 27300 equations
+connected equations=27300
+```
+
+Therefore the entire degree-4 equation set belongs to the same connected
+component as the sector-199 target.  Connectivity alone cannot reduce the
+system.
+
+A stricter Laporta-order-aware diagnostic was added:
+
+- discard rows whose hardest integral is below the target rank;
+- process only rows capable of contributing to the target pivot or harder pivots;
+- stop the finite-field forward elimination immediately when the target itself
+  becomes a pivot.
+
+This answers the narrower first question, "does degree 4 contain a reduction
+pivot for the target?", without completing all lower-rank reductions.
+
+Commits:
+
+```text
+1d936e5027f9f3b4c4057e459bcd07c9cb7302b6
+  Add target-rank and early-stop finite-field Laporta
+
+96f29563b4c279e3945a35a7cfbf5b857d5fc872
+  Use target-rank pivot search in native IBP probe
+```
+
+After pulling, rerun degree 4 and inspect:
+
+```text
+[native-ibp] probe 1: connected equations=27300
+[native-ibp] probe 1: rank-floor equations=...
+[native-ibp] probe 1: pivot search over F_2147483647...
+```
+
+If the rank-floor count drops substantially, this should be much cheaper than
+the previous full 27300-row elimination.  If the target pivot is still absent,
+degree 4 remains inconclusive.  If a target pivot is found, a second stage is
+still required to determine whether its RHS reduces entirely to the protected
+refined basis.
