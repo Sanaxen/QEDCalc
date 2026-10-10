@@ -136,6 +136,11 @@ def main() -> None:
             prime,
             target,
             protected=protected,
+            progress_every=500,
+            progress_callback=lambda done, total, pivots: print(
+                f"[native-ibp] probe {n}: pivot progress rows={done}/{total} pivots={pivots}",
+                flush=True,
+            ),
         )
         print(
             f"[native-ibp] probe {n}: pivot-search rules={len(rule_map)} "
