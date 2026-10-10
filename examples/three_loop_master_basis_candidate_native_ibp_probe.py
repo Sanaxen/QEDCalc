@@ -22,10 +22,10 @@ from qedcalc.operations.ibp import (
     bounded_seed_domain,
     compile_ibp_templates,
     generate_ibp_system,
-    laporta_forward_eliminate,
+    laporta_forward_eliminate_mod_prime,
     prune_zero_sectors,
-    reduce_integral,
-    specialize_ibp_system,
+    reduce_integral_mod_prime,
+    specialize_ibp_system_mod_prime,
 )
 from three_loop.native_ibp_family import build_native_ibp_family
 from examples.three_loop_master_basis_candidate_closure import (
@@ -103,22 +103,21 @@ def main() -> None:
 
     rows = []
     all_reducible_to_protected = True
-    for n, point in enumerate(_probe_points(), start=1):
-        print(f"[native-ibp] probe {n}: specialize...", flush=True)
-        peqs = specialize_ibp_system(equations, point)
-        print(f"[native-ibp] probe {n}: eliminate {len(peqs)} equations...", flush=True)
-        rules = laporta_forward_eliminate(
-            peqs,
-            family=None,
+    primes = (2147483647, 2147483629)
+    for n, (point, prime) in enumerate(zip(_probe_points(), primes), start=1):
+        print(f"[native-ibp] probe {n}: specialize to F_{prime}...", flush=True)
+        prows = specialize_ibp_system_mod_prime(equations, point, prime)
+        print(f"[native-ibp] probe {n}: eliminate {len(prows)} equations over F_{prime}...", flush=True)
+        rule_map = laporta_forward_eliminate_mod_prime(
+            prows,
+            prime,
             protected=protected,
-            prune_scaleless=False,
         )
-        print(f"[native-ibp] probe {n}: rules={len(rules)}", flush=True)
-        solved = {r.lhs for r in rules}
-        target_solved = target in solved
-        reduced = reduce_integral(target, rules)
+        print(f"[native-ibp] probe {n}: rules={len(rule_map)}", flush=True)
+        target_solved = target in rule_map
+        reduced = reduce_integral_mod_prime(target, rule_map, prime)
         residual = sorted(
-            (idx, coeff) for idx, coeff in reduced.items() if coeff != 0
+            (idx, coeff) for idx, coeff in reduced.items() if coeff % prime
         )
         residual_unprotected = [
             (idx, coeff) for idx, coeff in residual if idx not in protected
@@ -128,8 +127,9 @@ def main() -> None:
         rows.append({
             "probe": n,
             "point": {str(k): str(v) for k, v in point.items()},
-            "equation_count": len(peqs),
-            "rule_count": len(rules),
+            "prime": prime,
+            "equation_count": len(prows),
+            "rule_count": len(rule_map),
             "target_solved": target_solved,
             "residual_count": len(residual),
             "residual_protected_count": len(residual) - len(residual_unprotected),
@@ -137,7 +137,7 @@ def main() -> None:
             "residual_unprotected": [
                 {
                     "integral": list(idx.powers),
-                    "coefficient": str(coeff),
+                    "coefficient_mod_prime": int(coeff),
                 }
                 for idx, coeff in residual_unprotected[:50]
             ],
@@ -177,9 +177,10 @@ def main() -> None:
         "status": status,
         "audit_pass": all_reducible_to_protected,
         "interpretation": (
-            "audit_pass=True is an explicit finite-system reducibility witness at two "
-            "generic rational probe points. audit_pass=False is not evidence that the "
-            "target is a master; it means the bounded native-IBP neighborhood was insufficient."
+            "audit_pass=True is a finite-field generic-rank reducibility witness at two "
+            "independent rational probe points/primes. It is not yet a symbolic coefficient proof. "
+            "audit_pass=False is not evidence that the target is a master; it means the "
+            "bounded native-IBP neighborhood was insufficient."
         ),
         "union_reduction_audit": str(union_audit_path),
         "source_union_target_file": str(source_targets),
