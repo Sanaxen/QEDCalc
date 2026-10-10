@@ -3106,3 +3106,74 @@ Consequences:
   rather than recomputing all bounded neighborhoods through degree 6.
 
 Do not launch a full degree-5 native probe as the next step.
+
+
+### 2026-10-11 switch from full degree-N probes to streaming incremental shell pivots
+
+The degree-4 target-only finite-field probe completed consistently:
+
+```text
+probe 1: rules=15373 target_solved=False
+probe 2: rules=15373 target_solved=False
+status: target-pivot-not-found-in-finite-neighborhood
+```
+
+The key interpretation is that the unresolved boundary is specifically
+`s<=5 -> s<=6`.  Since the target has `s=0` and is already a master in the
+full/common `r8s5d2` closure, degrees below 6 cannot directly exercise the
+newly admitted s=6 layer.  Therefore a monolithic degree-5 run is not useful as
+the next decisive test.
+
+A streaming incremental native-IBP driver was added instead.
+
+It processes exact bounded seed shells degree-by-degree:
+
+```text
+degree 0 shell
+degree 1 shell
+...
+degree 6 shell
+```
+
+and, within each shell, processes small seed batches (default 250).  Finite-field
+pivot maps are carried forward between batches/degrees rather than recomputing
+the whole degree-N system from scratch.
+
+Important properties:
+
+- symbolic IBP equations are generated only for the current batch;
+- each batch is projected to target-rank columns;
+- two independent finite-field probes maintain separate pivot maps;
+- checkpoint state is written after every batch using compressed pickle;
+- interrupted runs resume from the saved degree/offset;
+- the run stops early if both probes obtain a target pivot;
+- even a positive pivot result is still only stage 1; a separate RHS reduction
+  is required before claiming reduction to the protected refined basis.
+
+New files:
+
+```text
+examples/three_loop_master_basis_candidate_incremental_native_ibp.py
+run_three_loop_master_basis_candidate_incremental_native_ibp.bat
+```
+
+Supporting change:
+
+```text
+d7ba755c2bff44b69a9c1de1c84c60edb4712d07
+  Allow incremental finite-field pivot continuation
+
+580a2739a81a336da6f982490050702aa7a12b5f
+  Add streaming incremental native IBP pivot audit
+
+7c40dae73ba85053842c751532c6a5b108edec49
+  Add incremental native IBP runner
+```
+
+Recommended run:
+
+```powershell
+.\run_three_loop_master_basis_candidate_incremental_native_ibp.bat VP05_full r8s3d0 199 6 250
+```
+
+Do not run the monolithic degree-5 probe next.
