@@ -656,6 +656,8 @@ def target_pivot_search_mod_prime(
     *,
     rank=None,
     protected: Iterable[IntegralIndex | Sequence[int]] = (),
+    progress_every: int = 0,
+    progress_callback=None,
 ) -> tuple[bool, dict[IntegralIndex, dict[IntegralIndex, int]], int]:
     """Fast sparse row-echelon search for a pivot on one target integral.
 
@@ -692,8 +694,11 @@ def target_pivot_search_mod_prime(
 
     pivots: dict[IntegralIndex, dict[IntegralIndex, int]] = {}
     processed = 0
+    total_rows = len(work)
     for row in work:
         processed += 1
+        if progress_every and processed % int(progress_every) == 0 and progress_callback is not None:
+            progress_callback(processed, total_rows, len(pivots))
         while row:
             candidates = [i for i in row if i not in protected_set]
             if not candidates:
@@ -724,6 +729,8 @@ def target_pivot_search_mod_prime(
             }
             pivots[lead] = rhs
             if lead == target_idx:
+                if progress_callback is not None:
+                    progress_callback(processed, total_rows, len(pivots))
                 return True, pivots, processed
             break
 
