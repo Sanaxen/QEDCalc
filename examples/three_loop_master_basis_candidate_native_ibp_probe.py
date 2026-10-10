@@ -26,6 +26,7 @@ from qedcalc.operations.ibp import (
     laporta_forward_eliminate_mod_prime,
     prune_zero_sectors,
     reduce_integral_mod_prime,
+    rows_at_or_above_rank,
     specialize_ibp_system_mod_prime,
 )
 from three_loop.native_ibp_family import build_native_ibp_family
@@ -111,14 +112,19 @@ def main() -> None:
         print(f"[native-ibp] probe {n}: target-connected prune from {len(prows)} equations...", flush=True)
         crows = connected_rows_for_targets(prows, (target,))
         print(f"[native-ibp] probe {n}: connected equations={len(crows)}", flush=True)
-        print(f"[native-ibp] probe {n}: eliminate {len(crows)} equations over F_{prime}...", flush=True)
+        rrows = rows_at_or_above_rank(crows, target)
+        print(f"[native-ibp] probe {n}: rank-floor equations={len(rrows)}", flush=True)
+        print(f"[native-ibp] probe {n}: pivot search over F_{prime}...", flush=True)
         rule_map = laporta_forward_eliminate_mod_prime(
-            crows,
+            rrows,
             prime,
             protected=protected,
+            stop_when_pivoted=target,
         )
-        print(f"[native-ibp] probe {n}: rules={len(rule_map)}", flush=True)
+        print(f"[native-ibp] probe {n}: pivot-search rules={len(rule_map)}", flush=True)
         target_solved = target in rule_map
+        if target_solved:
+            print(f"[native-ibp] probe {n}: target pivot found; residual basis check...", flush=True)
         reduced = reduce_integral_mod_prime(target, rule_map, prime)
         residual = sorted(
             (idx, coeff) for idx, coeff in reduced.items() if coeff % prime
@@ -134,6 +140,7 @@ def main() -> None:
             "prime": prime,
             "equation_count": len(prows),
             "connected_equation_count": len(crows),
+            "rank_floor_equation_count": len(rrows),
             "rule_count": len(rule_map),
             "target_solved": target_solved,
             "residual_count": len(residual),
