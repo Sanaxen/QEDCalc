@@ -3017,3 +3017,37 @@ A large reduction in columns or nonzeros should substantially reduce sparse
 finite-field fill-in.  If the projection still leaves nearly the full matrix,
 the next step is an on-demand target-column elimination strategy rather than a
 full-row forward Laporta pass.
+
+
+### 2026-10-10 degree-4 target-rank column projection results and target-only pivot search
+
+The degree-4 column projection reduced the finite-field system from:
+
+```text
+columns: 32733 -> 16923
+nnz:     403916 -> 328568
+```
+
+This is approximately a 48% column reduction but only a 19% nonzero reduction.
+Therefore substantial sparse fill-in can still remain, and the full forward
+Laporta pass may still take hours.
+
+A new target-only sparse row-echelon search was added.  For each row it reduces
+only the hardest currently-unprotected column until that column is either
+eliminated by an existing pivot or becomes a new pivot.  It does not recursively
+substitute lower solved columns unless they later become leading.  The search
+stops immediately when the sector-199 target itself becomes a pivot.
+
+This stage deliberately answers only target-pivot existence.  Even if both
+finite-field probes find the target pivot, a separate RHS reduction is required
+before claiming reduction to the 62 protected refined candidates.
+
+Commits:
+
+```text
+b3e47c02b94fd31a699cc50819dfbf13cfbccc02
+  Add target-only sparse finite-field pivot search
+
+9744878ca249cfd27fddbeeadc78397ca853bae8
+  Use target-only pivot search in native IBP probe
+```
