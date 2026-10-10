@@ -2868,3 +2868,58 @@ Run:
 Interpretation remains unchanged: only a consistent explicit reduction to the
 protected refined basis is positive reducibility evidence; an unsolved degree-4
 target remains inconclusive.
+
+
+### 2026-10-10 degree-4 native finite-field elimination still too slow
+
+The degree-4 native probe reached:
+
+```text
+seed count: 1820
+raw equations: 27300
+integrals after zero-sector prune: 32733
+probe 1: eliminate 27300 equations over F_2147483647...
+```
+
+and remained in that elimination stage for about seven hours.
+
+Observed resource behavior:
+
+```text
+CPU: ~3.6% of 28 logical CPUs, effectively one saturated logical core
+memory peak: ~2.7 GB
+current memory: ~1.6 GB
+swap-equivalent/page-file usage: ~3.2 GB
+```
+
+This is not a memory/swap bottleneck.  It is a single-core sparse-elimination
+algorithm bottleneck.
+
+The run should be stopped rather than continued.
+
+A target-connected row-pruning stage was added.  Before finite-field Laporta,
+QEDCalc now constructs the bipartite equation/integral graph, floods from the
+single sector-199 target, and discards every equation in disconnected
+components.  Such disconnected rows cannot contribute to a reduction witness
+for the target.
+
+Commits:
+
+```text
+448c40cf9f779457d2992846445fa088b95ffc05
+  Add target-connected finite-field row pruning
+
+5a476ecfe3a0f634e49c1727d61f74b958377f5c
+  Prune native IBP probe to target-connected rows
+```
+
+After pulling, rerun degree 4 and inspect:
+
+```text
+[native-ibp] probe 1: target-connected prune from 27300 equations...
+[native-ibp] probe 1: connected equations=...
+```
+
+If the connected count remains close to 27300, this graph-component pruning is
+insufficient and the next optimization must reduce the elimination algorithm
+itself rather than the row set.
