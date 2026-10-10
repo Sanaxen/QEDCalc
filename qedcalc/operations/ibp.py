@@ -649,6 +649,86 @@ def laporta_forward_eliminate_mod_prime(
     return rule_map
 
 
+def target_pivot_search_mod_prime(
+    rows: Sequence[Mapping[IntegralIndex, int]],
+    prime: int,
+    target: IntegralIndex | Sequence[int],
+    *,
+    rank=None,
+    protected: Iterable[IntegralIndex | Sequence[int]] = (),
+) -> tuple[bool, dict[IntegralIndex, dict[IntegralIndex, int]], int]:
+    """Fast sparse row-echelon search for a pivot on one target integral.
+
+    Unlike the full forward Laporta routine, each row is reduced only until its
+    hardest currently-unprotected column is new.  Lower solved columns are not
+    recursively substituted unless they later become the leading candidate.
+    This is sufficient for pivot-existence under the same descending ordering
+    and avoids substantial unnecessary fill-in.
+    """
+    if rank is None:
+        rank = sector_rank
+    target_idx = target if isinstance(target, IntegralIndex) else IntegralIndex(target)
+    protected_set = {
+        p if isinstance(p, IntegralIndex) else IntegralIndex(p)
+        for p in protected
+    }
+    rank_cache: dict[IntegralIndex, tuple] = {}
+
+    def rkey(idx: IntegralIndex):
+        value = rank_cache.get(idx)
+        if value is None:
+            value = rank(idx)
+            rank_cache[idx] = value
+        return value
+
+    work = [dict(r) for r in rows if r]
+    work.sort(
+        key=lambda row: max(
+            (rkey(i) for i in row if i not in protected_set),
+            default=(-1,),
+        ),
+        reverse=True,
+    )
+
+    pivots: dict[IntegralIndex, dict[IntegralIndex, int]] = {}
+    processed = 0
+    for row in work:
+        processed += 1
+        while row:
+            candidates = [i for i in row if i not in protected_set]
+            if not candidates:
+                break
+            lead = max(candidates, key=rkey)
+            coeff = row.get(lead, 0) % prime
+            if coeff == 0:
+                row.pop(lead, None)
+                continue
+
+            old = pivots.get(lead)
+            if old is not None:
+                row.pop(lead, None)
+                for idx, val in old.items():
+                    nv = (row.get(idx, 0) + coeff * val) % prime
+                    if nv:
+                        row[idx] = nv
+                    else:
+                        row.pop(idx, None)
+                continue
+
+            inv = pow(coeff, -1, prime)
+            row.pop(lead, None)
+            rhs = {
+                idx: (-val * inv) % prime
+                for idx, val in row.items()
+                if val % prime
+            }
+            pivots[lead] = rhs
+            if lead == target_idx:
+                return True, pivots, processed
+            break
+
+    return target_idx in pivots, pivots, processed
+
 def reduce_integral_mod_prime(
     index: IntegralIndex | Sequence[int],
     rule_map: Mapping[IntegralIndex, Mapping[IntegralIndex, int]],
