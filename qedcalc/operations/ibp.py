@@ -372,10 +372,20 @@ def laporta_eliminate(equations: Sequence[IBPEquation], rank=default_laporta_ran
 
 
 def _fast_coeff(expr: sp.Expr) -> sp.Expr:
-    """Cheaper rational-function normalization for large sparse IBP systems."""
+    """Cheap coefficient normalization for sparse IBP systems.
+
+    Generic-point probes specialize all kinematic/dimensional symbols to exact
+    rationals.  Calling sympy.cancel() on every row update is then pure overhead
+    and dominated the native Laporta probe.  Return numeric rationals directly;
+    reserve cancel() for genuinely symbolic rational functions.
+    """
     expr = sp.sympify(expr)
     if expr == 0:
         return sp.Integer(0)
+    if expr.is_Integer or expr.is_Rational:
+        return expr
+    if not expr.free_symbols:
+        return sp.factor(expr)
     return sp.cancel(expr)
 
 
