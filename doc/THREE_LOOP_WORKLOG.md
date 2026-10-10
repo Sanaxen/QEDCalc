@@ -2972,3 +2972,48 @@ the previous full 27300-row elimination.  If the target pivot is still absent,
 degree 4 remains inconclusive.  If a target pivot is found, a second stage is
 still required to determine whether its RHS reduces entirely to the protected
 refined basis.
+
+
+### 2026-10-10 rank-floor row pruning also did not reduce degree-4 system
+
+The next degree-4 diagnostic reported:
+
+```text
+connected equations=27300
+rank-floor equations=27300
+```
+
+Therefore every row contains at least one integral whose Laporta rank is at or
+above the sector-199 target.  Row-level rank pruning cannot reduce the system.
+
+The pivot-existence diagnostic was therefore tightened at the column level.
+For the narrow question "does the target acquire a pivot?", columns strictly
+below the target rank cannot affect elimination of the target or any harder
+column.  Those lower-rank columns are now projected out before finite-field
+elimination.  Protected refined-candidate columns are retained regardless of
+rank.
+
+This projection is used only for target-pivot existence.  It is not used to
+reconstruct a final reduction relation, because lower-rank RHS terms would be
+needed for that second stage.
+
+Commits:
+
+```text
+1c75cd7787b3023f702365d24ed3915ae8276f2f
+  Project finite-field pivot search to target-rank columns
+
+b4c2a2d5ec3e7860fd563026560c95732e3cf8cd
+  Use target-rank column projection in native IBP probe
+```
+
+After pulling and rerunning degree 4, inspect:
+
+```text
+[native-ibp] probe 1: rank projection columns=<after>/<before> nnz=<after>/<before>
+```
+
+A large reduction in columns or nonzeros should substantially reduce sparse
+finite-field fill-in.  If the projection still leaves nearly the full matrix,
+the next step is an on-demand target-column elimination strategy rather than a
+full-row forward Laporta pass.
