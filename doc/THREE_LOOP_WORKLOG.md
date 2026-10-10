@@ -2809,3 +2809,62 @@ Commits:
 
 The previous symbolic elimination run should be stopped and the same degree-3
 probe rerun after pulling these changes.
+
+
+### 2026-10-10 native finite-field degree-3 candidate probe completes
+
+After switching the native sparse Laporta stage to finite-field arithmetic, the
+degree-3 sector-199 probe completed successfully.
+
+Result:
+
+```text
+seed count: 455
+symbolic equations: 6825
+symbolic integrals: 9825
+
+probe 1:
+  prime: 2147483647
+  rules: 6410
+  target_solved: False
+  residual: 1
+  protected: 0
+  unprotected: 1
+  reducible_to_protected_basis: False
+
+probe 2:
+  prime: 2147483629
+  rules: 6410
+  target_solved: False
+  residual: 1
+  protected: 0
+  unprotected: 1
+  reducible_to_protected_basis: False
+
+status: unsolved-in-finite-neighborhood
+audit pass: False
+```
+
+The identical rank/pivot outcome at two independent probe points/primes is a
+good consistency check for the finite-field implementation.  However,
+`target_solved=False` is explicitly inconclusive: degree 3 does not provide
+enough local IBP closure to reduce the target, but it does not establish the
+target as a master.
+
+Next step: increase the bounded native-IBP neighborhood to degree 4.
+
+For the 12 available index-shift directions, the bounded multiset seed count is
+expected to grow from 455 at degree 3 to roughly 1820 at degree 4, giving about
+27300 raw IBP equations (15 equations per seed).  This is substantially larger
+but is now handled by the finite-field backend rather than symbolic rational
+elimination.
+
+Run:
+
+```powershell
+.\run_three_loop_master_basis_candidate_native_ibp_probe.bat VP05_full r8s3d0 199 4
+```
+
+Interpretation remains unchanged: only a consistent explicit reduction to the
+protected refined basis is positive reducibility evidence; an unsolved degree-4
+target remains inconclusive.
