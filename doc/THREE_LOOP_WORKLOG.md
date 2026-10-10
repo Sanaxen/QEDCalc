@@ -3051,3 +3051,58 @@ b3e47c02b94fd31a699cc50819dfbf13cfbccc02
 9744878ca249cfd27fddbeeadc78397ca853bae8
   Use target-only pivot search in native IBP probe
 ```
+
+
+### 2026-10-11 degree-4 target-only probe completes; degrees <6 cannot test the new s=6 boundary
+
+The optimized degree-4 target-only finite-field probe completed consistently:
+
+```text
+degree: 4
+seed count: 1820
+symbolic equations: 27300
+symbolic integrals: 32733
+
+probe 1:
+  rules: 15373
+  target_solved: False
+
+probe 2:
+  rules: 15373
+  target_solved: False
+
+status: target-pivot-not-found-in-finite-neighborhood
+audit pass: False
+```
+
+The two independent finite-field probes agree exactly.
+
+Important interpretation correction:
+
+The sector-199 refined candidate is
+
+```text
+VP05_full[1,1,1,0,0,0,1,1,0,0,0,0]
+complexity: r5s0d0
+```
+
+and it is already known to survive as a master in the full/common
+`r8s5d2` closure.  The unresolved question is only whether extending
+`s <= 5` to `s <= 6` introduces a new relation that removes this candidate.
+
+Therefore any genuinely new information capable of changing the master status
+must involve the newly admitted `s=6` layer.  In candidate-centered L1 index
+distance, the minimum distance from this `s=0` target to that new layer is 6.
+
+Consequences:
+
+- degree 3 and degree 4 probes are useful implementation/rank consistency tests,
+  but cannot directly exercise the new `s=6` boundary;
+- degree 5 is also not the decisive next test;
+- blindly running degree 5 would add substantial cost without reaching the
+  actual new boundary;
+- the next algorithm should formulate an incremental rank/update problem using
+  the already-established `s<=5` system plus only the new `s=6` information,
+  rather than recomputing all bounded neighborhoods through degree 6.
+
+Do not launch a full degree-5 native probe as the next step.
