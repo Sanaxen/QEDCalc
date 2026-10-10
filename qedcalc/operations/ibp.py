@@ -520,6 +520,43 @@ def connected_rows_for_targets(
     return tuple(work[i] for i in sorted(seen_rows))
 
 
+def project_rows_to_rank_floor(
+    rows: Sequence[Mapping[IntegralIndex, int]],
+    floor: IntegralIndex | Sequence[int],
+    *,
+    rank=None,
+    protected: Iterable[IntegralIndex | Sequence[int]] = (),
+) -> tuple[dict[IntegralIndex, int], ...]:
+    """Project rows to columns relevant for target-pivot existence.
+
+    For the narrow question whether ``floor`` becomes a pivot under descending
+    Laporta elimination, columns strictly below the floor rank cannot affect
+    elimination of the floor or any harder column.  Protected columns are kept
+    regardless of rank because they are designated free/master columns.
+
+    This projection is only for pivot-existence diagnostics.  It must not be
+    used as the final reduction relation because discarded lower-rank terms
+    are needed to reconstruct the target RHS.
+    """
+    if rank is None:
+        rank = sector_rank
+    floor_idx = floor if isinstance(floor, IntegralIndex) else IntegralIndex(floor)
+    floor_rank = rank(floor_idx)
+    protected_set = {
+        p if isinstance(p, IntegralIndex) else IntegralIndex(p)
+        for p in protected
+    }
+    out = []
+    for row in rows:
+        projected = {
+            idx: coeff
+            for idx, coeff in row.items()
+            if rank(idx) >= floor_rank or idx in protected_set
+        }
+        if projected:
+            out.append(projected)
+    return tuple(out)
+
 def rows_at_or_above_rank(
     rows: Sequence[Mapping[IntegralIndex, int]],
     floor: IntegralIndex | Sequence[int],
