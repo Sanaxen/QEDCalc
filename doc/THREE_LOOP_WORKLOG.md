@@ -3237,3 +3237,51 @@ Recommended next command after stopping the current incremental run:
 
 Do not launch degree 6 or continue the weeks-scale Python pivot accumulation
 until this artifact audit is inspected.
+
+
+### 2026-10-13 correction: bare kira.db is not evidence of reusable reduction rules
+
+The first Kira artifact audit reported 49 projects with
+`reusable_reduction_artifacts=True`.  This criterion was too permissive because
+it treated the mere existence of `kira.db` as reusable reduction evidence.
+
+That is incorrect for masters-only/initiate-only projects.  For example the
+known VP05 candidate-closure runs at r8s5d2/r9s5d2 have:
+
+```text
+run_triangular: false
+run_back_substitution: false
+kira.db: present
+id2int: absent
+result reduction tables: absent
+```
+
+Such a database may contain initialization / sector / master-identification
+state without containing reusable triangular reduction rules.
+
+The artifact audit was made conservative:
+
+- explicit `id2int + result reduction table` is accepted as reusable reduction
+  evidence;
+- a bare `kira.db` is not;
+- every `kira.db` is opened read-only through SQLite when possible;
+- table names and row counts are reported for schema-level inspection;
+- triangular/back-substitution projects without exported result tables are
+  flagged for database-content review, not automatically accepted.
+
+Commit:
+
+```text
+0ce7a010ca6ff3c551bc4419299cc2869ff03787
+  Make Kira reduction artifact audit conservative
+```
+
+Priority projects for deep inspection:
+
+```text
+kira_vp05_full_masters_candidate_closure_r8s3d0_r8s5d2
+kira_vp05_full_masters_candidate_sector_closure_r8s3d0_r9s5d2_sec199
+kira_vp05_full_masters_candidate_direct_reducibility_r8s3d0_r8s6d2_sec199
+```
+
+Do not assume the earlier "49 reusable projects" result is valid.
