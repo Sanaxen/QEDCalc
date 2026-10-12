@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sqlite3
 from pathlib import Path
 
 from three_loop.integral_family_classification import ROOT
@@ -30,6 +31,66 @@ def _text_has(path: Path, needle: str) -> bool:
         return needle in path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return False
+
+
+def _sqlite_summary(path: Path) -> dict:
+    """Inspect a Kira SQLite database without assuming a particular schema."""
+    out = {
+        "path": str(path),
+        "size_bytes": path.stat().st_size if path.exists() else 0,
+        "sqlite_readable": False,
+        "tables": [],
+        "errors": [],
+    }
+    try:
+        uri = "file:" + path.resolve().as_posix() + "?mode=ro"
+        con = sqlite3.connect(uri, uri=True)
+        try:
+            tables = [
+                str(row[0])
+                for row in con.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                )
+            ]
+            out["sqlite_readable"] = True
+            for name in tables:
+                rec = {"name": name, "row_count": None}
+                try:
+                    quoted = '"' + name.replace('"', '""') + '"'
+                    rec["row_count"] = int(
+                        con.execute(f"SELECT COUNT(*) FROM {quoted}").fetchone()[0]
+                    )
+                except Exception as exc:
+                    rec["error"] = str(exc)
+                out["tables"].append(rec)
+        finally:
+            con.close()
+    except Exception as exc:
+        out["errors"].append(str(exc))
+    return out
+
+
+def _looks_like_completed_reduction(
+    *,
+    run_triangular: bool,
+    run_back: bool,
+    id2int_hits: list[Path],
+    kira_table_hits: list[Path],
+    db_summaries: list[dict],
+) -> tuple[bool, str]:
+    """Conservative evidence test for reusable reduction rules.
+
+    A bare kira.db is not sufficient: masters-only initiate runs also create it.
+    Prefer explicit exported reduction artifacts.  Otherwise report a completed
+    triangular/back-substitution database only as needing schema-level review.
+    """
+    if id2int_hits and kira_table_hits:
+        return True, "explicit id2int + result reduction table"
+    if run_triangular and run_back and db_summaries:
+        return False, "triangular/back-substitution requested but no exported reduction table; inspect database contents"
+    if db_summaries:
+        return False, "bare kira.db only; insufficient evidence of reusable reduction rules"
+    return False, "no reduction database/output"
 
 
 def _project_record(project: Path, family: str) -> dict:
@@ -56,7 +117,14 @@ def _project_record(project: Path, family: str) -> dict:
     run_back = _text_has(jobs, "run_back_substitution: true")
     run_firefly = _text_has(jobs, "run_firefly: true")
 
-    reusable_reduction = bool(db_hits or (id2int_hits and kira_table_hits))
+    db_summaries = [_sqlite_summary(p) for p in db_hits]
+    reusable_reduction, reusable_reason = _looks_like_completed_reduction(
+        run_triangular=run_triangular,
+        run_back=run_back,
+        id2int_hits=id2int_hits,
+        kira_table_hits=kira_table_hits,
+        db_summaries=db_summaries,
+    )
     return {
         "project": str(project),
         "name": project.name,
@@ -65,6 +133,7 @@ def _project_record(project: Path, family: str) -> dict:
         "run_back_substitution": run_back,
         "run_firefly": run_firefly,
         "kira_db": [str(p) for p in db_hits],
+        "kira_db_details": db_summaries,
         "id2int": [str(p) for p in id2int_hits],
         "kira_result_tables": [str(p) for p in kira_table_hits],
         "masters_final": [str(p) for p in masters_final_hits],
@@ -72,6 +141,7 @@ def _project_record(project: Path, family: str) -> dict:
         "master": [str(p) for p in master_hits],
         "results_family_dir_exists": results_family.exists(),
         "reusable_reduction_artifacts": reusable_reduction,
+        "reusable_reduction_reason": reusable_reason,
     }
 
 
@@ -131,7 +201,17 @@ def main() -> None:
             f"  masters.final: {len(row['masters_final'])}",
             f"  masters/master: {len(row['masters']) + len(row['master'])}",
             f"  reusable reduction artifacts: {row['reusable_reduction_artifacts']}",
+            f"  reason: {row['reusable_reduction_reason']}",
         ])
+        for db in row.get("kira_db_details", []):
+            lines.append(
+                f"  db: size={db['size_bytes']} sqlite={db['sqlite_readable']} "
+                f"tables={len(db['tables'])}"
+            )
+            for table in db.get("tables", []):
+                lines.append(
+                    f"    table {table['name']}: rows={table.get('row_count')}"
+                )
     lines.extend([
         "",
         f"audit JSON: {out_json}",
