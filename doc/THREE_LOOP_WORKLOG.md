@@ -3285,3 +3285,62 @@ kira_vp05_full_masters_candidate_direct_reducibility_r8s3d0_r8s6d2_sec199
 ```
 
 Do not assume the earlier "49 reusable projects" result is valid.
+
+
+### 2026-10-13 Kira DB audit: r8s5d2 contains 34,167 EQUATION rows
+
+Deep artifact inspection changed the picture:
+
+```text
+kira_vp05_full_masters_candidate_closure_r8s3d0_r8s5d2
+  kira.db size: 2,998,272 bytes
+  tables:
+    EQUATION: 34167 rows
+    INTEGRALORDERING: 1
+    VERSION: 1
+    WEIGHTBITS: 1
+```
+
+By contrast:
+
+```text
+r9s5d2 sector-199 local closure:
+  EQUATION: 0 rows
+
+r8s6d2 sector-199 direct reducibility:
+  no EQUATION table
+```
+
+Therefore the best reuse candidate is the monolithic r8s5d2 candidate-closure
+database.  Although it has no exported reduction table/id2int and cannot yet be
+called a reusable completed reduction, it does retain a substantial equation
+store.
+
+A read-only database table inspector was added to reveal the EQUATION schema,
+column types, indexes, and sample values.  This is the next decision point:
+if Kira's stored equations can be decoded/mapped back to integral IDs, QEDCalc
+may reuse the established s<=5 equation system instead of rebuilding degree
+0..5 pivots in Python.
+
+New files:
+
+```text
+examples/three_loop_kira_db_inspect.py
+run_three_loop_kira_db_inspect.bat
+```
+
+Commits:
+
+```text
+2ee64141568fe45b3e6191e554831b1cbf08c564
+  Add read-only Kira DB table inspector
+
+ae1aaa7ab018f584c03bbb7ebe95cfadde1e730a
+  Add Kira DB inspector runner
+```
+
+Recommended command:
+
+```powershell
+.\run_three_loop_kira_db_inspect.bat candidate_closure_r8s3d0_r8s5d2 EQUATION 5
+```
