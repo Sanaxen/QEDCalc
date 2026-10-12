@@ -3177,3 +3177,63 @@ Recommended run:
 ```
 
 Do not run the monolithic degree-5 probe next.
+
+
+### 2026-10-13 incremental native IBP scaling became non-viable; inspect reusable Kira reduction artifacts
+
+The streaming incremental native-IBP run remained numerically stable, but its
+wall-clock scaling degraded severely as the accumulated pivot set grew.
+
+Observed degree-5 batch timing for 250 seeds:
+
+```text
+earlier: ~30 minutes
+later:   ~1.5 hours
+current: ~4 hours
+```
+
+At the time of reassessment the run was around:
+
+```text
+degree 5: batch 2250:2500/4368
+```
+
+The increasing cost is consistent with sparse fill-in: each new batch is being
+reduced against a progressively larger pivot map, so per-batch work is not
+constant.  Since degree 6 contains a much larger exact shell, extrapolating the
+current trend gives a weeks-scale run rather than a few days.
+
+The current Python incremental elimination should therefore be stopped.  Its
+checkpoint remains available, so no completed work is lost.
+
+Before attempting further native elimination, inspect whether earlier successful
+Kira s<=5 projects retained actual reduction artifacts (`kira.db`,
+`results/<family>/id2int`, reduction tables), not only master lists.  If such
+artifacts exist, they can potentially supply the already-known lower-shell
+reduction and avoid rebuilding degree 0..5 pivots in Python.
+
+New diagnostic:
+
+```text
+examples/three_loop_kira_reduction_artifact_audit.py
+run_three_loop_kira_reduction_artifact_audit.bat
+```
+
+Commits:
+
+```text
+55592a5d6aabf5a77608b50c0186fcc337fc0c4d
+  Add Kira reduction artifact audit
+
+c01adbc18746872414d81c3f681350755acab19d
+  Add Kira reduction artifact audit runner
+```
+
+Recommended next command after stopping the current incremental run:
+
+```powershell
+.\run_three_loop_kira_reduction_artifact_audit.bat VP05_full
+```
+
+Do not launch degree 6 or continue the weeks-scale Python pivot accumulation
+until this artifact audit is inspected.
