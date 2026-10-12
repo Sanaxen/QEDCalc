@@ -3344,3 +3344,79 @@ Recommended command:
 ```powershell
 .\run_three_loop_kira_db_inspect.bat candidate_closure_r8s3d0_r8s5d2 EQUATION 5
 ```
+
+
+### 2026-10-13 Kira r8s5d2 DB contains no nontrivial reusable IBP equations
+
+Detailed inspection of
+
+```text
+kira_vp05_full_masters_candidate_closure_r8s3d0_r8s5d2/results/kira.db
+```
+
+showed:
+
+```text
+EQUATION rows: 34167
+AUXILIARY=1: 34167
+LENGTH=1: 34167
+LENGTH>1: 0
+AUXILIARY=0: 0
+sector 199: 0
+COEFFICIENT: 1 in sampled rows
+ID == ARRAYID in sampled rows
+```
+
+Therefore these records are not the nontrivial IBP reduction/equation system
+needed to seed the native solver.  The Kira-DB reuse route is abandoned for this
+project.
+
+The next rescue path exploits a previously measured geometric fact: the new
+s=6 shell contains 868,824 integrals globally, but only 924 are at the minimum
+L1 distance 6 from the sector-199 target, all in sector 199.  This motivates a
+fixed-sector numerator-simplex probe.
+
+The probe keeps all positive powers equal to the target and varies only the
+seven zero-power indices with total numerator degree s=0..6.  This reaches the
+new s=6 boundary directly without the much larger bounded degree domain that
+also varies positive powers/dots.
+
+For seven numerator slots, the complete simplex through s=6 has only:
+
+```text
+sum_{s=0}^6 C(s+6,6) = C(13,7) = 1716 seeds
+```
+
+The s=6 shell itself has:
+
+```text
+C(12,6) = 924 seeds
+```
+
+This is a diagnostic, not a proof of stability: failure to find a target pivot
+is inconclusive because d>0 / positive-power variations are omitted.  A target
+pivot found consistently in both finite fields is useful evidence and would
+trigger the RHS-reduction stage.
+
+New files:
+
+```text
+examples/three_loop_master_basis_candidate_sector199_numerator_probe.py
+run_three_loop_master_basis_candidate_sector_numerator_probe.bat
+```
+
+Commits:
+
+```text
+4c366397e70fb2b23d33581b6199934c642ef631
+  Add fixed-sector numerator simplex IBP probe
+
+408881c49c94700e825cf41da9e9ba3a23f5d8b6
+  Add fixed-sector numerator probe runner
+```
+
+Recommended run:
+
+```powershell
+.\run_three_loop_master_basis_candidate_sector_numerator_probe.bat VP05_full r8s3d0 199 6
+```
