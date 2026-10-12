@@ -3420,3 +3420,79 @@ Recommended run:
 ```powershell
 .\run_three_loop_master_basis_candidate_sector_numerator_probe.bat VP05_full r8s3d0 199 6
 ```
+
+
+### 2026-10-13 fixed-sector native probe also develops catastrophic fill-in; switch to restricted FireFly
+
+The fixed-sector numerator-simplex native probe initially progressed in minutes
+per row, but by:
+
+```text
+[sector-numerator] probe 1: rows=7000/25740 pivots=6999
+```
+
+the cost had degraded to roughly 30 minutes per row.
+
+This confirms that the dominant problem is not only seed-domain size; the
+Python sparse elimination itself develops severe fill-in as the pivot set grows.
+Continuing the remaining ~18,700 rows is not practical.
+
+The native probe should be stopped.
+
+A new restricted Kira/FireFly rescue path was added.  It is deliberately much
+smaller than the earlier full r8s6d2 direct-reducibility attempt:
+
+```text
+family: VP05_full
+sector: 199
+target: VP05_full[1,1,1,0,0,0,1,1,0,0,0,0]
+r: 5
+s: 6
+d: 0
+mandatory targets: 1
+top-level sectors: [199]
+solver: FireFly
+```
+
+Rationale:
+
+- r=5 is the target's positive-line count;
+- d=0 forbids dotted positive propagators;
+- s=6 reaches exactly the unresolved numerator boundary;
+- only the target itself is selected as mandatory;
+- known proper-subsector refined candidates are supplied as preferred masters;
+- FireFly performs the finite-field reconstruction rather than QEDCalc's
+  increasingly expensive Python pivot accumulation.
+
+This does not recreate the 1716 numerator-simplex seeds as an explicit
+mandatory list.  Instead Kira is asked to generate the exact restricted
+sector-199 r5s6d0 IBP problem while only the target is mandatory.  This keeps
+the reduction objective minimal while still allowing the s=6 relations needed
+for the target.
+
+New files:
+
+```text
+examples/three_loop_master_basis_candidate_firefly_numerator.py
+run_three_loop_master_basis_candidate_firefly_numerator.bat
+```
+
+Commits:
+
+```text
+cd73e1f0b4dd88366b241af17a611f0dbe9f753e
+  Add restricted FireFly numerator rescue probe
+
+aa52bc617000343b14c4160407cb8cb6d8fe3452
+  Add restricted FireFly numerator runner
+```
+
+Recommended run:
+
+```powershell
+.\run_three_loop_master_basis_candidate_firefly_numerator.bat VP05_full r8s3d0 199 6 5
+```
+
+If Kira equation generation again stalls before FireFly begins, then the
+remaining bottleneck is Kira's IBP generation even in the r5s6d0 restriction,
+and a different generator/reduction strategy will be required.
