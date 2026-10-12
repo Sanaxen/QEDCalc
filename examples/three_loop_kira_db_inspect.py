@@ -9,11 +9,14 @@ from pathlib import Path
 from three_loop.integral_family_classification import ROOT
 
 
-def _find_project(name_filter: str) -> Path:
+def _find_project(family: str, name_filter: str) -> Path:
     out = ROOT / "output"
+    family_key = family.lower()
     hits = sorted(
         p for p in out.iterdir()
-        if p.is_dir() and name_filter.lower() in p.name.lower()
+        if p.is_dir()
+        and family_key in p.name.lower()
+        and name_filter.lower() in p.name.lower()
     )
     if len(hits) != 1:
         raise SystemExit(f"expected exactly one project for filter {name_filter!r}, found {len(hits)}: {hits}")
@@ -29,12 +32,13 @@ def _db(project: Path) -> Path:
 
 def main() -> None:
     p = argparse.ArgumentParser()
+    p.add_argument("--family", required=True)
     p.add_argument("--project-filter", required=True)
     p.add_argument("--table", default="EQUATION")
     p.add_argument("--sample-rows", type=int, default=5)
     args = p.parse_args()
 
-    project = _find_project(args.project_filter)
+    project = _find_project(args.family, args.project_filter)
     db = _db(project)
     uri = "file:" + db.resolve().as_posix() + "?mode=ro"
     con = sqlite3.connect(uri, uri=True)
