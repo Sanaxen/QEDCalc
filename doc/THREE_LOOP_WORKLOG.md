@@ -3684,3 +3684,52 @@ Recommended command after pulling:
 ```powershell
 .\run_three_loop_master_basis_candidate_firefly_numerator.bat VP05_full r8s3d0 199 6 2 5
 ```
+
+
+### 2026-10-13 final fallback policy: no hardware escalation; literature reconstruction/citation instead
+
+Project policy clarification:
+
+Increasing hardware resources (for example moving the calculation to a
+64/128-GB machine or external compute system) is NOT an available fallback for
+this project.
+
+The final escalation ladder for the remaining three-loop master-basis families
+is therefore:
+
+1. ordinary masters-first / initiate-only Kira;
+2. one-axis boundary checks and candidate refinement;
+3. preferred-master and sector-local decomposition;
+4. restricted target-specific Kira problems;
+5. Kira/FireFly finite-field reduction on the smallest justified boundary;
+6. if direct computation remains infeasible on the available hardware,
+   reconstruct the result from published literature where possible.
+
+The literature fallback must be handled conservatively:
+
+- first search for a published integral family / master basis / reduction table
+  that can be mapped to the QEDCalc topology;
+- document the propagator and sector mapping explicitly;
+- independently verify every part that can still be checked locally
+  (topology, denominator family, symmetry/equivalence, sector membership,
+  master count, normalization conventions, etc.);
+- distinguish a literature-derived master basis from a QEDCalc-computed one;
+- if only a published final result is available and the diagram-level master
+  basis cannot be reconstructed independently, state that limitation rather
+  than implying an in-house derivation.
+
+For the final 72-diagram documentation, any such exceptional case must be
+labelled explicitly, for example:
+
+```text
+Computation status: literature-derived / independently mapped
+Reason: direct IBP master-basis computation exceeded the available local
+hardware resources.
+Source: <paper / ancillary file / database>
+Verification performed: <topology/family/sector/symmetry checks>
+Remaining limitation: <what could not be independently recomputed>
+```
+
+The goal remains to produce a reproducible 72-diagram master-integral record.
+Literature citation is the last resort only after the computational reduction
+strategies above have been exhausted.
