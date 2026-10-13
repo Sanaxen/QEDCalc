@@ -221,7 +221,7 @@ def finalize(args: argparse.Namespace) -> None:
         conclusion = "reducible"
         audit_pass = True
     elif target_is_master and counts["unresolved"] == 0:
-        conclusion = "retained-master-in-restricted-r5s6d0-probe"
+        conclusion = f"retained-master-in-restricted-{seed.tag}-probe"
         audit_pass = True
     elif target_is_master:
         conclusion = "retained-master-in-restricted-r5s6d0-probe"
