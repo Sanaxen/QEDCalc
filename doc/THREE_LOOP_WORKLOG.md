@@ -3733,3 +3733,88 @@ Remaining limitation: <what could not be independently recomputed>
 The goal remains to produce a reproducible 72-diagram master-integral record.
 Literature citation is the last resort only after the computational reduction
 strategies above have been exhausted.
+
+
+### 2026-10-14 restricted r7s6d2 sector-199 probe completes: target still retained as master
+
+The final restricted sector-199 boundary probe completed successfully:
+
+```text
+seed: r7s6d2
+sector: 199
+target:
+  VP05_full[1,1,1,0,0,0,1,1,0,0,0,0]
+```
+
+Kira statistics:
+
+```text
+10,367,327 equations
+  7,779,231 zero
+  2,588,096 independent
+
+6,012,213 independent coefficients
+```
+
+Master identification:
+
+```text
+Number of master integrals: 1
+VP05_full[1,1,1,0,0,0,1,1,0,0,0,0] # 199
+
+No integrals to reduce, skipping this family.
+```
+
+QEDCalc classification:
+
+```text
+master: 1
+reduced: 0
+zero: 0
+unresolved: 0
+conclusion: retained-master-in-restricted-r7s6d2-probe
+audit pass: True
+```
+
+Total runtime:
+
+```text
+40553.4 s ~= 11.26 h
+```
+
+Observed resources:
+
+```text
+WSL memory: at configured 30 GB ceiling
+swap peak/use: approximately 130 GB
+```
+
+Combined restricted sector-199 evidence is now:
+
+```text
+r5s6d0 -> retained master
+r6s6d1 -> retained master
+r7s6d2 -> retained master
+```
+
+Interpretation:
+
+- For the sector-199 target, the complete restricted path through the required
+  s=6 and d<=2 boundary retains the target as a master.
+- Because sector 199 has five positive propagators, d=2 corresponds to r=7;
+  there is no need to push this exact sector to r=8 merely to satisfy the
+  global r8 envelope.
+- This is strong sector-local evidence for stability of the problematic
+  candidate under the unresolved s/d boundary.
+- It is still not, by itself, a proof of the entire VP05_full r8s6d2 global
+  closure because other candidate sectors / cross-sector contexts remain.
+- Resource scaling is now severe (30 GB RAM ceiling, ~130 GB swap). Do not widen
+  this particular sector-199 restricted problem further.
+
+Next VP05 decision:
+1. treat sector 199 as locally closed for the r8s6d2 boundary;
+2. apply the same minimal restricted-boundary logic only to remaining unresolved
+   candidate sectors rather than rerunning the monolithic r8s6d2 job;
+3. separately resolve the r8s5d3 one-axis boundary;
+4. only after those sector-local checks are complete, decide whether VP05_final63
+   can be registered.
