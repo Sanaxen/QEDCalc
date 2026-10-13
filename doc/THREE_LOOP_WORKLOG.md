@@ -3613,3 +3613,74 @@ Recommended next command:
 ```
 
 If this retains the target as a master, proceed next to r7s6d2 using max_d=2.
+
+
+### 2026-10-13 restricted r6s6d1 sector-199 probe also retains target as master
+
+The second restricted boundary test completed successfully:
+
+```text
+seed: r6s6d1
+sector: 199
+target:
+  VP05_full[1,1,1,0,0,0,1,1,0,0,0,0]
+```
+
+Kira statistics:
+
+```text
+3,762,370 equations
+  2,607,385 zero
+  1,154,985 independent
+
+5,494,264 independent coefficients
+```
+
+Master identification:
+
+```text
+Number of master integrals: 1
+VP05_full[1,1,1,0,0,0,1,1,0,0,0,0] # 199
+
+No integrals to reduce, skipping this family.
+```
+
+QEDCalc classification:
+
+```text
+master: 1
+reduced: 0
+zero: 0
+unresolved: 0
+audit pass: True
+```
+
+Total runtime:
+
+```text
+17926.5 s ~= 4.98 h
+```
+
+The printed conclusion string still said
+`retained-master-in-restricted-r5s6d0-probe`; this was only a reporting bug.
+The actual manifest/test seed was r6s6d1. The helper was corrected to include
+the actual dynamic seed tag in the conclusion.
+
+Commit:
+
+```text
+52485cf7fd2ffacdad60ac7c621effd9958887de
+  Fix restricted FireFly audit conclusion seed label
+```
+
+Next restricted boundary:
+
+```text
+r7s6d2
+```
+
+Recommended command after pulling:
+
+```powershell
+.\run_three_loop_master_basis_candidate_firefly_numerator.bat VP05_full r8s3d0 199 6 2 5
+```
