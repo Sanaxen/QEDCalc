@@ -6,12 +6,14 @@ if "%~1"=="" goto :usage
 if "%~2"=="" goto :usage
 if "%~3"=="" goto :usage
 if "%~4"=="" goto :usage
+if "%~5"=="" goto :usage
 
 set "FAMILY=%~1"
 set "BASELINE=%~2"
 set "SECTOR=%~3"
 set "MAXS=%~4"
-set "ORDERING=%~5"
+set "MAXD=%~5"
+set "ORDERING=%~6"
 if "%ORDERING%"=="" set "ORDERING=5"
 
 if not exist ".venv\Scripts\python.exe" (
@@ -24,6 +26,7 @@ if not exist ".venv\Scripts\python.exe" (
   --baseline-seed "%BASELINE%" ^
   --sector "%SECTOR%" ^
   --max-s "%MAXS%" ^
+  --max-d "%MAXD%" ^
   --prepare
 if errorlevel 1 exit /b %ERRORLEVEL%
 
@@ -33,6 +36,7 @@ set "PROJECT_FILE=%TEMP%\qedcalc_firefly_numerator_%RANDOM%_%RANDOM%.txt"
   --baseline-seed "%BASELINE%" ^
   --sector "%SECTOR%" ^
   --max-s "%MAXS%" ^
+  --max-d "%MAXD%" ^
   --print-project > "%PROJECT_FILE%"
 set "LIST_ERR=%ERRORLEVEL%"
 if not "%LIST_ERR%"=="0" (
@@ -66,10 +70,11 @@ if not "%KIRA_ERR%"=="0" (
   --baseline-seed "%BASELINE%" ^
   --sector "%SECTOR%" ^
   --max-s "%MAXS%" ^
+  --max-d "%MAXD%" ^
   --finalize
 exit /b %ERRORLEVEL%
 
 :usage
-echo Usage: %~nx0 FAMILY BASELINE_SEED SECTOR MAX_S [ORDERING]
-echo Example: %~nx0 VP05_full r8s3d0 199 6 5
+echo Usage: %~nx0 FAMILY BASELINE_SEED SECTOR MAX_S MAX_D [ORDERING]
+echo Example: %~nx0 VP05_full r8s3d0 199 6 1 5
 exit /b 2
