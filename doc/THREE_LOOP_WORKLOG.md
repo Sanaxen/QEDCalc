@@ -3572,3 +3572,44 @@ Next decision point: determine the smallest additional Kira boundary tests
 needed to bridge the remaining gap from restricted r5s6d0 sector-199 stability
 to the full r8s6d2 closure, without returning to the pathological monolithic
 r8s6d2 run.
+
+
+### 2026-10-13 next restricted boundary test: r6s6d1
+
+After the successful r5s6d0 sector-199 restricted probe, the next boundary test
+is the one-dot extension:
+
+```text
+sector: 199
+target: VP05_full[1,1,1,0,0,0,1,1,0,0,0,0]
+seed: r6s6d1
+```
+
+For this target there are five positive propagator lines. Therefore:
+
+```text
+d=0 -> r=5
+d=1 -> r=6
+d=2 -> r=7
+```
+
+The restricted FireFly helper/runner now accepts an explicit `max_d` and sets
+`r = positive_line_count + d`.
+
+Commits:
+
+```text
+6aa06e45e20c105b8c24d4e64180c4bd2fad4f4f
+  Allow dot-degree boundary in restricted FireFly probe
+
+db2e523a6f879bf8ba63f174da27819cf74702bd
+  Pass dot degree to restricted FireFly runner
+```
+
+Recommended next command:
+
+```powershell
+.\run_three_loop_master_basis_candidate_firefly_numerator.bat VP05_full r8s3d0 199 6 1 5
+```
+
+If this retains the target as a master, proceed next to r7s6d2 using max_d=2.
