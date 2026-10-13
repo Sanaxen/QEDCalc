@@ -3818,3 +3818,67 @@ Next VP05 decision:
 3. separately resolve the r8s5d3 one-axis boundary;
 4. only after those sector-local checks are complete, decide whether VP05_final63
    can be registered.
+
+
+### 2026-10-14 sector-local closure can reuse mathematically equivalent restricted audits
+
+After the successful sector-199 restricted sequence
+
+```text
+r5s6d0 -> retained master
+r6s6d1 -> retained master
+r7s6d2 -> retained master
+```
+
+the generic r8s6d2 sector-local closure was updated to recognize a passing
+restricted exact-sector audit as equivalent evidence when the requested r
+ceiling is redundant under the d ceiling.
+
+For a fixed sector:
+
+```text
+r = n_positive_lines + d
+```
+
+because each positive propagator contributes one baseline power and every
+additional positive power contributes one unit of d.
+
+Therefore the effective r ceiling for an exact-sector Seed(r,s,d) is
+
+```text
+effective_r = min(r, n_positive_lines + d)
+```
+
+For sector 199, the target has five positive lines.  Thus for requested
+r8s6d2:
+
+```text
+effective_r = min(8, 5 + 2) = 7
+```
+
+so the passing r7s6d2 restricted audit covers the exact-sector r8s6d2 boundary.
+
+Implementation:
+
+- prepare/reuse checks now look for a matching passing restricted FireFly audit;
+- print-projects skips such sectors;
+- finalize records them as
+  `restricted-equivalent-firefly-audit`;
+- no manual skip list is used; the equivalence is derived from the target
+  sector and Seed(r,s,d).
+
+Commit:
+
+```text
+976dab6a89f14e430bd7e337862931ad50d26705
+  Reuse equivalent restricted audits in sector closure
+```
+
+Recommended resume command:
+
+```powershell
+.\run_three_loop_master_basis_candidate_sector_closure.bat VP05_full r8s3d0 r8s6d2
+```
+
+Expected behavior: previously completed sectors and sector 199 are skipped;
+the next unresolved candidate sector should be sector 201.
