@@ -3496,3 +3496,79 @@ Recommended run:
 If Kira equation generation again stalls before FireFly begins, then the
 remaining bottleneck is Kira's IBP generation even in the r5s6d0 restriction,
 and a different generator/reduction strategy will be required.
+
+
+### 2026-10-13 restricted r5s6d0 sector-199 Kira/FireFly probe completes: target retained as master
+
+The restricted rescue run completed successfully:
+
+```text
+family: VP05_full
+sector: 199
+seed: r5s6d0
+mandatory targets: 1
+target:
+  VP05_full[1,1,1,0,0,0,1,1,0,0,0,0]
+```
+
+Kira generated the complete restricted equation system over the 12 relevant
+sectors:
+
+```text
+848812 equations
+  463807 zero
+  385005 independent
+
+3971838 independent coefficients
+```
+
+Master identification then gave:
+
+```text
+Number of master integrals: 1
+VP05_full[1,1,1,0,0,0,1,1,0,0,0,0] # 199
+
+No integrals to reduce, skipping this family.
+```
+
+QEDCalc audit:
+
+```text
+master count: 1
+target classification:
+  master: 1
+  reduced: 0
+  zero: 0
+  unresolved: 0
+
+conclusion:
+  retained-master-in-restricted-r5s6d0-probe
+
+audit pass: True
+```
+
+Total Kira runtime:
+
+```text
+3173.5 s ~= 52.9 min
+```
+
+Interpretation:
+
+- This is a strong positive result for the previously unresolved numerator
+  boundary: allowing s=6 at fixed sector 199, minimal r=5, and d=0 does NOT
+  generate a relation that removes the target.
+- FireFly reconstruction itself was not needed, because after Kira initiate /
+  master identification the sole mandatory target was already classified as a
+  master and Kira reported "No integrals to reduce".
+- This does NOT yet prove stability in the full r8s6d2 envelope.  The restricted
+  probe deliberately excludes positive-power/dot extensions (r>5 or d>0) and
+  broader sector contexts.
+- The weeks-scale native-Python pivot accumulation should remain abandoned.
+  Kira's native master-identification route is dramatically more efficient for
+  this question.
+
+Next decision point: determine the smallest additional Kira boundary tests
+needed to bridge the remaining gap from restricted r5s6d0 sector-199 stability
+to the full r8s6d2 closure, without returning to the pathological monolithic
+r8s6d2 run.
