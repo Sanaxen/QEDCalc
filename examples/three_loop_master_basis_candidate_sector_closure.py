@@ -27,6 +27,7 @@ from three_loop.master_basis_api import (
     Seed,
     export_kira_project,
     find_or_infer_masters,
+    integral_complexity,
     parse_integral,
 )
 from examples.three_loop_master_basis_candidate_closure import (
@@ -112,6 +113,70 @@ def _context(args: argparse.Namespace):
     )
 
 
+def _restricted_equivalent_audit(
+    family_id: str,
+    baseline: Seed,
+    seed: Seed,
+    sector: int,
+    targets: list[str],
+) -> tuple[bool, str]:
+    """Accept a passing restricted exact-sector audit when it covers the seed envelope.
+
+    For a fixed sector, r and d are not independent:
+        r = n_positive_lines + d.
+    Therefore, if the requested seed's r ceiling exceeds the maximum allowed by
+    its d ceiling, the effective r ceiling is n_positive_lines + d.  A passing
+    restricted FireFly audit at that effective (r,s,d) envelope is equivalent
+    for this exact-sector target check.
+    """
+    if len(targets) != 1:
+        return False, "restricted-equivalent audit requires exactly one target"
+
+    family, indices = parse_integral(targets[0])
+    if family != family_id:
+        return False, "target family mismatch"
+
+    positive_lines = sum(1 for a in indices if int(a) > 0)
+    effective_r = min(seed.r, positive_lines + seed.d)
+    effective = Seed(effective_r, seed.s, seed.d)
+
+    pattern = (
+        f"three_loop_{family_id.lower()}_firefly_numerator_"
+        f"{baseline.tag}_{effective.tag}_sec{sector}_audit.json"
+    )
+    hits = sorted(AUDIT_DIR.glob(pattern))
+    if len(hits) != 1:
+        return False, (
+            f"no unique restricted-equivalent audit for {effective.tag}; "
+            f"hits={len(hits)}"
+        )
+
+    try:
+        data = json.loads(hits[0].read_text(encoding="utf-8"))
+    except Exception as exc:
+        return False, f"cannot read restricted audit: {exc}"
+
+    if not data.get("audit_pass"):
+        return False, f"restricted audit did not pass: {hits[0]}"
+    if int(data.get("sector", -1)) != sector:
+        return False, "restricted audit sector mismatch"
+    if str(data.get("target", "")).replace(" ", "") != targets[0].replace(" ", ""):
+        return False, "restricted audit target mismatch"
+    if str(data.get("firefly_seed", "")) != effective.tag:
+        return False, "restricted audit seed mismatch"
+
+    conclusion = str(data.get("conclusion", ""))
+    if not conclusion.startswith("retained-master-in-restricted-"):
+        return False, f"restricted audit conclusion is not retained-master: {conclusion}"
+
+    return True, (
+        f"restricted-equivalent exact-sector audit {effective.tag} "
+        f"(requested {seed.tag}; positive_lines={positive_lines}, "
+        f"effective_r=min({seed.r},{positive_lines}+{seed.d})={effective_r}) "
+        f"from {hits[0]}"
+    )
+
+
 def _reusable_project(project: Path, family_id: str, targets: list[str]) -> tuple[bool, str]:
     """Reuse a completed exact-sector initiate-only result safely."""
     mandatory = project / MANDATORY_NAME
@@ -156,6 +221,12 @@ def prepare(args: argparse.Namespace) -> None:
         reusable, reuse_note = _reusable_project(
             project, spec.family_id, targets
         ) if project.exists() else (False, "project missing")
+        if not reusable:
+            restricted_ok, restricted_note = _restricted_equivalent_audit(
+                spec.family_id, baseline, seed, sector, targets
+            )
+            if restricted_ok:
+                reusable, reuse_note = True, restricted_note
         if not reusable:
             export_kira_project(
                 spec,
@@ -226,7 +297,13 @@ def print_projects(args: argparse.Namespace) -> None:
     total = len(groups)
     for index, (sector, targets) in enumerate(groups, start=1):
         project = _project(spec.family_id, baseline, seed, sector)
-        reusable, _ = _reusable_project(project, spec.family_id, targets) if project.exists() else (False, "")
+        reusable, _ = _reusable_project(
+            project, spec.family_id, targets
+        ) if project.exists() else (False, "")
+        if not reusable:
+            reusable, _ = _restricted_equivalent_audit(
+                spec.family_id, baseline, seed, sector, targets
+            )
         if reusable:
             continue
         print(f"{index}|{total}|{project}")
@@ -241,6 +318,26 @@ def finalize(args: argparse.Namespace) -> None:
 
     for sector, targets in groups.items():
         project = _project(spec.family_id, baseline, seed, sector)
+        restricted_ok, restricted_note = _restricted_equivalent_audit(
+            spec.family_id, baseline, seed, sector, targets
+        )
+        if restricted_ok:
+            retained = sorted(set(targets))
+            retained_all.update(retained)
+            rows.append({
+                "sector": sector,
+                "target_count": len(targets),
+                "project": str(project),
+                "masters_final": None,
+                "master_source_mode": "restricted-equivalent-firefly-audit",
+                "master_count": len(targets),
+                "retained_candidate_count": len(retained),
+                "missing_candidate_masters": [],
+                "stable": True,
+                "reuse_note": restricted_note,
+            })
+            continue
+
         try:
             masters_path, masters, source_mode = find_or_infer_masters(
                 project,
