@@ -73,11 +73,17 @@ def _context(args: argparse.Namespace):
         )
     target = targets[0]
 
-    # For the current target every positive index equals one.  Thus r equals the
-    # number of positive lines.  Keep d=0 so Kira does not introduce dotted
-    # positive propagators while reaching only the new numerator s boundary.
-    positive_count = sum(1 for x in target.split("[", 1)[1].rstrip("]").split(",") if int(x) > 0)
-    seed = Seed(positive_count, int(args.max_s), 0)
+    # For the current target every positive index equals one.  Increasing dot
+    # degree by d raises the positive-power sum r from the positive-line count
+    # to positive_count + d.  This lets us test the restricted boundary in the
+    # sequence r5s6d0 -> r6s6d1 -> r7s6d2 without reopening the full family.
+    positive_count = sum(
+        1
+        for x in target.split("[", 1)[1].rstrip("]").split(",")
+        if int(x) > 0
+    )
+    dot_degree = int(args.max_d)
+    seed = Seed(positive_count + dot_degree, int(args.max_s), dot_degree)
 
     preferred = sorted({
         x for x in candidate
@@ -287,6 +293,7 @@ def main() -> None:
     p.add_argument("--baseline-seed", type=_parse_seed)
     p.add_argument("--sector", required=True, type=int)
     p.add_argument("--max-s", required=True, type=int)
+    p.add_argument("--max-d", required=True, type=int)
     mode = p.add_mutually_exclusive_group(required=True)
     mode.add_argument("--prepare", action="store_true")
     mode.add_argument("--print-project", action="store_true")
