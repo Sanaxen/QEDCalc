@@ -3882,3 +3882,63 @@ Recommended resume command:
 
 Expected behavior: previously completed sectors and sector 199 are skipped;
 the next unresolved candidate sector should be sector 201.
+
+
+### 2026-10-14 restricted r6s6d2 sector-201 probe completes quickly: target retained as master
+
+The next unresolved VP05 sector, 201, was tested with the effective exact-sector
+boundary derived from four positive lines and d<=2:
+
+```text
+effective seed: r6s6d2
+sector: 201
+target:
+  VP05_full[1,0,0,1,0,0,1,1,0,0,0,0]
+preferred proper-subsector masters: 1
+```
+
+Kira statistics:
+
+```text
+3,692,826 equations
+  2,815,099 zero
+  877,727 independent
+
+2,054,689 independent coefficients
+```
+
+Master identification:
+
+```text
+Number of master integrals: 1
+VP05_full[1,0,0,1,0,0,1,1,0,0,0,0] # 201
+
+No integrals to reduce, skipping this family.
+```
+
+QEDCalc audit:
+
+```text
+master: 1
+reduced: 0
+zero: 0
+unresolved: 0
+conclusion: retained-master-in-restricted-r6s6d2-probe
+audit pass: True
+```
+
+Total runtime:
+
+```text
+3427.2 s ~= 57.1 min
+```
+
+Interpretation:
+
+- sector 201 is now locally closed for the requested r8s6d2 boundary because
+  its four positive lines imply effective_r=min(8,4+2)=6;
+- the restricted Kira/FireFly route is substantially more efficient here than
+  the earlier monolithic/sector-local r8s6d2 approach;
+- continue the remaining unresolved VP05 candidate sectors with the same
+  effective-boundary logic rather than launching the original full sector-local
+  seed whenever possible.
