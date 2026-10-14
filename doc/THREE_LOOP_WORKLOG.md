@@ -3942,3 +3942,46 @@ Interpretation:
 - continue the remaining unresolved VP05 candidate sectors with the same
   effective-boundary logic rather than launching the original full sector-local
   seed whenever possible.
+
+
+### 2026-10-14 sector 202 exposes multi-target refined-candidate case
+
+The first restricted probe attempt for sector 202 stopped before Kira because the
+runner still assumed exactly one refined candidate per sector:
+
+```text
+ValueError: sector 202 must contain exactly one refined candidate; found 3
+```
+
+This is not a physics/reduction failure.  It is a runner limitation.
+
+The restricted FireFly runner was generalized to support every refined
+candidate in the selected exact sector as mandatory targets in one project.
+
+For a fixed exact sector, the effective positive-power envelope is computed from
+the sector bit count rather than from one candidate:
+
+```text
+n_positive_lines = bit_count(sector)
+effective r = n_positive_lines + d
+```
+
+The audit now records:
+
+- `targets`
+- `target_count`
+- aggregate target classification
+- success only when every target is classified as master/reduced/zero
+
+The sector-local closure reuse logic was also extended to accept a passing
+multi-target restricted audit when all targets remain masters.
+
+Commits:
+
+```text
+07e6982d66a39e38116d825dcee1841cb761ebae
+  Support multiple refined targets in restricted sector probe
+
+532ac67d0eba7377508c29d5175ff064159182f9
+  Reuse multi-target restricted sector audits
+```
