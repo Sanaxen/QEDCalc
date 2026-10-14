@@ -129,14 +129,16 @@ def _restricted_equivalent_audit(
     restricted FireFly audit at that effective (r,s,d) envelope is equivalent
     for this exact-sector target check.
     """
-    if len(targets) != 1:
-        return False, "restricted-equivalent audit requires exactly one target"
+    if not targets:
+        return False, "restricted-equivalent audit requires at least one target"
 
-    family, indices = parse_integral(targets[0])
-    if family != family_id:
-        return False, "target family mismatch"
+    for target in targets:
+        family, _ = parse_integral(target)
+        if family != family_id:
+            return False, "target family mismatch"
 
-    positive_lines = sum(1 for a in indices if int(a) > 0)
+    # Every target in an exact sector has the same positive-line support.
+    positive_lines = int(sector).bit_count()
     effective_r = min(seed.r, positive_lines + seed.d)
     effective = Seed(effective_r, seed.s, seed.d)
 
@@ -160,14 +162,28 @@ def _restricted_equivalent_audit(
         return False, f"restricted audit did not pass: {hits[0]}"
     if int(data.get("sector", -1)) != sector:
         return False, "restricted audit sector mismatch"
-    if str(data.get("target", "")).replace(" ", "") != targets[0].replace(" ", ""):
-        return False, "restricted audit target mismatch"
+    audit_targets = data.get("targets")
+    if audit_targets is None and data.get("target") is not None:
+        # Backward compatibility with the original single-target audit schema.
+        audit_targets = [data.get("target")]
+    if audit_targets is None:
+        return False, "restricted audit target list missing"
+    norm = lambda xs: sorted(str(x).replace(" ", "") for x in xs)
+    if norm(audit_targets) != norm(targets):
+        return False, "restricted audit target set mismatch"
     if str(data.get("firefly_seed", "")) != effective.tag:
         return False, "restricted audit seed mismatch"
 
     conclusion = str(data.get("conclusion", ""))
-    if not conclusion.startswith("retained-master-in-restricted-"):
-        return False, f"restricted audit conclusion is not retained-master: {conclusion}"
+    retained_all = (
+        conclusion.startswith("retained-master-in-restricted-")
+        or conclusion.startswith("all-targets-retained-master-in-restricted-")
+    )
+    if not retained_all:
+        return False, (
+            "restricted audit does not retain every candidate as a master: "
+            f"{conclusion}"
+        )
 
     return True, (
         f"restricted-equivalent exact-sector audit {effective.tag} "
