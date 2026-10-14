@@ -67,27 +67,20 @@ def _context(args: argparse.Namespace):
 
     sector = int(args.sector)
     targets = [x for x in candidate if _sector(x) == sector]
-    if len(targets) != 1:
-        raise ValueError(
-            f"sector {sector} must contain exactly one refined candidate; found {len(targets)}"
-        )
-    target = targets[0]
+    if not targets:
+        raise ValueError(f"sector {sector} contains no refined candidates")
 
-    # For the current target every positive index equals one.  Increasing dot
-    # degree by d raises the positive-power sum r from the positive-line count
-    # to positive_count + d.  This lets us test the restricted boundary in the
-    # sequence r5s6d0 -> r6s6d1 -> r7s6d2 without reopening the full family.
-    positive_count = sum(
-        1
-        for x in target.split("[", 1)[1].rstrip("]").split(",")
-        if int(x) > 0
-    )
+    # For a fixed exact sector the positive-line count is fixed by the sector
+    # bit mask, independent of how many refined candidates live in that sector.
+    # With dot degree d, the largest positive-power sum that needs testing is
+    # n_positive_lines + d.
+    positive_count = int(sector).bit_count()
     dot_degree = int(args.max_d)
     seed = Seed(positive_count + dot_degree, int(args.max_s), dot_degree)
 
     preferred = sorted({
         x for x in candidate
-        if x != target
+        if x not in targets
         and (_sector(x) & sector) == _sector(x)
         and _sector(x) != sector
     })
@@ -100,7 +93,7 @@ def _context(args: argparse.Namespace):
         candidate_file,
         candidate,
         sector,
-        target,
+        targets,
         seed,
         preferred,
     )
@@ -115,7 +108,7 @@ def prepare(args: argparse.Namespace) -> None:
         candidate_file,
         candidate,
         sector,
-        target,
+        targets,
         seed,
         preferred,
     ) = _context(args)
@@ -134,7 +127,7 @@ def prepare(args: argparse.Namespace) -> None:
     )
 
     mandatory = project / MANDATORY_NAME
-    mandatory.write_text(target + "\n", encoding="utf-8", newline="\n")
+    mandatory.write_text("\n".join(targets) + "\n", encoding="utf-8", newline="\n")
     preferred_path = project / PREFERRED_NAME
     if preferred:
         preferred_path.write_text("\n".join(preferred) + "\n", encoding="utf-8", newline="\n")
@@ -149,7 +142,8 @@ def prepare(args: argparse.Namespace) -> None:
         "candidate_envelope": envelope.tag,
         "firefly_seed": seed.tag,
         "sector": sector,
-        "target": target,
+        "targets": targets,
+        "target_count": len(targets),
         "candidate_master_file": str(candidate_file),
         "candidate_master_count": len(candidate),
         "preferred_subsector_master_count": len(preferred),
@@ -161,7 +155,7 @@ def prepare(args: argparse.Namespace) -> None:
             "numerator_sum_s": seed.s,
             "dot_degree_d": seed.d,
             "top_level_sector": sector,
-            "mandatory_target_count": 1,
+            "mandatory_target_count": len(targets),
         },
     }
     AUDIT_DIR.mkdir(parents=True, exist_ok=True)
@@ -181,7 +175,9 @@ def prepare(args: argparse.Namespace) -> None:
     print(f"candidate envelope: {envelope.tag}")
     print(f"FireFly seed: {seed.tag}")
     print(f"sector: {sector}")
-    print(f"target: {target}")
+    print(f"targets: {len(targets)}")
+    for target in targets:
+        print(f"  {target}")
     print(f"preferred proper-subsector masters: {len(preferred)}")
     print(f"project: {project}")
     print(f"manifest: {manifest_path}")
@@ -202,7 +198,7 @@ def finalize(args: argparse.Namespace) -> None:
         candidate_file,
         candidate,
         sector,
-        target,
+        targets,
         seed,
         preferred,
     ) = _context(args)
@@ -211,24 +207,25 @@ def finalize(args: argparse.Namespace) -> None:
     masters_path, masters, source_mode = find_or_infer_masters(
         project,
         spec.family_id,
-        mandatory_targets=[target],
+        mandatory_targets=targets,
     )
-    status = _classify_targets(project, spec.family_id, [target], masters)
+    status = _classify_targets(project, spec.family_id, targets, masters)
     counts = status["counts"]
-    target_is_master = target in set(masters)
+    master_set = set(masters)
+    retained_targets = [x for x in targets if x in master_set]
 
-    if counts["reduced"] == 1 or counts["zero"] == 1:
-        conclusion = "reducible"
-        audit_pass = True
-    elif target_is_master and counts["unresolved"] == 0:
-        conclusion = f"retained-master-in-restricted-{seed.tag}-probe"
-        audit_pass = True
-    elif target_is_master:
-        conclusion = "retained-master-in-restricted-r5s6d0-probe"
-        audit_pass = True
+    # A restricted probe is considered successful when every mandatory target
+    # has a definite classification: reduced, zero, or retained as a master.
+    classified = (
+        counts["master"] + counts["reduced"] + counts["zero"]
+    )
+    audit_pass = counts["unresolved"] == 0 and classified == len(targets)
+    if audit_pass and counts["master"] == len(targets):
+        conclusion = f"all-targets-retained-master-in-restricted-{seed.tag}-probe"
+    elif audit_pass:
+        conclusion = f"all-targets-classified-in-restricted-{seed.tag}-probe"
     else:
         conclusion = "unresolved"
-        audit_pass = False
 
     stem = (
         f"three_loop_{spec.family_id.lower()}_firefly_numerator_"
@@ -244,7 +241,8 @@ def finalize(args: argparse.Namespace) -> None:
         "candidate_envelope": envelope.tag,
         "firefly_seed": seed.tag,
         "sector": sector,
-        "target": target,
+        "targets": targets,
+        "target_count": len(targets),
         "candidate_master_file": str(candidate_file),
         "candidate_master_count": len(candidate),
         "preferred_subsector_master_count": len(preferred),
@@ -258,10 +256,10 @@ def finalize(args: argparse.Namespace) -> None:
         "conclusion": conclusion,
         "audit_pass": audit_pass,
         "interpretation": (
-            "This is a restricted r=positive-line-count, s=6, d=0 sector probe. "
-            "A reduction is a positive reducibility witness. Retention as a master "
-            "is evidence only within this restricted no-dot numerator boundary and "
-            "does not by itself prove full r8s6d2 stability."
+            f"This is a restricted exact-sector {seed.tag} probe. "
+            "A reduction/zero classification is a positive reducibility witness; "
+            "retention is evidence within the tested exact-sector boundary. "
+            "The audit covers all refined candidates in this sector."
         ),
     }
     audit_json.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8", newline="\n")
@@ -272,7 +270,8 @@ def finalize(args: argparse.Namespace) -> None:
         f"baseline seed: {baseline.tag}",
         f"FireFly seed: {seed.tag}",
         f"sector: {sector}",
-        f"target: {target}",
+        f"targets: {len(targets)}",
+        *[f"  {target}" for target in targets],
         f"preferred proper-subsector masters: {len(preferred)}",
         f"master count: {len(masters)}",
         f"target classification: {counts}",
