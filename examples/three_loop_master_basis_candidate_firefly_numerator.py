@@ -253,11 +253,34 @@ def finalize(args: argparse.Namespace) -> None:
         multi_target=len(targets) > 1,
     )
 
-    masters_path, masters, source_mode = find_or_infer_masters(
-        project,
-        spec.family_id,
-        mandatory_targets=targets,
-    )
+    try:
+        masters_path, masters, source_mode = find_or_infer_masters(
+            project,
+            spec.family_id,
+            mandatory_targets=targets,
+        )
+    except ValueError:
+        # Multi-target preferred-master experiments use a fresh project
+        # namespace.  If that experiment fails before master identification,
+        # salvage the earlier restricted FireFly project when it already
+        # completed Kira's initiate/master-selection stage for the exact same
+        # mandatory target set.
+        if len(targets) <= 1:
+            raise
+        legacy_project = _project(
+            spec.family_id,
+            baseline,
+            sector,
+            seed,
+            multi_target=False,
+        )
+        masters_path, masters, source_mode = find_or_infer_masters(
+            legacy_project,
+            spec.family_id,
+            mandatory_targets=targets,
+        )
+        project = legacy_project
+        source_mode = f"legacy-restricted-project:{source_mode}"
     status = _classify_targets(project, spec.family_id, targets, masters)
     counts = status["counts"]
     master_set = set(masters)
