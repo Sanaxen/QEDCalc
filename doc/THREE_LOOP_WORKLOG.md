@@ -3985,3 +3985,56 @@ Commits:
 532ac67d0eba7377508c29d5175ff064159182f9
   Reuse multi-target restricted sector audits
 ```
+
+
+### 2026-10-15 sector 202 restricted r6s6d2: master identification succeeds, late Kira reduction fails
+
+The multi-target restricted sector-202 probe reached master identification
+successfully before Kira exited nonzero during the later reduction phase.
+
+Observed resource pressure:
+
+```text
+WSL memory: at 30 GB ceiling
+swap: rose to approximately 230 GB
+CPU: low single-digit utilization
+```
+
+Kira equation-generation/master-identification output:
+
+```text
+5,351,958 equations
+  4,254,335 zero
+  1,097,623 independent
+
+7,237,092 independent coefficients
+
+Number of master integrals: 4
+VP05_full[0,0,0,1,0,0,1,1,0,0,0,0]    # 200
+VP05_full[0,1,0,1,0,0,1,1,0,0,0,0]    # 202
+VP05_full[-2,1,0,1,0,0,1,1,0,0,0,0]   # 202
+VP05_full[-1,1,0,1,-1,0,1,1,0,0,0,0]  # 202
+```
+
+The three refined sector-202 mandatory targets are all present in the identified
+master list.  The fourth master is the proper-subsector sector-200 master.
+
+After this, Kira restarted equation generation for the reduction stage and then
+exited with code 15.  Therefore this is treated as a late reduction/resource
+failure, not a failure of master identification.
+
+The runner was updated so that when Kira exits nonzero after such a late stage,
+QEDCalc automatically attempts `--finalize`.  If the already-written master
+identification output is sufficient to classify every mandatory target, the
+restricted audit is salvaged and the run returns success.
+
+Commit:
+
+```text
+51883752da08e5ca3cfddbbd2ded632fbe231839
+  Salvage restricted audits after late Kira failure
+```
+
+For the current already-computed sector-202 project, do NOT rerun the expensive
+Kira job.  Pull the update and invoke the Python finalize step directly against
+the existing project context.
