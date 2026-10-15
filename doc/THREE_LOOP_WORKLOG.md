@@ -4306,3 +4306,50 @@ Interpretation:
 The preserved Kira master-identification output for this probe contained one
 proper-subsector master (sector 200) and three sector-202 masters.  The next
 step is therefore basis refinement/union update, not another reduction attempt.
+
+
+### 2026-10-15 VP05 sector 202: audited candidate representative replacement helper
+
+Added `examples/three_loop_master_basis_candidate_sector_refine.py` and
+`run_three_loop_master_basis_candidate_sector_refine.bat` to carry the
+restricted Kira master-identification evidence into the *candidate master
+list*. The helper is strictly guarded:
+
+- requires the locally persisted, passing restricted audit for the exact
+  family / baseline / r6s6d2 / sector 202;
+- matches the old exact-sector candidate set to the recovered terminal evidence;
+- uses only the three same-sector masters, explicitly excluding the sector-200
+  proper-subsector master;
+- refuses duplicate representatives, any candidate-cardinality change, or
+  a change to the set of candidate sectors;
+- creates a proposed candidate file and JSON provenance report;
+- `--apply` additionally saves a one-time backup and updates the original
+  candidate file referenced by the passing refinement audit.
+
+The expected local outcome is sector 202: three candidates -> three
+masters, leaving 63 global candidates if the preceding 63-candidate file
+has not changed. **This is a representative replacement, not a proof of
+global 63-dimensional IBP closure or numerical coefficients.**
+
+Windows commands (in the repository root):
+
+```powershell
+git pull
+.\run_three_loop_master_basis_candidate_sector_refine.bat
+.\run_three_loop_master_basis_candidate_sector_refine.bat --apply
+```
+
+The first call performs a guarded dry-run and outputs the proposed master
+list and report. The second makes the audited update; do not run it until
+the dry-run output is checked. No Kira computation is launched here.
+
+Once this has been applied and the 63-candidate sectors reviewed, continue
+sector 203 with the restricted exact-sector boundary: popcount(203)=5,
+effective_r=7, hence r7s6d2, MAX_S=6, MAX_D=2, ORDERING=5.
+
+```powershell
+.\run_three_loop_master_basis_candidate_firefly_numerator.bat VP05_full r8s3d0 203 6 2 5
+```
+
+The missing r8s5d3 direction is a separate pending boundary. No VP05
+final master basis is promoted until the necessary closure evidence passes.
