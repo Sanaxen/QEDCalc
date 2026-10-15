@@ -19,7 +19,7 @@ if exist "%PROJECT%\diagnostic_exit_v2.txt" (
 copy /Y "scripts\sector203_bounded_diagnostic.sh" "%PROJECT%\sector203_bounded_diagnostic.sh" >nul
 if errorlevel 1 exit /b 5
 echo QEDCalc isolated diagnostic: %MODE%
-wsl.exe --cd "%PROJECT%" bash ./sector203_bounded_diagnostic.sh
+wsl.exe --cd "%PROJECT%" bash -c "sed -i 's/\r$//' sector203_bounded_diagnostic.sh && bash -n sector203_bounded_diagnostic.sh && bash ./sector203_bounded_diagnostic.sh"
 set "WSL_RESULT=!ERRORLEVEL!"
 echo WSL_PROCESS_EXIT_CODE=!WSL_RESULT!
 if exist "%PROJECT%\diagnostic_exit_v2.txt" (
