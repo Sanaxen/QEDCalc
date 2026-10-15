@@ -4459,3 +4459,7 @@ running project has its own earlier copied runner and is not modified.
 ### 2026-10-15 sector203 monitor wall-time setting revised
 
 The monitored t1 r5s6d0 run reached sector 202 (11/14) and was terminated by the prior 1800-second timer (`time_stop`, code -15). Observed peak swap ~36.86 GiB and RAM ~29.35 GiB, much lower than swap stop (220 GiB). This timeout was artificial, not a Kira failure or evidence of stalled solve. The monitored Python runner now defaults to `--max-seconds 0` (no time limit); the BAT explicitly passes 0. Swap guard at 220 GiB, warning 210 GiB, 5-second samples, log streaming, and unique per-run output directories remain. A specific positive `--max-seconds` can still be supplied manually for bounded experiments. Do not claim that a terminated run can resume from its final log line: the next invocation creates a fresh Kira project.
+
+### 2026-10-16 VP05 sector 203 one-target r5s6d0 monitored completion
+
+User reports first single-target `r5s6d0` monitored run completed normally: Kira `Total time (31658.1 s)`, monitor elapsed `31683.9 s`, `reason=kira_exit`, `kira_returncode=0`, and final displayed sector `203 (14 of 14)`. This establishes completion of this restricted one-target initiate-only job, **not** the identity or number of masters, nor full four-target r7s6d2 closure. Inspect Kira `results/masters.final`, `kira.log`, and the run manifest before selecting the next expensive calculation. No master basis has been promoted by this report.
