@@ -7,8 +7,8 @@ import re
 ROOT = Path(__file__).resolve().parent.parent
 PREFIX = "kira_vp05_full_preferred_masters_r8s3d0_r7s6d2_sec203_monitored_t1_r5s6d0_"
 CANDIDATE = ROOT / "output/three_loop_integral_family_audit/vp05_full_masters_r8s3d0_union_r8s5d2_refined_masters.txt"
-INTEGRAL = re.compile(r"VP05_full\\[[^\\]\r\n]+\\]")
-HEADER = re.compile(r"Number of master integrals:\\s*(\\d+)")
+INTEGRAL = re.compile(r"VP05_full\[[^\]\r\n]+\]")
+HEADER = re.compile(r"Number of master integrals:\s*(\d+)")
 def sector(expr):
     entries = [int(x.strip()) for x in expr.split("[", 1)[1].rstrip("]").split(",")]
     return sum((1 << i) for i, x in enumerate(entries) if x > 0)
