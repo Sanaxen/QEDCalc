@@ -34,6 +34,34 @@ from examples.three_loop_master_basis_candidate_sector_closure import _sector
 MANDATORY_NAME = "mandatory_firefly_numerator_target.txt"
 PREFERRED_NAME = "preferred_firefly_numerator_subsector_masters.txt"
 
+# Recovery evidence transcribed from the completed Kira master-identification
+# terminal output for VP05_full sector 202. The original runtime results/log were
+# later cleaned by retries, so this preserves the exact already-observed master
+# list without rerunning the 5.35M-equation job. Keep this table narrow and
+# provenance-explicit; do not use it as a generic fallback.
+RECOVERED_MASTER_EVIDENCE = {
+    ("VP05_full", "r8s3d0", "r6s6d2", 202): {
+        "source": "terminal-log-transcription-2026-10-15",
+        "mandatory_targets": [
+            "VP05_full[0,1,0,1,-1,-1,1,1,0,0,0,0]",
+            "VP05_full[0,1,0,1,-2,0,1,1,0,0,0,0]",
+            "VP05_full[0,1,0,1,0,0,1,1,0,0,0,0]",
+        ],
+        "reported_masters": [
+            "VP05_full[0,0,0,1,0,0,1,1,0,0,0,0]",
+            "VP05_full[0,1,0,1,0,0,1,1,0,0,0,0]",
+            "VP05_full[-2,1,0,1,0,0,1,1,0,0,0,0]",
+            "VP05_full[-1,1,0,1,-1,0,1,1,0,0,0,0]",
+        ],
+        "equations": {
+            "total": 5351958,
+            "zero": 4254335,
+            "independent": 1097623,
+            "independent_coefficients": 7237092,
+        },
+    },
+}
+
 
 def _project(
     family: str,
@@ -274,13 +302,30 @@ def finalize(args: argparse.Namespace) -> None:
             seed,
             multi_target=False,
         )
-        masters_path, masters, source_mode = find_or_infer_masters(
-            legacy_project,
-            spec.family_id,
-            mandatory_targets=targets,
-        )
-        project = legacy_project
-        source_mode = f"legacy-restricted-project:{source_mode}"
+        try:
+            masters_path, masters, source_mode = find_or_infer_masters(
+                legacy_project,
+                spec.family_id,
+                mandatory_targets=targets,
+            )
+            project = legacy_project
+            source_mode = f"legacy-restricted-project:{source_mode}"
+        except ValueError:
+            key = (spec.family_id, baseline.tag, seed.tag, sector)
+            evidence = RECOVERED_MASTER_EVIDENCE.get(key)
+            if evidence is None:
+                raise
+            if sorted(evidence["mandatory_targets"]) != sorted(targets):
+                raise ValueError(
+                    "recovered master evidence mandatory target set does not "
+                    "match the current refined candidate set"
+                )
+            masters = list(evidence["reported_masters"])
+            masters_path = Path(
+                f"<recovered-terminal-evidence:{evidence['source']}>"
+            )
+            source_mode = "recovered-kira-terminal-master-identification"
+            project = legacy_project
     status = _classify_targets(project, spec.family_id, targets, masters)
     counts = status["counts"]
     master_set = set(masters)
