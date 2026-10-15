@@ -19,9 +19,9 @@ if exist "%PROJECT%\monitored_kira.log" (
 )
 echo Starting monitored Kira in isolated project:
 echo %PROJECT%
-echo Wall-time cap: 7200 seconds; swap warning: 150 GiB; stop: 170 GiB.
+echo Wall-time cap: disabled; swap warning: 150 GiB; stop: 170 GiB.
 echo NOTE: time/swap stops terminate the Kira process; they do not establish master stability.
-wsl.exe --cd "%PROJECT%" python3 sector203_monitored_kira.py --max-seconds 7200 --warn-gib 150 --stop-gib 170
+wsl.exe --cd "%PROJECT%" python3 sector203_monitored_kira.py --max-seconds 0 --warn-gib 150 --stop-gib 170
 set "RC=%ERRORLEVEL%"
 echo MONITOR_WSL_EXIT_CODE=%RC%
 if exist "%PROJECT%\monitored_exit.json" type "%PROJECT%\monitored_exit.json"
