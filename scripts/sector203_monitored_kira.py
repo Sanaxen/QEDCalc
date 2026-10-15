@@ -29,12 +29,12 @@ def main():
     a = argparse.ArgumentParser()
     a.add_argument("--warn-gib", type=float, default=210)
     a.add_argument("--stop-gib", type=float, default=220)
-    a.add_argument("--max-seconds", type=int, default=1800)
+    a.add_argument("--max-seconds", type=int, default=0, help="0 disables wall-time limit")
     a.add_argument("--interval", type=int, default=5)
     args = a.parse_args()
     if not (0 < args.warn_gib < args.stop_gib <= 240):
         a.error("require 0 < warn-gib < stop-gib <= 240")
-    if args.max_seconds < 10 or args.interval < 1:
+    if (args.max_seconds != 0 and args.max_seconds < 10) or args.interval < 1:
         a.error("invalid duration/interval")
     project = Path.cwd()
     if not (project / "jobs.yaml").is_file():
@@ -114,7 +114,7 @@ def main():
                     break
                 if swap_gib >= args.stop_gib:
                     reason = "swap_stop"
-                elif elapsed >= args.max_seconds:
+                elif args.max_seconds > 0 and elapsed >= args.max_seconds:
                     reason = "time_stop"
                 if swap_gib >= args.warn_gib and not warned:
                     print(f"WARNING: swap >= {args.warn_gib} GiB", flush=True)
