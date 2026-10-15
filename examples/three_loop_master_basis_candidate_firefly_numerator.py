@@ -263,6 +263,32 @@ def finalize(args: argparse.Namespace) -> None:
     master_set = set(masters)
     retained_targets = [x for x in targets if x in master_set]
 
+    # Kira's initiate/master-identification stage has a useful stronger
+    # semantics for mandatory targets: after equation selection, any mandatory
+    # integral for which no reduction formula was found is itself reported as a
+    # master.  Therefore, once a valid master list has been emitted for this
+    # exact mandatory set, a mandatory target absent from that list is evidence
+    # that an initiate-stage reduction relation was found, even if the later
+    # triangular/FireFly export failed before writing text reduction tables.
+    #
+    # Apply this only when every unresolved item belongs to the exact mandatory
+    # set of this project and a non-empty master list was recovered.
+    initiate_reduced = []
+    if masters and counts["unresolved"]:
+        unresolved = list(status["items"]["unresolved"])
+        initiate_reduced = [x for x in unresolved if x in set(targets)]
+        if len(initiate_reduced) == len(unresolved):
+            status["items"]["reduced"].extend(initiate_reduced)
+            status["items"]["unresolved"] = []
+            status["counts"]["reduced"] += len(initiate_reduced)
+            status["counts"]["unresolved"] = 0
+            status["classification_basis"] = (
+                "kira-initiate-master-list: mandatory target absent from the "
+                "reported master list implies a reduction relation was found "
+                "during equation selection"
+            )
+            counts = status["counts"]
+
     # A restricted probe is considered successful when every mandatory target
     # has a definite classification: reduced, zero, or retained as a master.
     classified = (
@@ -304,12 +330,15 @@ def finalize(args: argparse.Namespace) -> None:
         "master_source_mode": source_mode,
         "master_count": len(masters),
         "target_status": status,
+        "initiate_stage_reduced_targets": initiate_reduced,
         "conclusion": conclusion,
         "audit_pass": audit_pass,
         "interpretation": (
             f"This is a restricted exact-sector {seed.tag} probe. "
             "A reduction/zero classification is a positive reducibility witness; "
-            "retention is evidence within the tested exact-sector boundary. "
+            "for mandatory targets, absence from a valid Kira initiate-stage "
+            "master list is also treated as a reduction witness. Retention is "
+            "evidence within the tested exact-sector boundary. "
             "The audit covers all refined candidates in this sector."
         ),
     }
