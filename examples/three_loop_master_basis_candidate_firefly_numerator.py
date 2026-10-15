@@ -35,9 +35,17 @@ MANDATORY_NAME = "mandatory_firefly_numerator_target.txt"
 PREFERRED_NAME = "preferred_firefly_numerator_subsector_masters.txt"
 
 
-def _project(family: str, baseline: Seed, sector: int, seed: Seed) -> Path:
+def _project(
+    family: str,
+    baseline: Seed,
+    sector: int,
+    seed: Seed,
+    *,
+    multi_target: bool = False,
+) -> Path:
+    mode = "preferred_masters" if multi_target else "firefly_numerator"
     return ROOT / "output" / (
-        f"kira_{family.lower()}_firefly_numerator_"
+        f"kira_{family.lower()}_{mode}_"
         f"{baseline.tag}_{seed.tag}_sec{sector}"
     )
 
@@ -121,7 +129,13 @@ def prepare(args: argparse.Namespace) -> None:
         proper_subsector_preferred,
     ) = _context(args)
 
-    project = _project(spec.family_id, baseline, sector, seed)
+    project = _project(
+        spec.family_id,
+        baseline,
+        sector,
+        seed,
+        multi_target=len(targets) > 1,
+    )
 
     # A single target can use the original FireFly path because Kira commonly
     # concludes immediately that there is nothing to reduce.  For multiple
@@ -207,8 +221,14 @@ def prepare(args: argparse.Namespace) -> None:
 
 
 def print_project(args: argparse.Namespace) -> None:
-    spec, baseline, _, _, _, _, sector, _, seed, _, _ = _context(args)
-    print(_project(spec.family_id, baseline, sector, seed))
+    spec, baseline, _, _, _, _, sector, targets, seed, _, _ = _context(args)
+    print(_project(
+        spec.family_id,
+        baseline,
+        sector,
+        seed,
+        multi_target=len(targets) > 1,
+    ))
 
 
 def finalize(args: argparse.Namespace) -> None:
@@ -225,7 +245,13 @@ def finalize(args: argparse.Namespace) -> None:
         preferred,
         proper_subsector_preferred,
     ) = _context(args)
-    project = _project(spec.family_id, baseline, sector, seed)
+    project = _project(
+        spec.family_id,
+        baseline,
+        sector,
+        seed,
+        multi_target=len(targets) > 1,
+    )
 
     masters_path, masters, source_mode = find_or_infer_masters(
         project,
