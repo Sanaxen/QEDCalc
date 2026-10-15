@@ -122,11 +122,19 @@ def prepare(args: argparse.Namespace) -> None:
     ) = _context(args)
 
     project = _project(spec.family_id, baseline, sector, seed)
+
+    # A single target can use the original FireFly path because Kira commonly
+    # concludes immediately that there is nothing to reduce.  For multiple
+    # targets the scientific question here is only whether the requested
+    # refined candidates can be selected as masters at this restricted
+    # boundary.  Use initiate-only masters mode so Kira does not launch the
+    # expensive downstream reduction merely to rotate between equivalent bases.
+    solver = "masters" if len(targets) > 1 else "firefly"
     export_kira_project(
         spec,
         project,
         seed=seed,
-        solver="firefly",
+        solver=solver,
         mandatory_file=MANDATORY_NAME,
         reduce_sectors=[sector],
         top_level_sectors=[sector],
@@ -144,11 +152,12 @@ def prepare(args: argparse.Namespace) -> None:
 
     manifest = {
         "schema_version": 1,
-        "stage": "master_basis_candidate_firefly_numerator_probe",
+        "stage": "master_basis_candidate_restricted_sector_probe",
         "family": spec.family_id,
         "baseline_seed": baseline.tag,
         "candidate_envelope": envelope.tag,
         "firefly_seed": seed.tag,
+        "solver": solver,
         "sector": sector,
         "targets": targets,
         "target_count": len(targets),
@@ -184,6 +193,7 @@ def prepare(args: argparse.Namespace) -> None:
     print(f"baseline seed: {baseline.tag}")
     print(f"candidate envelope: {envelope.tag}")
     print(f"FireFly seed: {seed.tag}")
+    print(f"solver: {solver}")
     print(f"sector: {sector}")
     print(f"targets: {len(targets)}")
     for target in targets:
