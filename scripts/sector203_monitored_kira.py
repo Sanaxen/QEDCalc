@@ -79,7 +79,7 @@ def main():
                     with open("monitored_kira.log", "rb") as inp:
                         inp.seek(max(0, inp.seek(0, 2) - 32768))
                         tail = inp.read().decode("utf-8", "replace")
-                    hits = re.findall(r"Generate equations for topology .*? sector (\\d+) \\((\\d+) of (\\d+)\\)", tail)
+                    hits = re.findall(r"Generate equations for topology .*? sector (\d+) \((\d+) of (\d+)\)", tail)
                     if hits:
                         last_sector = hits[-1]
                 except OSError:
