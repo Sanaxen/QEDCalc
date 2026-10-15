@@ -61,7 +61,21 @@ echo.
 wsl.exe --cd "%WIN_PROJECT%" bash -lc "set -o pipefail; command -v kira >/dev/null 2>&1 || { echo 'ERROR: kira not found in WSL PATH'; exit 127; }; export FERMATPATH=$HOME/fermat/Ferl7/fer64; rm -rf results sectormappings tmp firefly_saves ff_save firefly_saves_alt pyred; echo FERMATPATH=$FERMATPATH; echo INTEGRAL_ORDERING=%ORDERING%; kira --integral_ordering=%ORDERING% jobs.yaml 2>&1 | tee kira_firefly_numerator_order%ORDERING%.log"
 set "KIRA_ERR=%ERRORLEVEL%"
 if not "%KIRA_ERR%"=="0" (
-  echo ERROR: Kira exited with code %KIRA_ERR%.
+  echo WARNING: Kira exited with code %KIRA_ERR%.
+  echo Attempting to salvage a completed master-identification result...
+  ".venv\Scripts\python.exe" -m examples.three_loop_master_basis_candidate_firefly_numerator ^
+    --family "%FAMILY%" ^
+    --baseline-seed "%BASELINE%" ^
+    --sector "%SECTOR%" ^
+    --max-s "%MAXS%" ^
+    --max-d "%MAXD%" ^
+    --finalize
+  set "SALVAGE_ERR=%ERRORLEVEL%"
+  if "%SALVAGE_ERR%"=="0" (
+    echo QEDCalc restricted audit salvaged successfully from Kira master-identification output.
+    exit /b 0
+  )
+  echo ERROR: Kira exited with code %KIRA_ERR% and the partial result could not be finalized.
   exit /b %KIRA_ERR%
 )
 
