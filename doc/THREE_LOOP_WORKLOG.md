@@ -4097,3 +4097,50 @@ Next action: rerun the same sector-202 restricted command after git pull.  The
 existing project directory and Kira database are intentionally not deleted by
 the runner's runtime cleanup, so reusable equation-state may remain available,
 but no speedup is assumed.
+
+
+### 2026-10-15 sector 202 preferred-basis retry: switch multi-target probe to initiate-only masters mode
+
+A retry with the refined sector-202 targets also supplied as preferred masters
+exited before producing any usable master list:
+
+```text
+ValueError: VP05_full: no masters.final, initiate-only master list, or verified
+no-reduction master set found
+ERROR: Kira exited with code 1 and the partial result could not be finalized.
+```
+
+The multi-target restricted probe is therefore changed again.
+
+For one-target sectors the original FireFly route remains useful because Kira
+often identifies the target as a master and reports "No integrals to reduce".
+
+For multi-target sectors, however, the current scientific question is only
+whether the refined targets can themselves be selected as a master basis at the
+restricted exact-sector boundary.  A downstream reduction is unnecessary and
+can cause extreme swap growth merely to convert between equivalent master
+bases.
+
+New policy:
+
+```text
+1 target   -> solver=firefly
+>1 targets -> solver=masters (initiate-only)
+```
+
+The multi-target project still uses:
+
+- the exact-sector restricted r/s/d boundary;
+- all refined exact-sector targets as mandatory targets;
+- the same targets as preferred masters;
+- any known proper-subsector refined masters as additional preferred masters.
+
+The expected output is now only Kira master identification; no FireFly,
+triangular solve, or back substitution is requested.
+
+Commit:
+
+```text
+a2e265b0de61872982f3b545982d0e982e635948
+  Use initiate-only masters mode for multi-target restricted probes
+```
