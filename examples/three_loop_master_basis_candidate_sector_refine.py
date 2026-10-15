@@ -18,7 +18,7 @@ def run(family: str, baseline_text: str, sector: int, seed_text: str, apply: boo
     baseline = _parse_seed(baseline_text)
     seed = _parse_seed(seed_text)
     (_, _, _, _, _, _, candidate_path, candidates, _, mode) = _resolve(
-        argparse.Namespace(family=family, baseline_seed=baseline_text, solver="masters")
+        argparse.Namespace(family=family, baseline_seed=baseline, solver="masters")
     )
     if mode != "refined-candidate-only":
         raise ValueError(f"expected refined-candidate-only, got {mode}")
