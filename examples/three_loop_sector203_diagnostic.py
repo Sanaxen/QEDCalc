@@ -22,7 +22,7 @@ def main():
     if len(targets) != 4:
         raise ValueError("expected four exact-sector targets; refusing diagnostic")
     source = _project(spec.family_id, baseline, sector, seed, multi_target=True)
-    required = ["jobs.yaml", "integralfamilies.yaml", "kinematics.yaml",
+    required = ["jobs.yaml", "config/integralfamilies.yaml", "config/kinematics.yaml",
                 "mandatory_firefly_numerator_target.txt", PREFERRED_NAME]
     for name in required:
         if not (source / name).is_file():
@@ -36,7 +36,9 @@ def main():
             raise FileExistsError(f"diagnostic directory already exists: {dest}")
         dest.mkdir()
         for name in required:
-            shutil.copy2(source / name, dest / name)
+            target = dest / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source / name, target)
         if label == "without_preferred":
             text = (dest / "jobs.yaml").read_text(encoding="utf-8")
             lines = [line for line in text.splitlines()
