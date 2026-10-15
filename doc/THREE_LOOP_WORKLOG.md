@@ -4269,3 +4269,40 @@ the recorded target set and is labeled
 `recovered-kira-terminal-master-identification`.
 
 Commit: `d15ca9779db0e718abaaeb682ba36512b7d3048e`.
+
+
+### 2026-10-15 VP05 sector 202 restricted audit passes with basis refinement
+
+Recovered/finalized restricted audit:
+
+```text
+family: VP05_full
+baseline seed: r8s3d0
+restricted seed: r6s6d2
+sector: 202
+targets: 3
+master count: 4
+target classification:
+  master: 1
+  reduced: 2
+  zero: 0
+  unresolved: 0
+conclusion: all-targets-classified-in-restricted-r6s6d2-probe
+audit pass: True
+```
+
+Interpretation:
+
+- the original three refined sector-202 candidates are not all retained as the
+  preferred basis at the stronger exact-sector boundary;
+- one candidate remains a master;
+- two candidates have Kira initiate-stage reduction relations;
+- the sector-202 master space remains nontrivial, but the refined candidate
+  basis must be updated using the newly identified sector-202 masters rather
+  than treating the old three targets as stable masters;
+- no further expensive sector-202 Kira rerun is required for the r8s6d2
+  exact-sector check.
+
+The preserved Kira master-identification output for this probe contained one
+proper-subsector master (sector 200) and three sector-202 masters.  The next
+step is therefore basis refinement/union update, not another reduction attempt.
