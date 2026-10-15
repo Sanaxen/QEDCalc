@@ -4196,3 +4196,62 @@ Commit:
 aa3488558270b4484746fa55074afd4b11af6330
   Isolate multi-target preferred-master Kira projects
 ```
+
+
+### 2026-10-15 sector 202 reinterpretation: initiate-stage master list is sufficient to classify missing mandatory targets
+
+Kira's documented master-identification semantics resolve the apparent
+sector-202 ambiguity without another expensive reduction.
+
+Kira reports the master list after mandatory equation selection and before
+forward elimination.  A selected mandatory integral appears in that master list
+if no reduction formula was found for it.  Therefore, for the exact mandatory
+target set used by the sector-202 restricted project:
+
+- mandatory target present in the reported master list -> retained master;
+- mandatory target absent from the reported master list -> Kira found a
+  reduction relation during initiate/equation selection.
+
+This means the earlier QEDCalc classification
+
+```text
+master=1, unresolved=2
+```
+
+was too conservative because it required exported reduction tables for the two
+non-master mandatory targets even though Kira had already completed the
+master-selection stage.
+
+The restricted audit code now upgrades such unresolved mandatory targets to
+`reduced` when a valid non-empty Kira master list exists for the exact
+mandatory set.
+
+Because the later preferred-master experiments did not produce usable master
+lists, finalize also falls back to the earlier restricted FireFly project that
+did successfully reach Kira master identification.
+
+Expected sector-202 audit after the patch:
+
+```text
+master: 1
+reduced: 2
+zero: 0
+unresolved: 0
+audit pass: True
+```
+
+This does not claim that the original three refined candidates are all retained
+as the same basis.  It says instead that, at restricted r6s6d2, one remains a
+master and two have initiate-stage reduction relations into the newly identified
+master basis.  The sector-202 basis therefore needs to be updated/refined rather
+than forcing the old three-candidate basis.
+
+Commits:
+
+```text
+092d838927e9f4f693e2dd97986db88ce4f24f03
+  Classify missing mandatory targets from Kira initiate master lists
+
+c26614b8df1930c86dba9b5639763e6c04220afd
+  Salvage legacy restricted master list for multi-target audits
+```
