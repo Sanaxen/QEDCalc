@@ -30,7 +30,7 @@ def main():
     targets=[fmt(x) for x in expanded if sector(x)==203]
     if len(targets)!=5:p.error("expected five sector203 targets")
     # Fetch the topology spec through the existing validated QEDCalc context.
-    ns=argparse.Namespace(family="VP05_full",baseline_seed="r8s3d0",sector=203,max_s=6,max_d=2)
+    ns=argparse.Namespace(family="VP05_full",baseline_seed=Seed(8,3,0),sector=203,max_s=6,max_d=2)
     spec,baseline,*_= _context(ns)
     if spec.family_id!="VP05_full" or baseline.tag!="r8s3d0":p.error("wrong family context")
     base=ROOT/"output"
