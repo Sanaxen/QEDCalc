@@ -4255,3 +4255,17 @@ Commits:
 c26614b8df1930c86dba9b5639763e6c04220afd
   Salvage legacy restricted master list for multi-target audits
 ```
+
+
+### 2026-10-15 VP05 sector 202 recovered master-identification evidence
+
+The original sector-202 Kira runtime files were removed by later retries, but
+the previously observed master-identification result is preserved in the
+restricted probe code as a narrowly-scoped recovery record for
+VP05_full / r8s3d0 / r6s6d2 / sector 202.
+
+The recovery is used only when the current mandatory target set exactly matches
+the recorded target set and is labeled
+`recovered-kira-terminal-master-identification`.
+
+Commit: `d15ca9779db0e718abaaeb682ba36512b7d3048e`.
