@@ -46,8 +46,6 @@ def main():
         # Reassign the rank field to the engine's observed sector-rank slot.
         observed_rank=codec.rank[remap[sector]]
         mapped=(observed_rank<<shift) | (standard&((1<<shift)-1))
-        if (mapped,sector) not in records:
-            raise ValueError(f"Mapped integral missing from SYSTEM terms: sector={sector} integral={integral}")
         return (mapped,sector)
     masters=parse_file_integrals(project/"results/VP05_full/masters")
     candidates=[x for x in parse_file_integrals(CANDIDATE) if m.sec_of(x)==203]
@@ -64,7 +62,8 @@ def main():
     for integral in masters:
         k=key(integral)
         added=insert({k:1},augmented,prime,args.max_fill)
-        master_status.append({"integral":list(integral),"sector":k[1],"weight":k[0],"rank_increase":added})
+        master_status.append({"integral":list(integral),"sector":k[1],"weight":k[0],
+          "appears_in_selected_system":k in records,"rank_increase":added})
     candidate_status=[]
     for integral in candidates:
         k=key(integral)
