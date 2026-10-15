@@ -1,10 +1,11 @@
-"""FireFly rescue probe for one refined candidate on the fixed-sector s=6 boundary.
+"""Restricted FireFly rescue probe for refined candidates in one exact sector.
 
-This is intentionally much smaller than the earlier r8s6d2 direct-reducibility
-project.  For the sector-199 target we use the minimal positive-power envelope
-r=5, the required numerator boundary s=6, and d=0.  Only the target integral is
-mandatory; known proper-subsector refined candidates are supplied as preferred
-masters.
+This is intentionally much smaller than the earlier full r8s6d2
+direct-reducibility project.  All refined candidates in the selected exact
+sector are mandatory and are also supplied as preferred masters, together with
+known refined candidates from proper subsectors.  This avoids an arbitrary
+basis rotation that would otherwise force an expensive reduction merely to
+recover the originally selected refined basis.
 
 The purpose is to let Kira generate the exact IBP system for this restricted
 boundary while FireFly performs finite-field reconstruction, avoiding the
@@ -78,12 +79,17 @@ def _context(args: argparse.Namespace):
     dot_degree = int(args.max_d)
     seed = Seed(positive_count + dot_degree, int(args.max_s), dot_degree)
 
-    preferred = sorted({
+    proper_subsector_preferred = sorted({
         x for x in candidate
         if x not in targets
         and (_sector(x) & sector) == _sector(x)
         and _sector(x) != sector
     })
+    # Prefer the refined candidates from this exact sector themselves.  With
+    # multiple mandatory targets Kira may otherwise choose a different but
+    # equivalent sector basis, forcing an expensive reduction merely to prove
+    # that the original candidates span the same master space.
+    preferred = sorted(set(targets) | set(proper_subsector_preferred))
 
     return (
         spec,
@@ -146,8 +152,10 @@ def prepare(args: argparse.Namespace) -> None:
         "target_count": len(targets),
         "candidate_master_file": str(candidate_file),
         "candidate_master_count": len(candidate),
-        "preferred_subsector_master_count": len(preferred),
-        "preferred_subsector_masters": preferred,
+        "preferred_master_count": len(preferred),
+        "preferred_masters": preferred,
+        "preferred_proper_subsector_master_count": len(proper_subsector_preferred),
+        "preferred_proper_subsector_masters": proper_subsector_preferred,
         "union_reduction_audit": str(union_audit_path),
         "project": str(project),
         "restriction": {
@@ -178,7 +186,9 @@ def prepare(args: argparse.Namespace) -> None:
     print(f"targets: {len(targets)}")
     for target in targets:
         print(f"  {target}")
-    print(f"preferred proper-subsector masters: {len(preferred)}")
+    print(f"preferred masters total: {len(preferred)}")
+    print(f"preferred exact-sector targets: {len(targets)}")
+    print(f"preferred proper-subsector masters: {len(proper_subsector_preferred)}")
     print(f"project: {project}")
     print(f"manifest: {manifest_path}")
     print("QEDCalc FireFly fixed-sector numerator prepare PASS")
@@ -245,8 +255,8 @@ def finalize(args: argparse.Namespace) -> None:
         "target_count": len(targets),
         "candidate_master_file": str(candidate_file),
         "candidate_master_count": len(candidate),
-        "preferred_subsector_master_count": len(preferred),
-        "preferred_subsector_masters": preferred,
+        "preferred_master_count": len(preferred),
+        "preferred_masters": preferred,
         "union_reduction_audit": str(union_audit_path),
         "project": str(project),
         "masters_path": str(masters_path),
@@ -272,7 +282,7 @@ def finalize(args: argparse.Namespace) -> None:
         f"sector: {sector}",
         f"targets: {len(targets)}",
         *[f"  {target}" for target in targets],
-        f"preferred proper-subsector masters: {len(preferred)}",
+        f"preferred masters total: {len(preferred)}",
         f"master count: {len(masters)}",
         f"target classification: {counts}",
         f"conclusion: {conclusion}",
