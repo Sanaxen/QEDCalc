@@ -4455,3 +4455,7 @@ arrive (including `Generate equations ... sector N (k of total)`). Swap warning,
 automatic stop at 220 GiB, and 1800-second wall-time guard remain unchanged.
 The revised code applies to newly prepared monitored projects; an already
 running project has its own earlier copied runner and is not modified.
+
+### 2026-10-15 sector203 monitor wall-time setting revised
+
+The monitored t1 r5s6d0 run reached sector 202 (11/14) and was terminated by the prior 1800-second timer (`time_stop`, code -15). Observed peak swap ~36.86 GiB and RAM ~29.35 GiB, much lower than swap stop (220 GiB). This timeout was artificial, not a Kira failure or evidence of stalled solve. The monitored Python runner now defaults to `--max-seconds 0` (no time limit); the BAT explicitly passes 0. Swap guard at 220 GiB, warning 210 GiB, 5-second samples, log streaming, and unique per-run output directories remain. A specific positive `--max-seconds` can still be supplied manually for bounded experiments. Do not claim that a terminated run can resume from its final log line: the next invocation creates a fresh Kira project.
