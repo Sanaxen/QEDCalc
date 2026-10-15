@@ -4409,3 +4409,39 @@ git pull
 Timeout 124 is inconclusive, not a failure of IBP reducibility. A single
 target result cannot prove four-target combined closure or the final r7s6d2
 boundary; later stages and joint consistency must still be verified.
+
+
+### 2026-10-15 VP05 sector 203 monitored Kira resource guard
+
+Four isolated r5s6d0 one-target 90-second probes all reached sector 200
+(2/14), then returned exit 124 (timeout), with no master list established.
+Historical Kira computations experienced rapid swap growth after the last
+`Generate equations` line; 240 GiB is the maximum possible user swap
+provision, currently 230 GiB. Avoid assuming that sector-progress log lines
+measure solver completion.
+
+Added a monitored WSL Python 3 runner (standard library only):
+`scripts/sector203_monitored_kira.py`, an isolated project preparer
+`examples/three_loop_sector203_monitored_prepare.py`, and Windows launcher
+`run_three_loop_sector203_monitored.bat`.
+
+Initial controls: 30-minute wall clock maximum, 5-second metrics interval,
+swap warning at 210 GiB and automatic TERM/KILL stop at 220 GiB. Reports
+`monitored_metrics.jsonl`, `monitored_kira.log`, and
+`monitored_exit.json`; records observed RAM, swap, Kira main process
+CPU%, and last Kira sector line. CPU% of main PID is not system-wide
+28-thread utilization. The guard acts at sampling intervals, so thresholds
+are not an absolute hard cgroup memory limit. Kira exits due to timeout
+or swap guard are not scientific reduction failures.
+
+The preparer copies only YAML and one-target mandatory text from the
+previously prepared diagnostic into a new monitored project, without
+copying the old Kira database or modifying sector-202 results.
+
+First monitored local run:
+```powershell
+git pull
+.\run_three_loop_sector203_monitored.bat 1 r5s6d0
+```
+
+No master basis promotion is implied by a completed diagnostic alone.
