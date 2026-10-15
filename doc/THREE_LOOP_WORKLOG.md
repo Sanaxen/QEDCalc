@@ -4144,3 +4144,55 @@ Commit:
 a2e265b0de61872982f3b545982d0e982e635948
   Use initiate-only masters mode for multi-target restricted probes
 ```
+
+
+### 2026-10-15 sector 202 code-1 retry: isolate preferred-master project from stale FireFly DB
+
+The multi-target initiate-only retry still exited with code 1 before producing a
+master list.  Review of the runner showed that the project directory was still
+the same one previously used for the FireFly run:
+
+```text
+kira_vp05_full_firefly_numerator_r8s3d0_r6s6d2_sec202
+```
+
+Runtime cleanup intentionally preserves `kira.db`.  That behavior is correct
+for resuming the same Kira job, but not when changing the job semantics from:
+
+```text
+solver=firefly
+no exact-sector preferred refined basis
+```
+
+to:
+
+```text
+solver=masters (initiate-only)
+exact-sector refined targets also supplied as preferred masters
+```
+
+To avoid any stale-database/configuration interaction, multi-target
+preferred-master probes now use a separate project namespace:
+
+```text
+kira_<family>_preferred_masters_<baseline>_<seed>_sec<sector>
+```
+
+while single-target FireFly probes retain the existing
+`firefly_numerator` project namespace.
+
+For VP05 sector 202 the new project is therefore:
+
+```text
+kira_vp05_full_preferred_masters_r8s3d0_r6s6d2_sec202
+```
+
+This guarantees a fresh Kira database for the initiate-only preferred-basis
+test without deleting or modifying the valuable previous FireFly project.
+
+Commit:
+
+```text
+aa3488558270b4484746fa55074afd4b11af6330
+  Isolate multi-target preferred-master Kira projects
+```
