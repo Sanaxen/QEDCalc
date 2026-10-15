@@ -4467,3 +4467,7 @@ User reports first single-target `r5s6d0` monitored run completed normally: Kira
 ### 2026-10-16 sector 203 read-only comparison result
 
 Read-only `examples.three_loop_sector203_result_audit` against completed t1 `r5s6d0` Kira log and 63 refined candidates: 10 Kira masters overall, sector composition 73:1, 201:1, 202:3, 203:5. Existing refined candidate file has 4 sector-203 representatives. Two exact matches: `VP05_full[1,1,0,1,-1,0,1,1,0,0,0,0]`, `VP05_full[1,1,0,1,0,0,1,1,0,0,0,0]`. Three sector-203 masters are only in the Kira result and two candidates only in original list. These arise under different target/seed scopes: they cannot be equated or used to replace the 4-candidate set without a common-system rank/target audit at adequate boundary. No candidate modifications. Preserve completed ~8.8-hour Kira workspace for database reuse investigation.
+
+### 2026-10-16 saved Kira SYSTEM read-only inventory
+
+User confirmed fourteen `tmp/VP05_full/SYSTEM_VP05_full_<sector>.gz` files contain `Eq` records with encoded integral IDs, coefficients and sector labels, but the encoding is not yet verified. Added `examples/three_loop_sector203_system_inventory.py` to inventory equation counts, terms, distinct internal IDs, and referenced sector distributions without invoking Kira or changing candidate lists. Do not claim that a compressed SYSTEM dump is the full original 5.2M-coefficient system or that integral IDs can be decoded without documented verification.
