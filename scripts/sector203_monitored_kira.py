@@ -51,6 +51,8 @@ def main():
     warned = False
     clock_ticks = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
     cpu_prev = None
+    log_offset = 0
+    pending = b""
     try:
         with open("monitored_kira.log", "w", encoding="utf-8") as log, open(
             "monitored_metrics.jsonl", "w", encoding="utf-8"
@@ -95,7 +97,18 @@ def main():
                 }
                 metrics.write(json.dumps(sample) + "\n")
                 metrics.flush()
-                print(json.dumps(sample), flush=True)
+                # Keep metrics on disk for later analysis; console is for Kira progress.
+                # Mirror newly completed Kira log lines without replaying earlier output.
+                with open("monitored_kira.log", "rb") as inp:
+                    inp.seek(log_offset)
+                    chunk = inp.read()
+                    log_offset = inp.tell()
+                if chunk:
+                    pending += chunk
+                    lines = pending.split(b"\n")
+                    pending = lines.pop()
+                    for line in lines:
+                        print(line.rstrip(b"\r").decode("utf-8", "replace"), flush=True)
                 code = proc.poll()
                 if code is not None:
                     break
@@ -116,6 +129,11 @@ def main():
                     break
                 time.sleep(args.interval)
             code = proc.wait()
+            with open("monitored_kira.log", "rb") as inp:
+                inp.seek(log_offset)
+                pending += inp.read()
+            if pending:
+                print(pending.decode("utf-8", "replace"), end="" if pending.endswith(b"\n") else "\n", flush=True)
         final = {"reason": reason, "kira_returncode": code, "elapsed_s": round(time.monotonic()-start,1),
                  "last_sector": last_sector, "success": reason == "kira_exit" and code == 0}
         Path("monitored_exit.json").write_text(json.dumps(final, indent=2) + "\n", encoding="utf-8")
