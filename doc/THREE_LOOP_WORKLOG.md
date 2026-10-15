@@ -4353,3 +4353,32 @@ effective_r=7, hence r7s6d2, MAX_S=6, MAX_D=2, ORDERING=5.
 
 The missing r8s5d3 direction is a separate pending boundary. No VP05
 final master basis is promoted until the necessary closure evidence passes.
+
+
+### 2026-10-15 sector 203 immediate code-1: isolated bounded A/B diagnostic
+
+After sector-202 basis replacement (63 -> 63 candidates), the sector-203
+r7s6d2 multi-target initiate-only project exited code 1 at early equation
+selection (sector 73, 1/14). There was no observed memory/swap spike. Kira 3.1
+itself starts normally. Its exact failure cause is still unknown.
+
+Added:
+- `examples/three_loop_sector203_diagnostic.py`
+- `run_three_loop_sector203_diagnostic.bat`
+
+The diagnostic clones only source YAML and target text files into two *new*
+project directories. It does not copy `kira.db`, results, or other old runtime
+state. It executes identical seed and ordering with/without preferred masters,
+each under a strict 90-second `timeout`, retaining independent
+`diagnostic.log` files. Exit 124 denotes a timeout and must not be interpreted
+as successful master identification or as a Kira failure.
+
+Run once:
+```powershell
+git pull
+.\run_three_loop_sector203_diagnostic.bat
+```
+
+Inspect the last 40 lines of each diagnostic log and the printed exit codes.
+The original sector-203 project and the successful sector-202 candidate
+replacement remain unchanged. No full retry until root cause is established.
