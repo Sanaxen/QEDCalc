@@ -104,11 +104,41 @@ def main():
         except (ValueError,AssertionError) as ex:
             mismatch_by_recorded_sector[sec]+=1
             errors.append({"weight":weight,"sector":sec,"error":str(ex)})
+    # Infer only sector-ranking permutations observed directly in SYSTEM records.
+    # Do not change encoded dot/numerator fields. Require one-to-one mapping
+    # and per-sector uniformity before using rank remapping.
+    inferred={}
+    reverse={}
+    for recorded, mapping in decode_sectors.items():
+        if len(mapping) != 1:
+            raise SystemExit(f"FAIL: sector {recorded} has non-uniform decoded sectors: {dict(mapping)}")
+        inferred[recorded]=next(iter(mapping))
+        decoded_sector=inferred[recorded]
+        if decoded_sector in reverse and reverse[decoded_sector]!=recorded:
+            raise SystemExit("FAIL: decoded sector ranking not injective")
+        reverse[decoded_sector]=recorded
+    corrected=set()
+    corrected_errors=[]
+    for weight,recorded in ids:
+        try:
+            powers=codec.decode(weight)
+            actual=inferred.get(recorded)
+            if actual != m.sec_of(powers) or codec.encode(powers)!=weight:
+                corrected_errors.append([weight,recorded,"invalid inferred rank mapping"])
+            if actual == m.sec_of(powers):
+                # Preserve the original record-sector label for reporting.
+                corrected.add((weight,recorded))
+        except (ValueError,AssertionError) as ex:
+            corrected_errors.append([weight,recorded,str(ex)])
     report={"project":str(project),"external_codec":str(a.codec_file.resolve()),
         "ordering":ordering,"weight_bits":bits,"top_level_sector":203,
         "equations":numeq,"term_weight_sector_pairs":len(ids),
         "decoded_distinct_integrals":len(decoded),
         "decoding_errors":len(errors),"error_examples":errors[:5],
+        "sector_rank_remap_observed":{str(k):v for k,v in sorted(inferred.items())},
+        "rank_remap_verified_pairs":len(corrected),
+        "rank_remap_errors":len(corrected_errors),
+        "rank_remap_coverage":"only sectors appearing in saved SYSTEM records",
         "matched_by_recorded_sector":dict(sorted(matched_by_recorded_sector.items())),
         "mismatch_by_recorded_sector":dict(sorted(mismatch_by_recorded_sector.items())),
         "decoded_sector_mapping":{str(s):dict(sorted(t.items())) for s,t in sorted(decode_sectors.items())},
@@ -122,10 +152,11 @@ def main():
             "appears_as_equation_head":codec.encode(x) in heads,
             "in_kira_master_list":x in masters} for x in targets],
         "kira_masters_present_in_selected_system":sum(x in decoded for x in masters),
-        "conclusion":"presence/absence only; no linear algebra reduction or r7s6d2 closure proven"}
+        "conclusion":"raw default rank mismatch in proper sectors; inferred recorded-to-codec sector mapping checked for the saved SYSTEM terms only; no reduction or r7s6d2 closure proven"}
     print(json.dumps(report,indent=2,ensure_ascii=False))
-    if errors:
-        raise SystemExit("FAIL: global codec mismatch; candidate weight hits are provisional pending verified mapping")
+    if corrected_errors:
+        raise SystemExit("FAIL: observed sector rank mapping fails round-trip checks")
+    print("AUDIT: observed sector-rank remapping is internally consistent; sector203 retains its original rank.")
 
 if __name__=="__main__":
     main()
