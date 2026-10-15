@@ -102,6 +102,7 @@ def _context(args: argparse.Namespace):
         targets,
         seed,
         preferred,
+        proper_subsector_preferred,
     )
 
 
@@ -117,6 +118,7 @@ def prepare(args: argparse.Namespace) -> None:
         targets,
         seed,
         preferred,
+        proper_subsector_preferred,
     ) = _context(args)
 
     project = _project(spec.family_id, baseline, sector, seed)
@@ -195,7 +197,7 @@ def prepare(args: argparse.Namespace) -> None:
 
 
 def print_project(args: argparse.Namespace) -> None:
-    spec, baseline, _, _, _, _, sector, _, seed, _ = _context(args)
+    spec, baseline, _, _, _, _, sector, _, seed, _, _ = _context(args)
     print(_project(spec.family_id, baseline, sector, seed))
 
 
@@ -211,6 +213,7 @@ def finalize(args: argparse.Namespace) -> None:
         targets,
         seed,
         preferred,
+        proper_subsector_preferred,
     ) = _context(args)
     project = _project(spec.family_id, baseline, sector, seed)
 
@@ -257,6 +260,8 @@ def finalize(args: argparse.Namespace) -> None:
         "candidate_master_count": len(candidate),
         "preferred_master_count": len(preferred),
         "preferred_masters": preferred,
+        "preferred_proper_subsector_master_count": len(proper_subsector_preferred),
+        "preferred_proper_subsector_masters": proper_subsector_preferred,
         "union_reduction_audit": str(union_audit_path),
         "project": str(project),
         "masters_path": str(masters_path),
@@ -283,6 +288,8 @@ def finalize(args: argparse.Namespace) -> None:
         f"targets: {len(targets)}",
         *[f"  {target}" for target in targets],
         f"preferred masters total: {len(preferred)}",
+        f"preferred exact-sector targets: {len(targets)}",
+        f"preferred proper-subsector masters: {len(proper_subsector_preferred)}",
         f"master count: {len(masters)}",
         f"target classification: {counts}",
         f"conclusion: {conclusion}",
