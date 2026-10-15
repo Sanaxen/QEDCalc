@@ -87,30 +87,45 @@ def main():
         p.error(f"Saved SYSTEM equation count changed: {numeq} != 3317")
     errors=[]
     decoded=set()
+    mismatch_by_recorded_sector=defaultdict(int)
+    matched_by_recorded_sector=defaultdict(int)
+    decode_sectors=defaultdict(lambda: defaultdict(int))
     for weight,sec in ids:
         try:
             powers=codec.decode(weight)
-            if m.sec_of(powers)!=sec or codec.encode(powers)!=weight:
-                errors.append({"weight":weight,"sector":sec,"decoded":powers})
+            decoded_sector=m.sec_of(powers)
+            decode_sectors[sec][decoded_sector]+=1
+            if decoded_sector!=sec or codec.encode(powers)!=weight:
+                mismatch_by_recorded_sector[sec]+=1
+                errors.append({"weight":weight,"sector":sec,"decoded_sector":decoded_sector,"decoded":powers})
+            else:
+                matched_by_recorded_sector[sec]+=1
             decoded.add(powers)
         except (ValueError,AssertionError) as ex:
+            mismatch_by_recorded_sector[sec]+=1
             errors.append({"weight":weight,"sector":sec,"error":str(ex)})
     report={"project":str(project),"external_codec":str(a.codec_file.resolve()),
         "ordering":ordering,"weight_bits":bits,"top_level_sector":203,
         "equations":numeq,"term_weight_sector_pairs":len(ids),
         "decoded_distinct_integrals":len(decoded),
         "decoding_errors":len(errors),"error_examples":errors[:5],
+        "matched_by_recorded_sector":dict(sorted(matched_by_recorded_sector.items())),
+        "mismatch_by_recorded_sector":dict(sorted(mismatch_by_recorded_sector.items())),
+        "decoded_sector_mapping":{str(s):dict(sorted(t.items())) for s,t in sorted(decode_sectors.items())},
+        "sector203_recorded_pairs":sum(sec==203 for _,sec in ids),
+        "sector203_recorded_decode_match":matched_by_recorded_sector[203],
         "sector203_candidates":[{
             "integral":"VP05_full["+",".join(map(str,x))+"]",
             "weight":codec.encode(x),
-            "appears_in_selected_system":x in decoded,
+            "appears_in_selected_system":(codec.encode(x),203) in ids,
+            "decoded_name_seen_without_sector_validation":x in decoded,
             "appears_as_equation_head":codec.encode(x) in heads,
             "in_kira_master_list":x in masters} for x in targets],
         "kira_masters_present_in_selected_system":sum(x in decoded for x in masters),
         "conclusion":"presence/absence only; no linear algebra reduction or r7s6d2 closure proven"}
     print(json.dumps(report,indent=2,ensure_ascii=False))
     if errors:
-        raise SystemExit("FAIL: codec mismatch, do not interpret candidate classifications")
+        raise SystemExit("FAIL: global codec mismatch; candidate weight hits are provisional pending verified mapping")
 
 if __name__=="__main__":
     main()
