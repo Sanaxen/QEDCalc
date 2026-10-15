@@ -4382,3 +4382,30 @@ git pull
 Inspect the last 40 lines of each diagnostic log and the printed exit codes.
 The original sector-203 project and the successful sector-202 candidate
 replacement remain unchanged. No full retry until root cause is established.
+
+
+### 2026-10-15 VP05 sector 203 single-target staged diagnostics
+
+The preferred-free four-target r7s6d2 diagnostic reached sector 73 (1/14)
+and timed out after 90 seconds (exit 124), rather than giving an immediate
+Kira failure. This does not establish that preferred masters cause an error
+or that the four-target seed is infeasible.
+
+Added `examples/three_loop_sector203_single_target.py` and
+`run_three_loop_sector203_single_target.bat`. Each invocation clones only
+the configuration and selects one of four original sector-203 mandatory targets
+in a fresh, uniquely named Kira project, without preferred masters. The
+target is checked against its r/s/d envelope. Valid stages are r5s6d0,
+r6s6d1, r7s6d2. Each run has a 90-second limit and records Kira's exit
+status separately. Existing master lists, candidate files, and databases
+are not modified.
+
+First lightweight diagnostic:
+```powershell
+git pull
+.\run_three_loop_sector203_single_target.bat 1 r5s6d0
+```
+
+Timeout 124 is inconclusive, not a failure of IBP reducibility. A single
+target result cannot prove four-target combined closure or the final r7s6d2
+boundary; later stages and joint consistency must still be verified.
