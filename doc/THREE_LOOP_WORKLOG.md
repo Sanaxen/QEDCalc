@@ -4445,3 +4445,13 @@ git pull
 ```
 
 No master basis promotion is implied by a completed diagnostic alone.
+
+### 2026-10-15 Sector 203 monitored runner console adjustment
+
+The user already has a separate WSL RAM/swap/CPU dashboard; repeating sampled JSON
+on the console is distracting. Updated `scripts/sector203_monitored_kira.py`
+to keep `monitored_metrics.jsonl` on disk but print Kira log lines as they
+arrive (including `Generate equations ... sector N (k of total)`). Swap warning,
+automatic stop at 220 GiB, and 1800-second wall-time guard remain unchanged.
+The revised code applies to newly prepared monitored projects; an already
+running project has its own earlier copied runner and is not modified.
