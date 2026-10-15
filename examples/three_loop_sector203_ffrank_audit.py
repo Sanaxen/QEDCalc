@@ -11,12 +11,12 @@ import json
 from pathlib import Path
 from examples.three_loop_sector203_weight_audit import ROOT, RUN, CANDIDATE, load_codec, parse_file_integrals
 
-def coefficient(s, z, prime):
+def coefficient(s, z, d, prime):
     def visit(node):
         if isinstance(node, ast.Constant) and type(node.value) is int:
             return node.value % prime
-        if isinstance(node, ast.Name) and node.id == "z":
-            return z % prime
+        if isinstance(node, ast.Name) and node.id in ("z", "d"):
+            return (z if node.id == "z" else d) % prime
         if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
             return -visit(node.operand) % prime
         if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.UAdd):
@@ -36,7 +36,7 @@ def coefficient(s, z, prime):
         raise ValueError(f"unsupported coefficient expression: {s!r}")
     return visit(ast.parse(s.replace("^","**"), mode="eval").body)
 
-def equations(path, prime, z):
+def equations(path, prime, z, d):
     rows=[]
     with gzip.open(path,"rt",encoding="utf-8") as f:
         while (marker:=f.readline()):
@@ -48,7 +48,7 @@ def equations(path, prime, z):
                 data=f.readline().split()
                 if len(data)<4: raise ValueError("bad term")
                 key=(int(data[2]),int(data[3]))
-                val=coefficient(data[1],z,prime)
+                val=coefficient(data[1],z,d,prime)
                 row[key]=(row.get(key,0)+val)%prime
             rows.append({k:v for k,v in row.items() if v})
     return rows
@@ -76,6 +76,7 @@ def main():
     a.add_argument("--codec-file",type=Path,required=True)
     a.add_argument("--prime",type=int,default=1000003)
     a.add_argument("--z",type=int,default=17)
+    a.add_argument("--d",type=int,default=7)
     a.add_argument("--max-fill",type=int,default=25000)
     args=a.parse_args()
     p=args.prime
@@ -90,7 +91,7 @@ def main():
     if len(candidates)!=4 or len(masters)!=10: a.error("unexpected candidate or master count")
     files=list(sorted((project/"tmp/VP05_full").glob("SYSTEM_VP05_full_*.gz")))
     rows=[]
-    for file in files: rows.extend(equations(file,p,args.z))
+    for file in files: rows.extend(equations(file,p,args.z,args.d))
     if len(rows)!=3317: a.error(f"unexpected SYSTEM equation count {len(rows)}")
     pivots={}
     for i,row in enumerate(rows,1):
@@ -121,7 +122,7 @@ def main():
         candidate_status.append({"integral":list(integral),"rank_increase_after_sector203_masters":increases,
             "in_saved_equation_plus_sector203_masters_span":not increases})
     print(json.dumps({"scope":"saved selected Kira SYSTEM equations at seed r5s6d0; lower-sector masters not explicitly injected",
-      "prime":p,"z":args.z,"equations":len(rows),"rank":raw_rank,
+      "prime":p,"z":args.z,"d":args.d,"equations":len(rows),"rank":raw_rank,
       "sector203_master_rank_increments":master_status,
       "candidate_status":candidate_status,
       "caveat":"probabilistic single-point rank; not full symbolic reduction or r7s6d2 closure; lower sectors remain formal columns"},
