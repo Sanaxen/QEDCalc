@@ -4038,3 +4038,62 @@ Commit:
 For the current already-computed sector-202 project, do NOT rerun the expensive
 Kira job.  Pull the update and invoke the Python finalize step directly against
 the existing project context.
+
+
+### 2026-10-15 sector 202 finalize correction: two refined targets unresolved; force preferred refined basis
+
+The direct finalize of the existing sector-202 restricted project produced:
+
+```text
+targets: 3
+  VP05_full[0,1,0,1,-1,-1,1,1,0,0,0,0]
+  VP05_full[0,1,0,1,-2,0,1,1,0,0,0,0]
+  VP05_full[0,1,0,1,0,0,1,1,0,0,0,0]
+
+master count: 4
+target classification:
+  master: 1
+  reduced: 0
+  zero: 0
+  unresolved: 2
+
+audit pass: False
+```
+
+Therefore the earlier interpretation that all three refined candidates were
+present in Kira's master list was incorrect.  Kira had selected a different
+sector-202 master basis:
+
+```text
+VP05_full[0,1,0,1,0,0,1,1,0,0,0,0]
+VP05_full[-2,1,0,1,0,0,1,1,0,0,0,0]
+VP05_full[-1,1,0,1,-1,0,1,1,0,0,0,0]
+```
+
+plus one proper-subsector sector-200 master.
+
+This indicates a basis rotation rather than an established loss of master
+dimension.  However, because the later reduction failed under extreme swap
+pressure, the two original refined candidates remain unclassified and the
+sector-202 audit must NOT be marked passing yet.
+
+The restricted runner is now changed so that every exact-sector refined target
+is supplied both as a mandatory target and as a preferred master.  Known proper
+subsector refined candidates are also included.  This asks Kira to retain the
+original refined basis directly instead of choosing an arbitrary equivalent
+basis and then requiring an expensive reduction to map back to it.
+
+Commits:
+
+```text
+2ece1d0827b9feea50318cd3d2d2313c96e56345
+  Prefer refined targets in multi-target restricted probes
+
+68f24a8035cd9dff575ef0495d9e8114f6dc0b18
+  Fix restricted probe preferred-master context
+```
+
+Next action: rerun the same sector-202 restricted command after git pull.  The
+existing project directory and Kira database are intentionally not deleted by
+the runner's runtime cleanup, so reusable equation-state may remain available,
+but no speedup is assumed.
