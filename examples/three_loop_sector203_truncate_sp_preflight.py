@@ -37,7 +37,7 @@ def main():
         caps={s:(6 if s==203 else min(6,max(1,s.bit_count()-l+1))) for s in SECTORS}
         estimates={s:count_sector(s,6,caps[s],1) for s in SECTORS}
         # Separate preview file only; allow rerun if identical, refuse conflict.
-        preview=project/f"jobs.truncate_sp_l{l}.preview.yaml"
+        preview=project/f"jobs.truncate_sp_l{l}.v2.preview.yaml"
         modified=text.replace(selection,"      truncate_sp: [1: "+str(l)+"]\n"+selection)
         if preview.exists():
             if preview.read_text(encoding="utf-8")!=modified:parser.error(f"preview exists with different contents: {preview}")
