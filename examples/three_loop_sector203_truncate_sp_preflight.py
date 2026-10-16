@@ -38,7 +38,7 @@ def main():
         estimates={s:count_sector(s,6,caps[s],1) for s in SECTORS}
         # Separate preview file only; allow rerun if identical, refuse conflict.
         preview=project/f"jobs.truncate_sp_l{l}.preview.yaml"
-        modified=text.replace(selection,"      truncate_sp:\n        - {topologies: [VP05_full], l: "+str(l)+"}\n"+selection)
+        modified=text.replace(selection,"      truncate_sp: [1: "+str(l)+"]\n"+selection)
         if preview.exists():
             if preview.read_text(encoding="utf-8")!=modified:parser.error(f"preview exists with different contents: {preview}")
         else:
