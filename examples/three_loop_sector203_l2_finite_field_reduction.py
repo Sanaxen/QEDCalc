@@ -70,7 +70,9 @@ def main():
     parser.add_argument("--points", type=int, choices=(1, 2, 3), default=1)
     parser.add_argument("--grid", action="store_true", help="Probe fixed d while varying z, then fixed z while varying d")
     parser.add_argument("--verify-formula", action="store_true", help="Independently test candidate C=-2/z on unused z,d samples")
+    parser.add_argument("--prime", type=int, choices=(1000003, 1000033), default=1000003, help="Independent prime fields for coefficient audit")
     args = parser.parse_args()
+    prime = args.prime
     project = args.project.resolve()
     preferred = parse_file_integrals(project / "results/preferredMasters")
     selected = parse_file_integrals(project / "results/VP05_full/masters")
@@ -100,23 +102,23 @@ def main():
         pivots = {}
         rowcount = 0
         for file in files:
-            for row in equations(file, PRIME, z, d):
+            for row in equations(file, prime, z, d):
                 rowcount += 1
-                insert_reduced(row, pivots, PRIME, master_keys)
+                insert_reduced(row, pivots, prime, master_keys)
         if rowcount != 2678 or len(pivots) != 2678:
             raise RuntimeError(f"Unexpected equation count/rank {rowcount}/{len(pivots)}")
         if any(k in pivots for k in master_keys):
             raise RuntimeError("A selected master became a pivot: cannot extract coefficients")
-        remainder = reduce_vector({target_key: 1}, pivots, PRIME, master_keys)
+        remainder = reduce_vector({target_key: 1}, pivots, prime, master_keys)
         if any(k not in master_keys for k in remainder):
             raise RuntimeError(f"Target has nonmaster residual terms: {len(remainder)}")
         data = {
-            "prime": PRIME, "z": z, "d": d,
+            "prime": prime, "z": z, "d": d,
             "equations": rowcount, "rank": len(pivots),
             "candidate4_reducible": True,
             "coefficients_mod_p": [
                 {"master_key": by_id[x],
-                 "coefficient_mod_p": (-remainder.get(by_id[x], 0)) % PRIME,
+                 "coefficient_mod_p": (-remainder.get(by_id[x], 0)) % prime,
                  "coefficient_symmetric": (
                      ((-remainder.get(by_id[x], 0)) % PRIME + PRIME // 2) % PRIME - PRIME // 2
                  )}
@@ -126,10 +128,10 @@ def main():
         }
         print("REDUCTION_POINT " + json.dumps(data, ensure_ascii=False), flush=True)
         if args.verify_formula:
-            expected = (-2 * pow(z, -1, PRIME)) % PRIME
+            expected = (-2 * pow(z, -1, prime)) % prime
             coefficients = {tuple(x["master_key"]): x["coefficient_mod_p"] for x in data["coefficients_mod_p"]}
             ok = (coefficients.get((6, 203)) == expected and
-                  coefficients.get((5, 201)) == (-expected) % PRIME and
+                  coefficients.get((5, 201)) == (-expected) % prime and
                   all(coefficients.get((i, 203)) == 0 for i in (7, 8, 9)))
             print("VERIFY_FORMULA " + json.dumps({"z":z,"d":d,"expected_C":expected,"pass":ok}), flush=True)
             if not ok:
