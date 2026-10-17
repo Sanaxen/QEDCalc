@@ -67,17 +67,45 @@ def main():
         output["warning_opaque_ids"]="Small numeric IDs represent aliased master columns; adding full-weight master vectors without resolving aliases cannot prove or disprove candidate membership."
     if not all(target_presence):
         output["warning"]="Some mandatory integrals do not appear in serialized SYSTEM equations. Cannot conclude their reducibility without further evidence."
-    # Do not run the earlier invalid quotient membership check: the SYSTEM
-    # records use small alias columns that have not been matched to masters.
-    # Keeping those aliases separate makes a candidate with no visible full
-    # weight appear independent, which is a false inference.
-    output["points"]=[]
-    output["quotient_membership_status"]="BLOCKED_UNRESOLVED_SMALL_ID_ALIASES"
-    output["required_next_evidence"]=[
-        "Resolve the small integer alias IDs from Kira's documented intermediate tables",
-        "Check mandatory target identifiers against alias mapping before rank testing",
-        "Only then compute quotient rank over stored selected equations"
-    ]
-    output["limitation"]="Saved equation coefficients are real evidence, but with 10 unresolved short IDs a candidate-membership rank test is invalid. No scientific classification is made."
+    # Working hypothesis: small ID n is the nth preferredMasters integral.
+    # This is empirically supported by all ten matching sector tags, but not
+    # proven by Kira source. We report CONDITIONAL rank results only.
+    preferred=parse_file_integrals(project/"results/preferredMasters")
+    if len(preferred)!=10:ap.error("expected ten preferred integrals")
+    by_id={i+1:(i+1,mod.sec_of(x)) for i,x in enumerate(preferred)}
+    if set(by_id.values())!=opaque:
+        output["alias_hypothesis_status"]="REJECTED_SECTOR_MISMATCH"
+        output["alias_expected"]=sorted([list(x) for x in by_id.values()])
+    else:
+        output["alias_hypothesis_status"]="SECTOR_MATCH_10_OF_10_UNVERIFIED_ORDER"
+        preferred_index={x:i+1 for i,x in enumerate(preferred)}
+        def candidate_key(indices):
+            if indices in preferred_index:
+                i=preferred_index[indices]
+                return by_id[i]
+            return key(indices)
+        p=1000003
+        for z,d in [(17,7),(29,11),(37,13)][:args.points]:
+            span={}
+            rows=0
+            for f in files:
+                for row in equations(f,p,z,d):
+                    rows+=1
+                    insert(row,span,p,args.max_fill)
+            augmented=span.copy()
+            increments=[insert({candidate_key(x):1},augmented,p,args.max_fill) for x in masters]
+            checks=[]
+            for t in targets:
+                probe=augmented.copy()
+                increase=insert({candidate_key(t):1},probe,p,args.max_fill)
+                checks.append({"target":"VP05_full["+",".join(map(str,t))+"]",
+                    "hypothesized_alias_id":preferred_index.get(t),
+                    "rank_increase":increase,
+                    "in_saved_system_plus_masters_span":not increase})
+            point={"z":z,"d":d,"equations":rows,"rank":len(span),
+                "selected_master_rank_increments":increments,"mandatory_conditional":checks}
+            output["points"].append(point)
+            print("CONDITIONAL_POINT "+json.dumps(point,ensure_ascii=False),flush=True)
+    output["limitation"]="Small-ID mapping by preferredMasters order is HYPOTHETICAL despite 10/10 sector agreement. Conditional finite-field rank does not establish a symbolic reduction, Kira source semantics or untruncated global master basis."
     print(json.dumps(output,ensure_ascii=False,indent=2))
 if __name__=="__main__":main()
