@@ -15,6 +15,7 @@ from examples.three_loop_sector203_weight_audit import ROOT, parse_file_integral
 
 DEFAULT = ROOT / "output/kira_vp05_full_provisional64_sec203_r6s6d1_truncate_sp_l2_20261016_135543_689734"
 POINTS = ((17, 7), (29, 11), (37, 13))
+GRID_POINTS = ((17, 7), (19, 7), (23, 7), (29, 7), (17, 9), (17, 11), (17, 13))
 PRIME = 1000003
 
 
@@ -66,6 +67,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--project", type=Path, default=DEFAULT)
     parser.add_argument("--points", type=int, choices=(1, 2, 3), default=1)
+    parser.add_argument("--grid", action="store_true", help="Probe fixed d while varying z, then fixed z while varying d")
     args = parser.parse_args()
     project = args.project.resolve()
     preferred = parse_file_integrals(project / "results/preferredMasters")
@@ -92,7 +94,7 @@ def main():
             {"key": by_id[x], "integral": "VP05_full[" + ",".join(map(str, x)) + "]"}
             for x in selected
         ]}, ensure_ascii=False), flush=True)
-    for z, d in POINTS[:args.points]:
+    for z, d in (GRID_POINTS if args.grid else POINTS[:args.points]):
         pivots = {}
         rowcount = 0
         for file in files:
