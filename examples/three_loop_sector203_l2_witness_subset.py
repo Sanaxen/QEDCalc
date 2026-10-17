@@ -1,7 +1,7 @@
 """Read-only finite-field row-provenance extraction for VP05 candidate4.
 
 Identify a *necessary candidate subset* of serialized SYSTEM equations whose
-finite-field combination yields z*I10+2*I6-2*I5. This is NOT an exact symbolic
+finite-field combination yields z*I10-2*I6+2*I5. This is NOT an exact symbolic
 certificate. Do not run Kira. Hard caps stop runaway symbolic/provenance fill.
 """
 from __future__ import annotations
@@ -87,7 +87,7 @@ def main():
         if (idx+1)%500==0:print(f"PROVENANCE_PROGRESS {idx+1}/2678 rank={len(pivots)}",flush=True)
     if len(pivots)!=2678:raise RuntimeError("Unexpected rank; no conclusion")
     # Desired polynomial relation rather than division by z.
-    vector={TARGET:17,I6:2,I5:P-2}
+    vector={TARGET:17,I6:P-2,I5:2}
     trace={}
     residue=eliminate(vector,pivots,trace,args.max_terms,args.max_support)
     if vector or residue is not None:
@@ -101,7 +101,7 @@ def main():
             val=(reconstructed.get(k,0)+c*v)%P
             if val:reconstructed[k]=val
             else:reconstructed.pop(k,None)
-    expected={TARGET:17,I6:2,I5:P-2}
+    expected={TARGET:17,I6:P-2,I5:2}
     if reconstructed!=expected:
         raise AssertionError("Provenance check against original equations failed")
     print("WITNESS_SUBSET "+json.dumps({
