@@ -16,6 +16,7 @@ from examples.three_loop_sector203_weight_audit import ROOT, parse_file_integral
 DEFAULT = ROOT / "output/kira_vp05_full_provisional64_sec203_r6s6d1_truncate_sp_l2_20261016_135543_689734"
 POINTS = ((17, 7), (29, 11), (37, 13))
 GRID_POINTS = ((17, 7), (19, 7), (23, 7), (29, 7), (17, 9), (17, 11), (17, 13))
+VERIFY_POINTS = ((31, 5), (41, 9), (43, 17), (53, 19))
 PRIME = 1000003
 
 
@@ -68,6 +69,7 @@ def main():
     parser.add_argument("--project", type=Path, default=DEFAULT)
     parser.add_argument("--points", type=int, choices=(1, 2, 3), default=1)
     parser.add_argument("--grid", action="store_true", help="Probe fixed d while varying z, then fixed z while varying d")
+    parser.add_argument("--verify-formula", action="store_true", help="Independently test candidate C=-2/z on unused z,d samples")
     args = parser.parse_args()
     project = args.project.resolve()
     preferred = parse_file_integrals(project / "results/preferredMasters")
@@ -94,7 +96,7 @@ def main():
             {"key": by_id[x], "integral": "VP05_full[" + ",".join(map(str, x)) + "]"}
             for x in selected
         ]}, ensure_ascii=False), flush=True)
-    for z, d in (GRID_POINTS if args.grid else POINTS[:args.points]):
+    for z, d in (VERIFY_POINTS if args.verify_formula else GRID_POINTS if args.grid else POINTS[:args.points]):
         pivots = {}
         rowcount = 0
         for file in files:
@@ -123,6 +125,15 @@ def main():
             "limitation": "Numeric finite-field evaluation only, not a symbolic identity or global master basis proof."
         }
         print("REDUCTION_POINT " + json.dumps(data, ensure_ascii=False), flush=True)
+        if args.verify_formula:
+            expected = (-2 * pow(z, -1, PRIME)) % PRIME
+            coefficients = {tuple(x["master_key"]): x["coefficient_mod_p"] for x in data["coefficients_mod_p"]}
+            ok = (coefficients.get((6, 203)) == expected and
+                  coefficients.get((5, 201)) == (-expected) % PRIME and
+                  all(coefficients.get((i, 203)) == 0 for i in (7, 8, 9)))
+            print("VERIFY_FORMULA " + json.dumps({"z":z,"d":d,"expected_C":expected,"pass":ok}), flush=True)
+            if not ok:
+                raise RuntimeError("Candidate C=-2/z FAILED at this independent finite-field sample")
 
 
 if __name__ == "__main__":
