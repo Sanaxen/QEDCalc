@@ -93,22 +93,23 @@ def main():
     if vector or residue is not None:
         print("PROPOSED_RELATION_RESIDUAL " + json.dumps({"remaining_terms":[{"key":list(k),"coefficient_mod_p":v} for k,v in sorted(vector.items())], "missing_pivot":list(residue) if residue is not None else None, "trace_size":len(trace)}),flush=True)
         raise RuntimeError(f"Proposed relation did not reduce to zero: remaining {len(vector)} terms; see PROPOSED_RELATION_RESIDUAL")
-    # Trace is such that desired = sum(trace[i]*equation[i]) mod P at z=17,d=7.
+    # Target trace starts empty and pivot subtraction gives NEGATIVE source coefficients.
+    # Hence desired = -sum(trace[i]*original_equation[i]) modulo P.
     # Verify directly against ORIGINAL saved rows, not against echelon form.
     reconstructed={}
     for idx,c in trace.items():
         for k,v in rows[idx][2].items():
-            val=(reconstructed.get(k,0)+c*v)%P
+            val=(reconstructed.get(k,0)-c*v)%P
             if val:reconstructed[k]=val
             else:reconstructed.pop(k,None)
     expected={TARGET:17,I6:P-2,I5:2}
     if reconstructed!=expected:
-        raise AssertionError("Provenance check against original equations failed")
+        raise AssertionError("Provenance reconstruction failed: " + json.dumps({"expected_terms":len(expected),"actual_terms":len(reconstructed),"difference_count":len(set(expected.items()) ^ set(reconstructed.items()))}))
     print("WITNESS_SUBSET "+json.dumps({
         "finite_field":"GF(1000003)","z":17,"d":7,
         "rows_total":len(rows),"rank":len(pivots),
         "support_count":len(trace),"verified_against_original_rows":True,
-        "selected_row_provenance":[{"file":rows[i][0],"equation_id":rows[i][1],"weight_mod_p":trace[i]}
+        "selected_row_provenance":[{"file":rows[i][0],"equation_id":rows[i][1],"weight_mod_p":(-trace[i])%P}
             for i in sorted(trace)[:args.report_top]],
         "printed_count":min(args.report_top,len(trace)),
         "next":"Use these row IDs as a candidate subset for exact symbolic verification; GF(p) coefficients are not symbolic multipliers."
