@@ -42,12 +42,16 @@ def main():
     def parse(s):return sp.sympify(s.replace("^","**"),locals=locals_,evaluate=True)
     def normalize(v):
         return sp.cancel(v)
+    current_row=[0]
     def check_caps(row,trace):
         if len(row)>args.max_columns or len(trace)>args.max_source_support:
             raise RuntimeError(f"CAP_EXCEEDED columns={len(row)} source_support={len(trace)}")
-        for value in list(row.values())+list(trace.values()):
-            if len(str(value))>args.max_expression_chars:
-                raise RuntimeError("CAP_EXCEEDED expression character length")
+        for category, terms in (("equation", row), ("provenance", trace)):
+            for key,value in terms.items():
+                length=len(str(value))
+                if length>args.max_expression_chars:
+                    print("SYMBOLIC_CAP_DIAGNOSTIC "+json.dumps({"row_number":current_row[0],"category":category,"key":str(key),"expression_chars":length,"expression_cap":args.max_expression_chars,"row_columns":len(row),"source_support":len(trace),"pivot_count":len(pivots)}),flush=True)
+                    raise RuntimeError("CAP_EXCEEDED expression character length")
     def subtract(row, base, factor):
         for k,b in base.items():
             v=normalize(row.get(k,sp.S.Zero)-factor*b)
@@ -67,6 +71,7 @@ def main():
     pivots={}
     limit=min(args.max_rows,len(raw))
     for idx,item in enumerate(raw[:limit]):
+        current_row[0]=idx+1
         row={}
         for term in item["terms"]:
             key=tuple(term["key"])
