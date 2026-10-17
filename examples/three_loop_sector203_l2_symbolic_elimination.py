@@ -26,6 +26,7 @@ def main():
     ap.add_argument("--max-rows",type=int,default=40)
     ap.add_argument("--max-columns",type=int,default=120)
     ap.add_argument("--max-expression-chars",type=int,default=1000)
+    ap.add_argument("--progress-every",type=int,default=10)
     ap.add_argument("--max-source-support",type=int,default=528)
     args=ap.parse_args()
     if args.max_rows < 1:ap.error("--max-rows must be positive")
@@ -43,12 +44,17 @@ def main():
     def normalize(v):
         return sp.cancel(v)
     current_row=[0]
+    peaks={"equation_chars":0,"provenance_chars":0,"columns":0,"support":0}
     def check_caps(row,trace):
+        peaks["columns"]=max(peaks["columns"],len(row))
+        peaks["support"]=max(peaks["support"],len(trace))
         if len(row)>args.max_columns or len(trace)>args.max_source_support:
             raise RuntimeError(f"CAP_EXCEEDED columns={len(row)} source_support={len(trace)}")
         for category, terms in (("equation", row), ("provenance", trace)):
             for key,value in terms.items():
                 length=len(str(value))
+                peak_key="equation_chars" if category=="equation" else "provenance_chars"
+                peaks[peak_key]=max(peaks[peak_key],length)
                 if length>args.max_expression_chars:
                     print("SYMBOLIC_CAP_DIAGNOSTIC "+json.dumps({"row_number":current_row[0],"category":category,"key":str(key),"expression_chars":length,"expression_cap":args.max_expression_chars,"row_columns":len(row),"source_support":len(trace),"pivot_count":len(pivots)}),flush=True)
                     raise RuntimeError("CAP_EXCEEDED expression character length")
@@ -86,10 +92,10 @@ def main():
             trace={k:normalize(v*inv) for k,v in trace.items()}
             check_caps(row,trace)
             pivots[lead]=(row,trace)
-        if (idx+1)%10==0:
-            print(f"SYMBOLIC_PROGRESS rows={idx+1}/{limit} rank={len(pivots)}",flush=True)
+        if (idx+1)%args.progress_every==0:
+            print("SYMBOLIC_PROGRESS "+json.dumps({"rows":idx+1,"total":limit,"rank":len(pivots),"peaks":peaks}),flush=True)
     if limit<len(raw):
-        print("SYMBOLIC_DIAGNOSTIC "+json.dumps({"rows_processed":limit,"rank":len(pivots),"result":"PARTIAL_ONLY","proof":False}),flush=True)
+        print("SYMBOLIC_DIAGNOSTIC "+json.dumps({"rows_processed":limit,"rank":len(pivots),"result":"PARTIAL_ONLY","proof":False,"peaks":peaks}),flush=True)
         return
     target={I10:z,I6:sp.Integer(-2),I5:sp.Integer(2)}
     remainder=dict(target)
