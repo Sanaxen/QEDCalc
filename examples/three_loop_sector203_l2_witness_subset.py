@@ -73,6 +73,7 @@ def main():
     ap.add_argument("--max-support",type=int,default=2678)
     ap.add_argument("--max-terms",type=int,default=25000)
     ap.add_argument("--report-top",type=int,default=30)
+    ap.add_argument("--save-subset",action="store_true",help="Write exact original equation subset and modular witness to new audit files")
     args=ap.parse_args()
     rows=read_rows(args.project.resolve())
     pivots={}
@@ -105,6 +106,19 @@ def main():
     expected={TARGET:17,I6:P-2,I5:2}
     if reconstructed!=expected:
         raise AssertionError("Provenance reconstruction failed: " + json.dumps({"expected_terms":len(expected),"actual_terms":len(reconstructed),"difference_count":len(set(expected.items()) ^ set(reconstructed.items()))}))
+    if args.save_subset:
+        from datetime import datetime
+        stamp=datetime.now().strftime("%Y%m%d_%H%M%S")
+        outdir=ROOT/"output"/"three_loop_integral_family_audit"
+        outdir.mkdir(parents=True,exist_ok=True)
+        base=outdir/f"vp05_candidate4_witness_{stamp}"
+        row_subset=[rows[i] for i in sorted(trace)]
+        with (base.with_suffix(".equations.json")).open("w",encoding="utf8") as stream:
+            json.dump({"scope":"Exact text row coefficients from saved SYSTEM (not symbolic certificate)","rows":[{"row_index":i,"file":rows[i][0],"equation_id":rows[i][1],"terms":[{"key":list(k),"coefficient_mod_p":v} for k,v in sorted(rows[i][2].items())]} for i in sorted(trace)]},stream,indent=2)
+        with (base.with_suffix(".modular_witness.json")).open("w",encoding="utf8") as stream:
+            json.dump({"prime":P,"z":17,"d":7,"target":"17*I10-2*I6+2*I5","verified":True,"rows":[{"row_index":i,"file":rows[i][0],"equation_id":rows[i][1],"multiplier_mod_p":(-trace[i])%P} for i in sorted(trace)]},stream,indent=2)
+        print("SAVED_SUBSET "+str(base)+".equations.json",flush=True)
+        print("SAVED_MODULAR_WITNESS "+str(base)+".modular_witness.json",flush=True)
     print("WITNESS_SUBSET "+json.dumps({
         "finite_field":"GF(1000003)","z":17,"d":7,
         "rows_total":len(rows),"rank":len(pivots),
