@@ -120,7 +120,7 @@ def main():
                 {"master_key": by_id[x],
                  "coefficient_mod_p": (-remainder.get(by_id[x], 0)) % prime,
                  "coefficient_symmetric": (
-                     ((-remainder.get(by_id[x], 0)) % PRIME + PRIME // 2) % PRIME - PRIME // 2
+                     (lambda r: r if r <= prime // 2 else r - prime)((-remainder.get(by_id[x], 0)) % prime)
                  )}
                 for x in selected
             ],
