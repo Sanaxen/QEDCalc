@@ -112,9 +112,27 @@ def main():
         outdir=ROOT/"output"/"three_loop_integral_family_audit"
         outdir.mkdir(parents=True,exist_ok=True)
         base=outdir/f"vp05_candidate4_witness_{stamp}"
-        row_subset=[rows[i] for i in sorted(trace)]
+        exact_rows=[]
+        wanted=set(trace)
+        idx=0
+        for file in sorted((args.project.resolve()/"tmp/VP05_full").glob("SYSTEM_VP05_full_*.gz")):
+            with gzip.open(file,"rt",encoding="utf8") as inp:
+                while (marker:=inp.readline()):
+                    if marker.strip()!="Eq": raise ValueError("Malformed SYSTEM equation")
+                    eqid=inp.readline().strip()
+                    n=int(inp.readline().strip())
+                    terms=[]
+                    for _ in range(n):
+                        fields=inp.readline().split()
+                        if idx in wanted:
+                            terms.append({"key":[int(fields[2]),int(fields[3])],"coefficient":fields[1]})
+                    if idx in wanted:
+                        assert rows[idx][0]==file.name and rows[idx][1]==eqid
+                        exact_rows.append({"row_index":idx,"file":file.name,"equation_id":eqid,"terms":terms})
+                    idx+=1
+        assert len(exact_rows)==len(wanted) and idx==len(rows)
         with (base.with_suffix(".equations.json")).open("w",encoding="utf8") as stream:
-            json.dump({"scope":"Exact text row coefficients from saved SYSTEM (not symbolic certificate)","rows":[{"row_index":i,"file":rows[i][0],"equation_id":rows[i][1],"terms":[{"key":list(k),"coefficient_mod_p":v} for k,v in sorted(rows[i][2].items())]} for i in sorted(trace)]},stream,indent=2)
+            json.dump({"scope":"Original exact coefficient text for selected SYSTEM equations; symbolic identity NOT yet proven","rows":exact_rows},stream,indent=2)
         with (base.with_suffix(".modular_witness.json")).open("w",encoding="utf8") as stream:
             json.dump({"prime":P,"z":17,"d":7,"target":"17*I10-2*I6+2*I5","verified":True,"rows":[{"row_index":i,"file":rows[i][0],"equation_id":rows[i][1],"multiplier_mod_p":(-trace[i])%P} for i in sorted(trace)]},stream,indent=2)
         print("SAVED_SUBSET "+str(base)+".equations.json",flush=True)
