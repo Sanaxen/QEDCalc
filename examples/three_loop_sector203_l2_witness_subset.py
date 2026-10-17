@@ -91,7 +91,8 @@ def main():
     trace={}
     residue=eliminate(vector,pivots,trace,args.max_terms,args.max_support)
     if vector or residue is not None:
-        raise RuntimeError(f"Proposed relation did not reduce to zero: remaining {len(vector)} terms")
+        print("PROPOSED_RELATION_RESIDUAL " + json.dumps({"remaining_terms":[{"key":list(k),"coefficient_mod_p":v} for k,v in sorted(vector.items())], "missing_pivot":list(residue) if residue is not None else None, "trace_size":len(trace)}),flush=True)
+        raise RuntimeError(f"Proposed relation did not reduce to zero: remaining {len(vector)} terms; see PROPOSED_RELATION_RESIDUAL")
     # Trace is such that desired = sum(trace[i]*equation[i]) mod P at z=17,d=7.
     # Verify directly against ORIGINAL saved rows, not against echelon form.
     reconstructed={}
