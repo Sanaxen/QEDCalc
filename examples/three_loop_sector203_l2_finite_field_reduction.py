@@ -69,7 +69,7 @@ def main():
     parser.add_argument("--project", type=Path, default=DEFAULT)
     parser.add_argument("--points", type=int, choices=(1, 2, 3), default=1)
     parser.add_argument("--grid", action="store_true", help="Probe fixed d while varying z, then fixed z while varying d")
-    parser.add_argument("--verify-formula", action="store_true", help="Independently test candidate C=-2/z on unused z,d samples")
+    parser.add_argument("--verify-formula", action="store_true", help="Test candidate C=+2/z using independently chosen z,d samples")
     parser.add_argument("--prime", type=int, choices=(1000003, 1000033), default=1000003, help="Independent prime fields for coefficient audit")
     args = parser.parse_args()
     prime = args.prime
@@ -118,9 +118,9 @@ def main():
             "candidate4_reducible": True,
             "coefficients_mod_p": [
                 {"master_key": by_id[x],
-                 "coefficient_mod_p": (-remainder.get(by_id[x], 0)) % prime,
+                 "coefficient_mod_p": remainder.get(by_id[x], 0) % prime,
                  "coefficient_symmetric": (
-                     (lambda r: r if r <= prime // 2 else r - prime)((-remainder.get(by_id[x], 0)) % prime)
+                     (lambda r: r if r <= prime // 2 else r - prime)(remainder.get(by_id[x], 0) % prime)
                  )}
                 for x in selected
             ],
@@ -128,14 +128,14 @@ def main():
         }
         print("REDUCTION_POINT " + json.dumps(data, ensure_ascii=False), flush=True)
         if args.verify_formula:
-            expected = (-2 * pow(z, -1, prime)) % prime
+            expected = (2 * pow(z, -1, prime)) % prime
             coefficients = {tuple(x["master_key"]): x["coefficient_mod_p"] for x in data["coefficients_mod_p"]}
             ok = (coefficients.get((6, 203)) == expected and
                   coefficients.get((5, 201)) == (-expected) % prime and
                   all(coefficients.get((i, 203)) == 0 for i in (7, 8, 9)))
             print("VERIFY_FORMULA " + json.dumps({"z":z,"d":d,"expected_C":expected,"pass":ok}), flush=True)
             if not ok:
-                raise RuntimeError("Candidate C=-2/z FAILED at this independent finite-field sample")
+                raise RuntimeError("Candidate C=+2/z FAILED at this independent finite-field sample")
 
 
 if __name__ == "__main__":
