@@ -99,7 +99,9 @@ def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--equations",type=Path)
     ap.add_argument("--rows",type=int,default=12)
-    ap.add_argument("--max-rows",type=int,default=160)
+    ap.add_argument("--max-rows",type=int,default=320)
+    ap.add_argument("--sparse-array-rows",action="store_true",
+        help="per-row compact Fermat arrays with mapped pivot update loops")
     ap.add_argument("--array-loop-rows",action="store_true",
         help="experimental dense Fermat row arrays and in-process loops")
     ap.add_argument("--max-array-cells",type=int,default=20000)
@@ -116,7 +118,9 @@ def main():
     ap.add_argument("--fermat",default="/home/yamatoyamato/fermat/Ferl7/fer64")
     a=ap.parse_args()
     assert sp.cancel(sp.sympify(explicit_multiplication("((-z)d+2z+2)/(2z)"),locals={"z":sp.Symbol("z"),"d":sp.Symbol("d")})-(-sp.Symbol("z")*sp.Symbol("d")+2*sp.Symbol("z")+2)/(2*sp.Symbol("z")))==0
-    if not 1<=a.rows<=a.max_rows<=160:ap.error("pilot bounded to 1..160 rows")
+    if not 1<=a.rows<=a.max_rows<=320:ap.error("pilot bounded to 1..320 rows")
+    if a.sparse_array_rows and a.array_loop_rows:ap.error("select only one array mode")
+    if a.sparse_array_rows and not a.prune_eliminated_pivots:ap.error("sparse arrays require --prune-eliminated-pivots")
     if a.max_commands<100 or a.max_outputs<1:ap.error("invalid command/output cap")
     if a.max_array_cells<1:ap.error("invalid array-cell cap")
     if a.verify_last_rows<0:ap.error("--verify-last-rows must be >=0")
@@ -125,7 +129,7 @@ def main():
     path=paths[-1]
     rows=json.loads(path.read_text(encoding="utf-8-sig"))["rows"][:a.rows]
     columns=sorted({tuple(t["key"]) for r in rows for t in r["terms"]},key=order)
-    if len(columns)>300:ap.error("too many distinct columns for this pilot")
+    if len(columns)>600:ap.error("too many distinct columns for this pilot")
     bycol={k:n for n,k in enumerate(columns)}
     start=time.perf_counter()
     sample=[mod_rows(rows,*pt) for pt in POINTS]
@@ -216,6 +220,47 @@ def main():
                 divisor="n{}".format(i)
                 script.append("{} := r{}[{}]".format(divisor,i,bycol[lead]+1))
                 script.append("for j = 1,{} do r{}[j] := r{}[j]/{} od".format(len(columns),i,i,divisor))
+    sparse_cells=0
+    if a.sparse_array_rows:
+        # Each live row stores the UNION of original and encountered pivot-row
+        # supports. This structural upper bound never relies on sampled zeros.
+        # It includes eliminated pivots so their factors can be read safely.
+        script=["&(t=0)","&(J=z)","&(J=d)"]
+        row_maps={}
+        for i,r in enumerate(rows):
+            if i not in needed:continue
+            parts={}
+            for t in r["terms"]:
+                k=tuple(t["key"])
+                parts.setdefault(k,[]).append(t["coefficient"].replace("**","^"))
+            keys=set(parts)
+            for owner,pivot in schedule[i][0]:
+                keys.add(pivot)
+                keys.update(expected[owner])
+            lead=schedule[i][1]
+            if lead is not None:keys.add(lead)
+            ordered=sorted(keys,key=order)
+            row_maps[i]={k:j+1 for j,k in enumerate(ordered)}
+            sparse_cells+=len(ordered)
+            entries=["("+"+".join("("+v+")" for v in parts[k])+")" if k in parts else "0" for k in ordered]
+            script.append("[r{}] := [(".format(i)+",".join(entries)+")]")
+            for owner,pivot in schedule[i][0]:
+                local=row_maps[i]
+                other=row_maps[owner]
+                factor="f{}x{}".format(i,owner)
+                script.append("{} := r{}[{}]".format(factor,i,local[pivot]))
+                terms=[k for k in expected[owner] if k!=pivot]
+                if terms:
+                    dst=[local[k] for k in terms]
+                    src=[other[k] for k in terms]
+                    tag="m{}x{}".format(i,owner)
+                    script.append("[d{}] := [(".format(tag)+",".join(map(str,dst))+")]")
+                    script.append("[s{}] := [(".format(tag)+",".join(map(str,src))+")]")
+                    script.append("for j = 1,{} do r{}[d{}[j]] := r{}[d{}[j]] - {}*r{}[s{}[j]] od".format(len(terms),i,tag,i,tag,factor,owner,tag))
+            if lead is not None:
+                divisor="n{}".format(i)
+                script.append("{} := r{}[{}]".format(divisor,i,row_maps[i][lead]))
+                script.append("for j = 1,{} do r{}[j] := r{}[j]/{} od".format(len(ordered),i,i,divisor))
     output_keys=[]
     for i,cols in enumerate(expected):
         if i<first_verify:continue
@@ -227,15 +272,16 @@ def main():
             else:
                 script.append(f"!('QEDGAUSS_{n:05d}=',r{i}c{bycol[k]})")
     script.append("&q")
+    storage_cells=sparse_cells if a.sparse_array_rows else array_cells
     print("FERMAT_GAUSS_PILOT_START "+json.dumps({"rows":len(rows),"columns":len(columns),
         "rank":len(basepivots),"operations":sum(len(x[0]) for x in schedule),
-        "outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":array_cells,"file":str(path)}),flush=True)
+        "outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"file":str(path)}),flush=True)
     if a.preflight_only:
-        print("FERMAT_GAUSS_PREFLIGHT "+json.dumps({"rows":len(rows),"rank":len(basepivots),"columns":len(columns),"operations":sum(len(x[0]) for x in schedule),"outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":array_cells,"max_array_cells":a.max_array_cells,"max_commands":a.max_commands,"max_outputs":a.max_outputs,"within_caps":len(script)<=a.max_commands and len(output_keys)<=a.max_outputs and array_cells<=a.max_array_cells,"result":"ESTIMATE_ONLY","proof":False}),flush=True)
+        print("FERMAT_GAUSS_PREFLIGHT "+json.dumps({"rows":len(rows),"rank":len(basepivots),"columns":len(columns),"operations":sum(len(x[0]) for x in schedule),"outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"max_array_cells":a.max_array_cells,"max_commands":a.max_commands,"max_outputs":a.max_outputs,"within_caps":len(script)<=a.max_commands and len(output_keys)<=a.max_outputs and storage_cells<=a.max_array_cells,"result":"ESTIMATE_ONLY","proof":False}),flush=True)
         return
     try:
-        if array_cells>a.max_array_cells:
-            raise RuntimeError(f"array cell cap exceeded: {array_cells}/{a.max_array_cells}")
+        if storage_cells>a.max_array_cells:
+            raise RuntimeError(f"array cell cap exceeded: {storage_cells}/{a.max_array_cells}")
         if len(script)>a.max_commands or len(output_keys)>a.max_outputs:
             raise RuntimeError(f"pilot cap exceeded: commands={len(script)}/{a.max_commands}, outputs={len(output_keys)}/{a.max_outputs}; run --preflight-only and do not raise caps without reviewing scope")
         run=subprocess.run(["wsl","--",a.fermat],input=("\n".join(script)+"\n").encode(),
@@ -283,7 +329,7 @@ def main():
                     raise AssertionError(f"Mismatch row={i}, col={k}, p={p}: Fermat {observed}, modular {expected_val}, text={v[:120]!r}")
         print("FERMAT_GAUSS_PILOT "+json.dumps({"result":"PASS_SAMPLED","rows":len(rows),
             "rank":len(basepivots),"operations":sum(len(x[0]) for x in schedule),
-            "verified_primes":[p for p,_,_ in POINTS],"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":array_cells,"seconds_including_wsl_startup":round(duration,3),
+            "verified_primes":[p for p,_,_ in POINTS],"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"seconds_including_wsl_startup":round(duration,3),
             "scope":"Exact-function elimination executed in Fermat; equality sampled, no symbolic proof"}),flush=True)
     except (RuntimeError,AssertionError,subprocess.TimeoutExpired,ValueError) as exc:
         print("FERMAT_GAUSS_PILOT_ERROR "+json.dumps({"error":str(exc)}),flush=True)
