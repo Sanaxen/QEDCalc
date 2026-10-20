@@ -96,12 +96,16 @@ def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--equations",type=Path)
     ap.add_argument("--rows",type=int,default=12)
-    ap.add_argument("--max-rows",type=int,default=30)
+    ap.add_argument("--max-rows",type=int,default=100)
+    ap.add_argument("--preflight-only",action="store_true")
+    ap.add_argument("--max-commands",type=int,default=4500)
+    ap.add_argument("--max-outputs",type=int,default=1000)
     ap.add_argument("--timeout",type=int,default=180)
     ap.add_argument("--fermat",default="/home/yamatoyamato/fermat/Ferl7/fer64")
     a=ap.parse_args()
     assert sp.cancel(sp.sympify(explicit_multiplication("((-z)d+2z+2)/(2z)"),locals={"z":sp.Symbol("z"),"d":sp.Symbol("d")})-(-sp.Symbol("z")*sp.Symbol("d")+2*sp.Symbol("z")+2)/(2*sp.Symbol("z")))==0
-    if not 1<=a.rows<=a.max_rows<=30:ap.error("pilot bounded to 1..30 rows")
+    if not 1<=a.rows<=a.max_rows<=100:ap.error("pilot bounded to 1..100 rows")
+    if a.max_commands<100 or a.max_outputs<1:ap.error("invalid command/output cap")
     paths=[a.equations.resolve()] if a.equations else sorted(FOLDER.glob("vp05_candidate4_witness_*.equations.json"))
     if not paths:ap.error("No exported witness file")
     path=paths[-1]
@@ -160,8 +164,12 @@ def main():
     print("FERMAT_GAUSS_PILOT_START "+json.dumps({"rows":len(rows),"columns":len(columns),
         "rank":len(basepivots),"operations":sum(len(x[0]) for x in schedule),
         "outputs":len(output_keys),"commands":len(script),"file":str(path)}),flush=True)
+    if a.preflight_only:
+        print("FERMAT_GAUSS_PREFLIGHT "+json.dumps({"rows":len(rows),"rank":len(basepivots),"columns":len(columns),"operations":sum(len(x[0]) for x in schedule),"outputs":len(output_keys),"commands":len(script),"max_commands":a.max_commands,"max_outputs":a.max_outputs,"within_caps":len(script)<=a.max_commands and len(output_keys)<=a.max_outputs,"result":"ESTIMATE_ONLY","proof":False}),flush=True)
+        return
     try:
-        if len(script)>4500:raise RuntimeError("pilot command cap exceeded")
+        if len(script)>a.max_commands or len(output_keys)>a.max_outputs:
+            raise RuntimeError(f"pilot cap exceeded: commands={len(script)}/{a.max_commands}, outputs={len(output_keys)}/{a.max_outputs}; run --preflight-only and do not raise caps without reviewing scope")
         run=subprocess.run(["wsl","--",a.fermat],input=("\n".join(script)+"\n").encode(),
             stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=a.timeout)
         stdout=run.stdout.decode("utf-8",errors="replace")
