@@ -142,6 +142,14 @@ def main():
             first=next((i for i,(aa,bb) in enumerate(zip(schedule,other)) if aa!=bb),min(len(schedule),len(other)))
             a_ops,a_lead=schedule[first] if first<len(schedule) else ([],None)
             b_ops,b_lead=other[first] if first<len(other) else ([],None)
+            # Find the earliest divergence in the operation trace, rather
+            # than comparing only the final pivot and the tail of operations.
+            common_prefix=0
+            while (common_prefix<min(len(a_ops),len(b_ops)) and
+                   a_ops[common_prefix]==b_ops[common_prefix]):
+                common_prefix+=1
+            first_baseline_op=a_ops[common_prefix] if common_prefix<len(a_ops) else None
+            first_different_op=b_ops[common_prefix] if common_prefix<len(b_ops) else None
             print("FERMAT_GAUSS_PIVOT_MISMATCH "+json.dumps({
                 "rows":len(rows),"first_different_row_zero_based":first,
                 "first_different_row_one_based":first+1,
@@ -149,6 +157,11 @@ def main():
                 "different_point":{"p":pt[0],"z":pt[1],"d":pt[2]},
                 "baseline_lead":a_lead,"different_lead":b_lead,
                 "baseline_ops_count":len(a_ops),"different_ops_count":len(b_ops),
+                "common_operation_prefix":common_prefix,
+                "first_baseline_op":first_baseline_op,
+                "first_different_op":first_different_op,
+                "baseline_ops_near_divergence":a_ops[max(0,common_prefix-3):common_prefix+4],
+                "different_ops_near_divergence":b_ops[max(0,common_prefix-3):common_prefix+4],
                 "baseline_ops_tail":a_ops[-8:],"different_ops_tail":b_ops[-8:],
                 "scope":"diagnostic only; symbolic schedule not established",
                 "proof":False}),flush=True)
