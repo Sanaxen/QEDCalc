@@ -101,13 +101,23 @@ def main():
         c=sp.cancel(convert(alpha))
         sym=[sp.cancel(convert(x)-a.updates*c*convert(y)) for x,y in zip(src,basis)]
         st=time.perf_counter()-began
+        import ast
+        for k,out in enumerate(outputs):
+            normalized="".join(out.split())
+            try:
+                ast.parse(normalized.replace("^","**"),mode="eval")
+            except SyntaxError as err:
+                raise RuntimeError("Fermat malformed output "+json.dumps({"column":k,"raw_value":out,"normalized":normalized,"source":src[k],"basis":basis[k],"factor":alpha,"stdout_tail":run_stdout[-1000:]},ensure_ascii=False)) from err
         verified_points=0
         for prime,zz,dd in ((1000003,17,7),(1000033,29,11),(1000037,13,19)):
             try:
                 factor=coefficient(alpha,zz,dd,prime)
                 for k,(x,y,out) in enumerate(zip(src,basis,outputs)):
                     expected=(coefficient(x,zz,dd,prime)-a.updates*factor*coefficient(y,zz,dd,prime))%prime
-                    actual=coefficient("".join(out.split()),zz,dd,prime)
+                    try:
+                        actual=coefficient("".join(out.split()),zz,dd,prime)
+                    except (SyntaxError,ValueError) as err:
+                        raise RuntimeError(f"Fermat coefficient parse failure column={k} output={out!r} prime={prime}") from err
                     if expected!=actual:raise AssertionError(f"Mismatch column={k}, prime={prime}, result={out!r}")
                 verified_points+=1
             except ZeroDivisionError:continue
