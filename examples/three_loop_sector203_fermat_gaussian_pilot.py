@@ -139,6 +139,19 @@ def main():
     for pt,rr in zip(POINTS[1:],sample[1:]):
         other,_=modular_echelon(rr,pt[0])
         if other!=schedule:
+            first=next((i for i,(aa,bb) in enumerate(zip(schedule,other)) if aa!=bb),min(len(schedule),len(other)))
+            a_ops,a_lead=schedule[first] if first<len(schedule) else ([],None)
+            b_ops,b_lead=other[first] if first<len(other) else ([],None)
+            print("FERMAT_GAUSS_PIVOT_MISMATCH "+json.dumps({
+                "rows":len(rows),"first_different_row_zero_based":first,
+                "first_different_row_one_based":first+1,
+                "baseline_point":{"p":POINTS[0][0],"z":POINTS[0][1],"d":POINTS[0][2]},
+                "different_point":{"p":pt[0],"z":pt[1],"d":pt[2]},
+                "baseline_lead":a_lead,"different_lead":b_lead,
+                "baseline_ops_count":len(a_ops),"different_ops_count":len(b_ops),
+                "baseline_ops_tail":a_ops[-8:],"different_ops_tail":b_ops[-8:],
+                "scope":"diagnostic only; symbolic schedule not established",
+                "proof":False}),flush=True)
             raise SystemExit("FERMAT_GAUSS_PILOT_ERROR different pivot schedules across primes: choose another sample")
     # Keep entries for each processed row in Fermat variables rROWcCOL.
     # Assign once; make row reduction factors from the current lead coefficient
