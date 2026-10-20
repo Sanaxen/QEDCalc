@@ -4,7 +4,7 @@ This deliberately benchmarks algebra only; it is NOT a symbolic IBP proof.
 Fermat is launched once for a batch, via the user's WSL installation.
 """
 from __future__ import annotations
-import argparse, json, subprocess, time
+import argparse, json, re, subprocess, time
 from pathlib import Path
 import sympy as sp
 from examples.three_loop_sector203_weight_audit import ROOT
@@ -22,16 +22,25 @@ def fermat_batch(exprs,binary,timeout):
     elapsed=time.perf_counter()-start
     if run.returncode:
         raise RuntimeError(f"Fermat exit={run.returncode}, stderr={run.stderr[-1200:]}, stdout={run.stdout[-1200:]}")
+    # Fermat emits prompts such as "0>>" and may concatenate all print
+    # statements onto a single line. Split by our NEXT label, never newline.
+    # Echoed commands can contain the same label, so select the last occurrence.
     results=[]
     for i in range(len(exprs)):
         tag=f"QEDFERMAT_{i:05d}="
         start_at=run.stdout.rfind(tag)
         if start_at<0:raise RuntimeError(f"Missing {tag}; output tail={run.stdout[-1200:]}")
         start_at+=len(tag)
-        end_at=run.stdout.find("\\n",start_at)
-        if end_at<0:end_at=len(run.stdout)
-        value=run.stdout[start_at:end_at].strip().rstrip(";").strip()
-        if not value:raise RuntimeError(f"Empty Fermat expression for {tag}; stdout={run.stdout[start_at:start_at+300]}")
+        next_tag=f"QEDFERMAT_{i+1:05d}="
+        end_at=run.stdout.rfind(next_tag) if i+1<len(exprs) else len(run.stdout)
+        if end_at<start_at:raise RuntimeError(f"Misordered Fermat labels at sample {i}")
+        value=run.stdout[start_at:end_at]
+        value=re.sub(r"\\s*\\d+>>\\s*$","",value)
+        if i==len(exprs)-1:
+            value=re.sub(r"\\s*\\d+>>\\s*bye\\s*$","",value)
+            value=re.sub(r"\\s*bye\\s*$","",value)
+        value=value.strip().rstrip(";").strip()
+        if not value:raise RuntimeError(f"Empty Fermat expression for {tag}")
         results.append(value)
     return results,elapsed
 
