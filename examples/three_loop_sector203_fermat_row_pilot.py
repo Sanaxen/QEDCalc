@@ -83,6 +83,8 @@ def main():
         # Reuse already validated output framing from the existing Fermat probe,
         # avoiding prompt assumptions at line boundaries.
         import re
+        assert re.sub(r"\s*[0-9]\s*>\s*>?\s*$", "", "19\n        0\n\n>").strip()=="19", "single-prompt output regression"
+        assert re.sub(r"\s*[0-9]\s*>\s*>?\s*$", "", "( d - 21 ) / ( d - 1 )\n        0\n\n>").strip()=="( d - 21 ) / ( d - 1 )", "rational-output regression"
         outputs=[]
         for k in range(len(keys)):
             tag=f"QEDFERMAT_{k:05d}="
@@ -92,7 +94,7 @@ def main():
             if begin<0 or end<begin:raise RuntimeError(f"Missing or misordered Fermat output tag {tag}; tail={run_stdout[-500:]}")
             part=run_stdout[begin+len(tag):end]
             part=re.sub(r"\s*bye\s*$","",part)
-            part=re.sub(r"\s*[0-9]\s*>\s*>\s*$","",part).strip()
+            part=re.sub(r"\s*[0-9]\s*>\s*>?\s*$","",part).strip()
             if not part or ">>" in part:raise RuntimeError(f"Unparsed Fermat output k={k}: {part[:240]!r}")
             outputs.append(part)
         z,d=sp.symbols("z d")
