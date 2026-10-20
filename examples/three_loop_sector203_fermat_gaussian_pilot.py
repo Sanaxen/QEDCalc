@@ -14,6 +14,9 @@ import subprocess
 import time
 from pathlib import Path
 
+import sympy as sp
+from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application
+
 from examples.three_loop_sector203_fermat_probe import FOLDER
 from examples.three_loop_sector203_ffrank_audit import coefficient
 
@@ -76,6 +79,18 @@ def parse_outputs(stdout,number):
             raise ValueError(f"Unparsed Fermat output {i}: {part[:400]!r}")
         values.append("".join(part.split()))
     return values
+
+def explicit_multiplication(value):
+    """Convert Fermat implicit products (2z, (-z)d, 2(d+1)) to explicit *."""
+    z,d=sp.symbols("z d")
+    parsed=parse_expr(value.replace("^","**"),local_dict={"z":z,"d":d},
+        global_dict={"Integer":sp.Integer,"Rational":sp.Rational,"Symbol":sp.Symbol,
+                     "Pow":sp.Pow,"Mul":sp.Mul,"Add":sp.Add},
+        transformations=standard_transformations+(implicit_multiplication_application,),
+        evaluate=False)
+    if parsed.free_symbols-{z,d}:
+        raise ValueError(f"Unexpected Fermat symbols: {parsed.free_symbols-{z,d}}")
+    return str(parsed)
 
 def main():
     ap=argparse.ArgumentParser()
@@ -154,6 +169,9 @@ def main():
             at=stdout.find("***")
             raise RuntimeError(f"Fermat interpreter error/exit={run.returncode}, context={stdout[max(0,at-100):at+600]!r}")
         actual=parse_outputs(stdout,len(output_keys))
+        # Fermat prints products without *, e.g. ((-z)d+2z+2)/(2z).
+        # Normalize before reusing the established finite-field AST evaluator.
+        actual=[explicit_multiplication(v) for v in actual]
         # Compare row-by-row against independent modular elimination;
         # no SymPy reduction and no assumption Fermat zero-pivots stay zero.
         for p,z,d in POINTS:
