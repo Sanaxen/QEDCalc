@@ -77,7 +77,7 @@ def main():
         if run.returncode:raise RuntimeError(f"Fermat returncode={run.returncode}, stderr={run_stderr[-600:]}, stdout={run_stdout[-600:]}")
         # Fermat can exit with code zero even when script statements fail.
         # Diagnose the FIRST interpreter error, not just a misleading missing output tag.
-        if "*** Error" in run.stdout or "*** Inappropriate" in run.stdout:
+        if "*** Error" in run_stdout or "*** Inappropriate" in run_stdout:
             at=run_stdout.find("***")
             raise RuntimeError("Fermat interpreter error: "+repr(run_stdout[max(0,at-360):at+700])+"; script_head="+repr(script[:12]))
         # Reuse already validated output framing from the existing Fermat probe,
@@ -88,9 +88,9 @@ def main():
             tag=f"QEDFERMAT_{k:05d}="
             nt=f"QEDFERMAT_{k+1:05d}="
             begin=run_stdout.rfind(tag)
-            end=run.stdout.rfind(nt) if k+1<len(keys) else len(run.stdout)
+            end=run_stdout.rfind(nt) if k+1<len(keys) else len(run_stdout)
             if begin<0 or end<begin:raise RuntimeError(f"Missing or misordered Fermat output tag {tag}; tail={run_stdout[-500:]}")
-            part=run.stdout[begin+len(tag):end]
+            part=run_stdout[begin+len(tag):end]
             part=re.sub(r"\s*bye\s*$","",part)
             part=re.sub(r"\s*[0-9]\s*>\s*>\s*$","",part).strip()
             if not part or ">>" in part:raise RuntimeError(f"Unparsed Fermat output k={k}: {part[:240]!r}")
