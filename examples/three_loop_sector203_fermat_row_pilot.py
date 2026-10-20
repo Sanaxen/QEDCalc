@@ -50,16 +50,19 @@ def main():
     alpha=f"({byrow[i][pivot]})/({byrow[j][pivot]})"
     # Construct a single Fermat session with persistent scalar variables.
     # Fermat variable assignments use ':='; print tagged results once.
-    script=["&(t=0);","&U;","&(J=z);","&(J=d);",f"fac := {alpha};"]
+    # Piped stdin is read as terminal statements, rather than a Fermat file.
+    # Here semicolons suppress output and may concatenate successive commands.
+    # Avoid &U (uglyprint), which warns of limitations for terminal execution.
+    script=["&(t=0)","&(J=z)","&(J=d)",f"fac := {alpha}"]
     for k,(x,y) in enumerate(zip(src,basis)):
-        script.append(f"v{k} := ({x});")
-        script.append(f"b{k} := ({y});")
+        script.append(f"v{k} := ({x})")
+        script.append(f"b{k} := ({y})")
     for _ in range(a.updates):
         for k in range(len(keys)):
-            script.append(f"v{k} := v{k} - fac*b{k};")
+            script.append(f"v{k} := v{k} - fac*b{k}")
     for k in range(len(keys)):
-        script.append(f"!('QEDFERMAT_{k:05d}=',v{k});")
-    script.append("&q;")
+        script.append(f"!('QEDFERMAT_{k:05d}=',v{k})")
+    script.append("&q")
     print("FERMAT_ROW_PILOT_START "+json.dumps({"file":str(paths[-1]),"row_i":i,"row_j":j,
         "pivot":pivot,"columns":len(keys),"updates":a.updates,"commands":len(script)}),flush=True)
     start=time.perf_counter()
