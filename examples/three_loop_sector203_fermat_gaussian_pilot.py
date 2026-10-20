@@ -150,6 +150,28 @@ def main():
                 common_prefix+=1
             first_baseline_op=a_ops[common_prefix] if common_prefix<len(a_ops) else None
             first_different_op=b_ops[common_prefix] if common_prefix<len(b_ops) else None
+            # Replay the common operation prefix independently in each field.
+            # Inspect BOTH candidate pivot coefficients immediately before
+            # their first divergent step. A sampled zero is NOT an exact zero.
+            candidates=sorted({tuple(op[1]) for op in (first_baseline_op,first_different_op) if op is not None},key=order)
+            probe=[]
+            for point,field_rows in ((POINTS[0],sample[0]),(pt,rr)):
+                prime=point[0]
+                vec=field_rows[first].copy()
+                field_pivots={}
+                for owner,pivot in a_ops[:common_prefix]:
+                    if owner not in field_pivots:
+                        # Obtain the normalized owner from the matching
+                        # complete-field echelon, not a symbolic assumption.
+                        _,all_pivots=modular_echelon(field_rows,prime)
+                        field_pivots={row_owner:pv for _,(row_owner,pv) in all_pivots.items()}
+                    factor=vec.get(tuple(pivot),0)
+                    for k,val in field_pivots[owner].items():
+                        n=(vec.get(k,0)-factor*val)%prime
+                        if n:vec[k]=n
+                        else:vec.pop(k,None)
+                probe.append({"p":prime,"z":point[1],"d":point[2],
+                    "candidate_coefficients":[{"key":k,"value":vec.get(k,0)} for k in candidates]})
             print("FERMAT_GAUSS_PIVOT_MISMATCH "+json.dumps({
                 "rows":len(rows),"first_different_row_zero_based":first,
                 "first_different_row_one_based":first+1,
@@ -158,6 +180,7 @@ def main():
                 "baseline_lead":a_lead,"different_lead":b_lead,
                 "baseline_ops_count":len(a_ops),"different_ops_count":len(b_ops),
                 "common_operation_prefix":common_prefix,
+                "candidate_pivot_values_after_common_prefix":probe,
                 "first_baseline_op":first_baseline_op,
                 "first_different_op":first_different_op,
                 "baseline_ops_near_divergence":a_ops[max(0,common_prefix-3):common_prefix+4],
