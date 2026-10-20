@@ -267,7 +267,9 @@ def main():
         for k in cols:
             output_keys.append((i,k))
             n=len(output_keys)-1
-            if a.array_loop_rows:
+            if a.sparse_array_rows:
+                script.append(f"!('QEDGAUSS_{n:05d}=',r{i}[{row_maps[i][k]}])")
+            elif a.array_loop_rows:
                 script.append(f"!('QEDGAUSS_{n:05d}=',r{i}[{bycol[k]+1}])")
             else:
                 script.append(f"!('QEDGAUSS_{n:05d}=',r{i}c{bycol[k]})")
