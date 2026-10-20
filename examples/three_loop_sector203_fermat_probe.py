@@ -25,12 +25,14 @@ def fermat_batch(exprs,binary,timeout):
     results=[]
     for i in range(len(exprs)):
         tag=f"QEDFERMAT_{i:05d}="
-        start_at=run.stdout.find(tag)
+        start_at=run.stdout.rfind(tag)
         if start_at<0:raise RuntimeError(f"Missing {tag}; output tail={run.stdout[-1200:]}")
         start_at+=len(tag)
-        end_at=run.stdout.find(";",start_at)
-        if end_at<0:raise RuntimeError(f"Missing Fermat terminator for {tag}; stdout={run.stdout[start_at:start_at+300]}")
-        results.append(run.stdout[start_at:end_at].strip())
+        end_at=run.stdout.find("\\n",start_at)
+        if end_at<0:end_at=len(run.stdout)
+        value=run.stdout[start_at:end_at].strip().rstrip(";").strip()
+        if not value:raise RuntimeError(f"Empty Fermat expression for {tag}; stdout={run.stdout[start_at:start_at+300]}")
+        results.append(value)
     return results,elapsed
 
 def main():
