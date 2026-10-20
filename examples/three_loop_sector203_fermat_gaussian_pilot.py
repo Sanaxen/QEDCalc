@@ -107,6 +107,8 @@ def main():
     ap.add_argument("--max-array-cells",type=int,default=20000)
     ap.add_argument("--prune-dead-rows",action="store_true",
         help="omit entire rows not needed for requested verification outputs")
+    ap.add_argument("--auto-points",action="store_true",
+        help="find three independent prime/specialization points with the same modular elimination trace")
     ap.add_argument("--preflight-only",action="store_true")
     ap.add_argument("--max-commands",type=int,default=4500)
     ap.add_argument("--max-outputs",type=int,default=1000)
@@ -132,11 +134,53 @@ def main():
     if len(columns)>600:ap.error("too many distinct columns for this pilot")
     bycol={k:n for n,k in enumerate(columns)}
     start=time.perf_counter()
-    sample=[mod_rows(rows,*pt) for pt in POINTS]
-    schedule,basepivots=modular_echelon(sample[0],POINTS[0][0])
+    points=POINTS
+    if a.auto_points:
+        # Deterministic search; never silently accept a single-point schedule.
+        # Distinct prime moduli make it harder to share arithmetic accidents.
+        moduli=[1000003,1000033,1000037,1000039,1000081,1000099,
+                1000117,1000121,1000133,1000151,1000159,1000171,
+                1000183,1000187,1000193,1000199,1000211,1000213,
+                1000231,1000249,1000253,1000273,1000289,1000291]
+        candidate_points=[(p,17+2*i,7+4*i) for i,p in enumerate(moduli) if sp.isprime(p)]
+        groups=[]
+        checked=0
+        for pt in candidate_points:
+            try:
+                rr=mod_rows(rows,*pt)
+                candidate_schedule,candidate_pivots=modular_echelon(rr,pt[0])
+            except (ZeroDivisionError,ValueError) as exc:
+                print("FERMAT_GAUSS_POINT_SKIPPED "+json.dumps({"point":pt,"reason":str(exc)[:180]}),flush=True)
+                continue
+            checked+=1
+            group=next((g for g in groups if g["schedule"]==candidate_schedule),None)
+            if group is None:
+                group={"schedule":candidate_schedule,"items":[]}
+                groups.append(group)
+            group["items"].append((pt,rr,candidate_pivots))
+            if len(group["items"])>=3:
+                chosen=group["items"][:3]
+                points=tuple(v[0] for v in chosen)
+                sample=[v[1] for v in chosen]
+                schedule=group["schedule"]
+                basepivots=chosen[0][2]
+                print("FERMAT_GAUSS_POINTS_SELECTED "+json.dumps({
+                    "points":points,"candidates_checked":checked,
+                    "distinct_schedules":len(groups),
+                    "rank":len(basepivots),"proof":False}),flush=True)
+                break
+        else:
+            print("FERMAT_GAUSS_POINTS_NOT_FOUND "+json.dumps({
+                "candidates_checked":checked,"distinct_schedules":len(groups),
+                "largest_group":max((len(g["items"]) for g in groups),default=0),
+                "scope":"No safe shared schedule; no Fermat run"}),flush=True)
+            raise SystemExit(2)
+    else:
+        sample=[mod_rows(rows,*pt) for pt in points]
+        schedule,basepivots=modular_echelon(sample[0],points[0][0])
     # Verify finite-field pivot pattern at independent evaluation points before
     # constructing symbolic Fermat commands; otherwise the plan is unsafe.
-    for pt,rr in zip(POINTS[1:],sample[1:]):
+    for pt,rr in zip(points[1:],sample[1:]):
         other,_=modular_echelon(rr,pt[0])
         if other!=schedule:
             first=next((i for i,(aa,bb) in enumerate(zip(schedule,other)) if aa!=bb),min(len(schedule),len(other)))
@@ -155,7 +199,7 @@ def main():
             # their first divergent step. A sampled zero is NOT an exact zero.
             candidates=sorted({tuple(op[1]) for op in (first_baseline_op,first_different_op) if op is not None},key=order)
             probe=[]
-            for point,field_rows in ((POINTS[0],sample[0]),(pt,rr)):
+            for point,field_rows in ((points[0],sample[0]),(pt,rr)):
                 prime=point[0]
                 vec=field_rows[first].copy()
                 field_pivots={}
@@ -175,7 +219,7 @@ def main():
             print("FERMAT_GAUSS_PIVOT_MISMATCH "+json.dumps({
                 "rows":len(rows),"first_different_row_zero_based":first,
                 "first_different_row_one_based":first+1,
-                "baseline_point":{"p":POINTS[0][0],"z":POINTS[0][1],"d":POINTS[0][2]},
+                "baseline_point":{"p":points[0][0],"z":points[0][1],"d":points[0][2]},
                 "different_point":{"p":pt[0],"z":pt[1],"d":pt[2]},
                 "baseline_lead":a_lead,"different_lead":b_lead,
                 "baseline_ops_count":len(a_ops),"different_ops_count":len(b_ops),
@@ -355,7 +399,7 @@ def main():
         actual=normalized
         # Compare row-by-row against independent modular elimination;
         # no SymPy reduction and no assumption Fermat zero-pivots stay zero.
-        for p,z,d in POINTS:
+        for p,z,d in points:
             rr=mod_rows(rows,p,z,d)
             basis={}
             for i,((ops,lead),original,cols) in enumerate(zip(schedule,rr,expected)):
@@ -380,7 +424,7 @@ def main():
                     raise AssertionError(f"Mismatch row={i}, col={k}, p={p}: Fermat {observed}, modular {expected_val}, text={v[:120]!r}")
         print("FERMAT_GAUSS_PILOT "+json.dumps({"result":"PASS_SAMPLED","rows":len(rows),
             "rank":len(basepivots),"operations":sum(len(x[0]) for x in schedule),
-            "verified_primes":[p for p,_,_ in POINTS],"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"seconds_including_wsl_startup":round(duration,3),
+            "verified_primes":[p for p,_,_ in points],"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"seconds_including_wsl_startup":round(duration,3),
             "scope":"Exact-function elimination executed in Fermat; equality sampled, no symbolic proof"}),flush=True)
     except (RuntimeError,AssertionError,subprocess.TimeoutExpired,ValueError) as exc:
         print("FERMAT_GAUSS_PILOT_ERROR "+json.dumps({"error":str(exc)}),flush=True)
