@@ -68,6 +68,11 @@ def main():
             stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=a.timeout)
         ft=time.perf_counter()-start
         if run.returncode:raise RuntimeError(f"Fermat returncode={run.returncode}, stderr={run.stderr[-600:]}, stdout={run.stdout[-600:]}")
+        # Fermat can exit with code zero even when script statements fail.
+        # Diagnose the FIRST interpreter error, not just a misleading missing output tag.
+        if "*** Error" in run.stdout or "*** Inappropriate" in run.stdout:
+            at=run.stdout.find("***")
+            raise RuntimeError("Fermat interpreter error: "+repr(run.stdout[max(0,at-360):at+700])+"; script_head="+repr(script[:12]))
         # Reuse already validated output framing from the existing Fermat probe,
         # avoiding prompt assumptions at line boundaries.
         import re
