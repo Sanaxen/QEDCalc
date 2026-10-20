@@ -22,6 +22,7 @@ def fermat_batch(exprs,binary,timeout):
     elapsed=time.perf_counter()-start
     if run.returncode:
         raise RuntimeError(f"Fermat exit={run.returncode}, stderr={run.stderr[-1200:]}, stdout={run.stdout[-1200:]}")
+    assert re.sub(r"[0-9]>>\s*$", "", "-d+20>>") == "-d+2", "prompt removal regression"
     # Fermat emits prompts such as "0>>" and may concatenate all print
     # statements onto a single line. Split by our NEXT label, never newline.
     # Echoed commands can contain the same label, so select the last occurrence.
@@ -35,10 +36,10 @@ def fermat_batch(exprs,binary,timeout):
         end_at=run.stdout.rfind(next_tag) if i+1<len(exprs) else len(run.stdout)
         if end_at<start_at:raise RuntimeError(f"Misordered Fermat labels at sample {i}")
         value=run.stdout[start_at:end_at]
-        value=re.sub(r"[0-9]>>\\s*$","",value)
+        value=re.sub(r"[0-9]>>\s*$","",value)
         if i==len(exprs)-1:
-            value=re.sub(r"[0-9]>>\\s*bye\\s*$","",value)
-            value=re.sub(r"\\s*bye\\s*$","",value)
+            value=re.sub(r"[0-9]>>\s*bye\s*$","",value)
+            value=re.sub(r"\s*bye\s*$","",value)
         value=value.strip().rstrip(";").strip()
         if ">>" in value:raise RuntimeError(f"Unparsed Fermat prompt in sample {i}: {value[:180]!r}")
         if not value:raise RuntimeError(f"Empty Fermat expression for {tag}")
@@ -89,7 +90,7 @@ def main():
          "fermat_seconds":round(ft,3),"sympy_seconds":round(st,3),
          "speedup_sympy_over_fermat":round(st/ft,3) if ft else None,
          "scope":"Algebra microbenchmark, not symbolic IBP elimination or proof"}),flush=True)
-    except (OSError,subprocess.TimeoutExpired,RuntimeError,AssertionError,ValueError) as exc:
+    except (OSError,subprocess.TimeoutExpired,RuntimeError,AssertionError,ValueError,SyntaxError) as exc:
         print("FERMAT_PROBE_ERROR "+json.dumps({"error":str(exc)}),flush=True)
         raise SystemExit(2) from exc
 
