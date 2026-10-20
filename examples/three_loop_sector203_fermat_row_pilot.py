@@ -67,15 +67,19 @@ def main():
         "pivot":pivot,"columns":len(keys),"updates":a.updates,"commands":len(script)}),flush=True)
     start=time.perf_counter()
     try:
-        run=subprocess.run(["wsl","--",a.fermat],input="\n".join(script)+"\n",text=True,
+        run=subprocess.run(["wsl","--",a.fermat],input=("\n".join(script)+"\n").encode("utf-8"),
             stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=a.timeout)
+        # Windows text=True translates LF to CRLF on stdin; Fermat reports CR
+        # (unicode 13) as an invalid token. Byte input preserves literal LF.
+        run_stdout=run.stdout.decode("utf-8",errors="replace")
+        run_stderr=run.stderr.decode("utf-8",errors="replace")
         ft=time.perf_counter()-start
-        if run.returncode:raise RuntimeError(f"Fermat returncode={run.returncode}, stderr={run.stderr[-600:]}, stdout={run.stdout[-600:]}")
+        if run.returncode:raise RuntimeError(f"Fermat returncode={run.returncode}, stderr={run_stderr[-600:]}, stdout={run_stdout[-600:]}")
         # Fermat can exit with code zero even when script statements fail.
         # Diagnose the FIRST interpreter error, not just a misleading missing output tag.
         if "*** Error" in run.stdout or "*** Inappropriate" in run.stdout:
-            at=run.stdout.find("***")
-            raise RuntimeError("Fermat interpreter error: "+repr(run.stdout[max(0,at-360):at+700])+"; script_head="+repr(script[:12]))
+            at=run_stdout.find("***")
+            raise RuntimeError("Fermat interpreter error: "+repr(run_stdout[max(0,at-360):at+700])+"; script_head="+repr(script[:12]))
         # Reuse already validated output framing from the existing Fermat probe,
         # avoiding prompt assumptions at line boundaries.
         import re
@@ -83,9 +87,9 @@ def main():
         for k in range(len(keys)):
             tag=f"QEDFERMAT_{k:05d}="
             nt=f"QEDFERMAT_{k+1:05d}="
-            begin=run.stdout.rfind(tag)
+            begin=run_stdout.rfind(tag)
             end=run.stdout.rfind(nt) if k+1<len(keys) else len(run.stdout)
-            if begin<0 or end<begin:raise RuntimeError(f"Missing or misordered Fermat output tag {tag}; tail={run.stdout[-500:]}")
+            if begin<0 or end<begin:raise RuntimeError(f"Missing or misordered Fermat output tag {tag}; tail={run_stdout[-500:]}")
             part=run.stdout[begin+len(tag):end]
             part=re.sub(r"\s*bye\s*$","",part)
             part=re.sub(r"\s*[0-9]\s*>\s*>\s*$","",part).strip()
