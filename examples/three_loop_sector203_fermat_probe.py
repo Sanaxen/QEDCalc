@@ -36,10 +36,9 @@ def fermat_batch(exprs,binary,timeout):
         end_at=run.stdout.rfind(next_tag) if i+1<len(exprs) else len(run.stdout)
         if end_at<start_at:raise RuntimeError(f"Misordered Fermat labels at sample {i}")
         value=run.stdout[start_at:end_at]
-        value=re.sub(r"[0-9]>>\s*$","",value)
         if i==len(exprs)-1:
-            value=re.sub(r"[0-9]>>\s*bye\s*$","",value)
             value=re.sub(r"\s*bye\s*$","",value)
+        value=re.sub(r"\s*[0-9]>>\s*$","",value)
         value=value.strip().rstrip(";").strip()
         if ">>" in value:raise RuntimeError(f"Unparsed Fermat prompt in sample {i}: {value[:180]!r}")
         if not value:raise RuntimeError(f"Empty Fermat expression for {tag}")
@@ -76,6 +75,11 @@ def main():
         for i,(value,expr) in enumerate(zip(values,exprs)):
             # Fermat formatting can contain whitespace; normalize it for finite-field verification.
             normalized="".join(value.split())
+            try:
+                import ast
+                ast.parse(normalized.replace("^","**"),mode="eval")
+            except SyntaxError as err:
+                raise RuntimeError(f"Fermat output syntax sample={i}, value={value!r}, input={expr!r}") from err
             verified=0
             for prime,z0,d0 in ((1000003,17,7),(1000033,29,11)):
                 try:
