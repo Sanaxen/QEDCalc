@@ -356,13 +356,13 @@ def main():
                     packed_src.extend(row_maps[owner][k] for k in terms)
                     spans.append((owner,pivot,first,len(packed_dst)))
                 if packed_dst:
-                    script.append("[D{}] := [(".format(i)+",".join(map(str,packed_dst))+")]")
-                    script.append("[S{}] := [(".format(i)+",".join(map(str,packed_src))+")]")
+                    script.append("[dm{}] := [(".format(i)+",".join(map(str,packed_dst))+")]")
+                    script.append("[sm{}] := [(".format(i)+",".join(map(str,packed_src))+")]")
                 for owner,pivot,first,last in spans:
                     factor="f{}x{}".format(i,owner)
                     script.append("{} := r{}[{}]".format(factor,i,row_maps[i][pivot]))
                     if first<=last:
-                        script.append("for j = {},{} do r{}[D{}[j]] := r{}[D{}[j]] - {}*r{}[S{}[j]] od".format(first,last,i,i,i,i,factor,owner,i))
+                        script.append("for j = {},{} do r{}[dm{}[j]] := r{}[dm{}[j]] - {}*r{}[sm{}[j]] od".format(first,last,i,i,i,i,factor,owner,i))
             else:
                 for owner,pivot in schedule[i][0]:
                     local=row_maps[i]
