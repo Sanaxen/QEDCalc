@@ -83,6 +83,9 @@ def parse_outputs(stdout,number):
 def explicit_multiplication(value):
     """Convert Fermat implicit products (2z, (-z)d, 2(d+1)) to explicit *."""
     z,d=sp.symbols("z d")
+    # Fermat uses backticks for line continuation in long printed formulas.
+    # They are display artefacts, never algebraic operators.
+    value=value.replace("`","")
     parsed=parse_expr(value.replace("^","**"),local_dict={"z":z,"d":d},
         global_dict={"Integer":sp.Integer,"Rational":sp.Rational,"Symbol":sp.Symbol,
                      "Pow":sp.Pow,"Mul":sp.Mul,"Add":sp.Add},
@@ -180,7 +183,14 @@ def main():
         actual=parse_outputs(stdout,len(output_keys))
         # Fermat prints products without *, e.g. ((-z)d+2z+2)/(2z).
         # Normalize before reusing the established finite-field AST evaluator.
-        actual=[explicit_multiplication(v) for v in actual]
+        normalized=[]
+        for output_index,v in enumerate(actual):
+            try:
+                normalized.append(explicit_multiplication(v))
+            except Exception as exc:
+                row_id, integral=output_keys[output_index]
+                raise RuntimeError("Fermat normalization failure "+json.dumps({"output_index":output_index,"row":row_id,"integral":integral,"raw_output":v[:700]},default=str)) from exc
+        actual=normalized
         # Compare row-by-row against independent modular elimination;
         # no SymPy reduction and no assumption Fermat zero-pivots stay zero.
         for p,z,d in POINTS:
