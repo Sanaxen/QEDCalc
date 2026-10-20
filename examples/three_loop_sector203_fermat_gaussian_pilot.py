@@ -107,6 +107,7 @@ def main():
     ap.add_argument("--array-loop-rows",action="store_true",
         help="experimental dense Fermat row arrays and in-process loops")
     ap.add_argument("--max-array-cells",type=int,default=20000)
+    ap.add_argument("--max-map-cells",type=int,default=100000)
     ap.add_argument("--prune-dead-rows",action="store_true",
         help="omit entire rows not needed for requested verification outputs")
     ap.add_argument("--auto-points",action="store_true",
@@ -127,7 +128,7 @@ def main():
     if a.packed_sparse_maps and not a.sparse_array_rows:ap.error("--packed-sparse-maps requires --sparse-array-rows")
     if a.sparse_array_rows and not a.prune_eliminated_pivots:ap.error("sparse arrays require --prune-eliminated-pivots")
     if a.max_commands<100 or a.max_outputs<1:ap.error("invalid command/output cap")
-    if a.max_array_cells<1:ap.error("invalid array-cell cap")
+    if a.max_array_cells<1 or a.max_map_cells<1:ap.error("invalid array/map cell cap")
     if a.verify_last_rows<0:ap.error("--verify-last-rows must be >=0")
     paths=[a.equations.resolve()] if a.equations else sorted(FOLDER.glob("vp05_candidate4_witness_*.equations.json"))
     if not paths:ap.error("No exported witness file")
@@ -399,11 +400,13 @@ def main():
         "rank":len(basepivots),"operations":sum(len(x[0]) for x in schedule),
         "outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"file":str(path)}),flush=True)
     if a.preflight_only:
-        print("FERMAT_GAUSS_PREFLIGHT "+json.dumps({"rows":len(rows),"rank":len(basepivots),"columns":len(columns),"operations":sum(len(x[0]) for x in schedule),"outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"max_array_cells":a.max_array_cells,"max_commands":a.max_commands,"max_outputs":a.max_outputs,"within_caps":len(script)<=a.max_commands and len(output_keys)<=a.max_outputs and storage_cells<=a.max_array_cells,"result":"ESTIMATE_ONLY","proof":False}),flush=True)
+        print("FERMAT_GAUSS_PREFLIGHT "+json.dumps({"rows":len(rows),"rank":len(basepivots),"columns":len(columns),"operations":sum(len(x[0]) for x in schedule),"outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"max_map_cells":a.max_map_cells,"max_array_cells":a.max_array_cells,"max_commands":a.max_commands,"max_outputs":a.max_outputs,"within_caps":len(script)<=a.max_commands and len(output_keys)<=a.max_outputs and storage_cells<=a.max_array_cells and packed_map_cells<=a.max_map_cells,"result":"ESTIMATE_ONLY","proof":False}),flush=True)
         return
     try:
         if storage_cells>a.max_array_cells:
             raise RuntimeError(f"array cell cap exceeded: {storage_cells}/{a.max_array_cells}")
+        if packed_map_cells>a.max_map_cells:
+            raise RuntimeError(f"packed map cell cap exceeded: {packed_map_cells}/{a.max_map_cells}")
         if len(script)>a.max_commands or len(output_keys)>a.max_outputs:
             raise RuntimeError(f"pilot cap exceeded: commands={len(script)}/{a.max_commands}, outputs={len(output_keys)}/{a.max_outputs}; run --preflight-only and do not raise caps without reviewing scope")
         run=subprocess.run(["wsl","--",a.fermat],input=("\n".join(script)+"\n").encode(),
