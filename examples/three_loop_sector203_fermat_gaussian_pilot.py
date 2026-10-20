@@ -100,6 +100,8 @@ def main():
     ap.add_argument("--equations",type=Path)
     ap.add_argument("--rows",type=int,default=12)
     ap.add_argument("--max-rows",type=int,default=320)
+    ap.add_argument("--loop-control-rows",action="store_true",
+        help="EXPERIMENTAL: Fermat pointer-based row elimination control loop")
     ap.add_argument("--reuse-packed-maps",action="store_true",
         help="reuse one pair of packed index arrays between rows (experimental)")
     ap.add_argument("--packed-sparse-maps",action="store_true",
@@ -129,6 +131,8 @@ def main():
     if a.sparse_array_rows and a.array_loop_rows:ap.error("select only one array mode")
     if a.packed_sparse_maps and not a.sparse_array_rows:ap.error("--packed-sparse-maps requires --sparse-array-rows")
     if a.reuse_packed_maps and not a.packed_sparse_maps:ap.error("--reuse-packed-maps requires --packed-sparse-maps")
+    if a.loop_control_rows and not (a.sparse_array_rows and a.packed_sparse_maps and a.reuse_packed_maps):
+        ap.error("--loop-control-rows requires --sparse-array-rows --packed-sparse-maps --reuse-packed-maps")
     if a.sparse_array_rows and not a.prune_eliminated_pivots:ap.error("sparse arrays require --prune-eliminated-pivots")
     if a.max_commands<100 or a.max_outputs<1:ap.error("invalid command/output cap")
     if a.max_array_cells<1 or a.max_map_cells<1:ap.error("invalid array/map cell cap")
@@ -345,6 +349,10 @@ def main():
             sparse_cells+=len(ordered)
             entries=["("+"+".join("("+v+")" for v in parts[k])+")" if k in parts else "0" for k in ordered]
             script.append("[r{}] := [(".format(i)+",".join(entries)+")]")
+            if a.loop_control_rows:
+                # Fermat's system-wide array-of-arrays pointer. A previous
+                # row is never destroyed while subsequent rows depend on it.
+                script.append("%[{}] := [r{}]".format(i+1,i))
             if a.packed_sparse_maps:
                 # Flatten all per-operation maps into ONE pair of index
                 # vectors per live row. Each operation refers to a disjoint
@@ -364,11 +372,25 @@ def main():
                 if packed_dst:
                     script.append("[dm{}] := [(".format(map_tag)+",".join(map(str,packed_dst))+")]")
                     script.append("[sm{}] := [(".format(map_tag)+",".join(map(str,packed_src))+")]")
-                for owner,pivot,first,last in spans:
-                    factor="f{}x{}".format(i,owner)
-                    script.append("{} := r{}[{}]".format(factor,i,row_maps[i][pivot]))
-                    if first<=last:
-                        script.append("for j = {},{} do r{}[dm{}[j]] := r{}[dm{}[j]] - {}*r{}[sm{}[j]] od".format(first,last,i,map_tag,i,map_tag,factor,owner,map_tag))
+                if a.loop_control_rows and spans:
+                    # One outer Fermat loop over the per-row elimination
+                    # schedule. Operator order is unchanged. Metadata arrays
+                    # are reused between rows, and owner row arrays are
+                    # referenced through Fermat's global pointer table.
+                    script.append("[ow] := [("+",".join(str(o+1) for o,_,_,_ in spans)+")]")
+                    script.append("[pv] := [("+",".join(str(row_maps[i][p]) for _,p,_,_ in spans)+")]")
+                    script.append("[lo] := [("+",".join(str(first) for _,_,first,_ in spans)+")]")
+                    script.append("[hi] := [("+",".join(str(last) for _,_,_,last in spans)+")]")
+                    script.append("for t = 1,{} do".format(len(spans)))
+                    script.append("fac := r{}[pv[t]]".format(i))
+                    script.append("for j = lo[t],hi[t] do r{}[dm[j]] := r{}[dm[j]] - fac*%[ow[t]][sm[j]] od".format(i,i))
+                    script.append("od")
+                else:
+                    for owner,pivot,first,last in spans:
+                        factor="f{}x{}".format(i,owner)
+                        script.append("{} := r{}[{}]".format(factor,i,row_maps[i][pivot]))
+                        if first<=last:
+                            script.append("for j = {},{} do r{}[dm{}[j]] := r{}[dm{}[j]] - {}*r{}[sm{}[j]] od".format(first,last,i,map_tag,i,map_tag,factor,owner,map_tag))
             else:
                 for owner,pivot in schedule[i][0]:
                     local=row_maps[i]
@@ -403,16 +425,17 @@ def main():
     storage_cells=sparse_cells if a.sparse_array_rows else array_cells
     packed_map_cells_written=sum(len(expected[owner])-int(pivot in expected[owner]) for i in needed for owner,pivot in schedule[i][0])*2 if a.packed_sparse_maps else 0
     packed_map_cells=max_packed_row_cells if a.reuse_packed_maps else packed_map_cells_written
+    control_cells=4*max((len(schedule[i][0]) for i in needed),default=0) if a.loop_control_rows else 0
     print("FERMAT_GAUSS_PILOT_START "+json.dumps({"rows":len(rows),"columns":len(columns),
         "rank":len(basepivots),"operations":sum(len(x[0]) for x in schedule),
-        "outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"packed_map_cells_written":packed_map_cells_written,"reuse_packed_maps":a.reuse_packed_maps,"file":str(path)}),flush=True)
+        "outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"packed_map_cells_written":packed_map_cells_written,"reuse_packed_maps":a.reuse_packed_maps,"loop_control_rows":a.loop_control_rows,"control_cells":control_cells,"file":str(path)}),flush=True)
     if a.preflight_only:
-        print("FERMAT_GAUSS_PREFLIGHT "+json.dumps({"rows":len(rows),"rank":len(basepivots),"columns":len(columns),"operations":sum(len(x[0]) for x in schedule),"outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"max_map_cells":a.max_map_cells,"max_array_cells":a.max_array_cells,"max_commands":a.max_commands,"max_outputs":a.max_outputs,"within_caps":len(script)<=a.max_commands and len(output_keys)<=a.max_outputs and storage_cells<=a.max_array_cells and packed_map_cells<=a.max_map_cells,"result":"ESTIMATE_ONLY","proof":False}),flush=True)
+        print("FERMAT_GAUSS_PREFLIGHT "+json.dumps({"rows":len(rows),"rank":len(basepivots),"columns":len(columns),"operations":sum(len(x[0]) for x in schedule),"outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"max_map_cells":a.max_map_cells,"max_array_cells":a.max_array_cells,"max_commands":a.max_commands,"max_outputs":a.max_outputs,"within_caps":len(script)<=a.max_commands and len(output_keys)<=a.max_outputs and storage_cells<=a.max_array_cells and packed_map_cells+control_cells<=a.max_map_cells,"result":"ESTIMATE_ONLY","proof":False}),flush=True)
         return
     try:
         if storage_cells>a.max_array_cells:
             raise RuntimeError(f"array cell cap exceeded: {storage_cells}/{a.max_array_cells}")
-        if packed_map_cells>a.max_map_cells:
+        if packed_map_cells+control_cells>a.max_map_cells:
             raise RuntimeError(f"packed map cell cap exceeded: {packed_map_cells}/{a.max_map_cells}")
         if len(script)>a.max_commands or len(output_keys)>a.max_outputs:
             raise RuntimeError(f"pilot cap exceeded: commands={len(script)}/{a.max_commands}, outputs={len(output_keys)}/{a.max_outputs}; run --preflight-only and do not raise caps without reviewing scope")
