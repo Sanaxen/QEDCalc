@@ -100,6 +100,7 @@ def main():
     ap.add_argument("--timeout",type=int,default=180)
     ap.add_argument("--fermat",default="/home/yamatoyamato/fermat/Ferl7/fer64")
     a=ap.parse_args()
+    assert sp.cancel(sp.sympify(explicit_multiplication("((-z)d+2z+2)/(2z)"),locals={"z":sp.Symbol("z"),"d":sp.Symbol("d")})-(-sp.Symbol("z")*sp.Symbol("d")+2*sp.Symbol("z")+2)/(2*sp.Symbol("z")))==0
     if not 1<=a.rows<=a.max_rows<=30:ap.error("pilot bounded to 1..30 rows")
     paths=[a.equations.resolve()] if a.equations else sorted(FOLDER.glob("vp05_candidate4_witness_*.equations.json"))
     if not paths:ap.error("No exported witness file")
