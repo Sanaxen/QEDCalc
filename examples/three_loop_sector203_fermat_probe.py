@@ -35,11 +35,12 @@ def fermat_batch(exprs,binary,timeout):
         end_at=run.stdout.rfind(next_tag) if i+1<len(exprs) else len(run.stdout)
         if end_at<start_at:raise RuntimeError(f"Misordered Fermat labels at sample {i}")
         value=run.stdout[start_at:end_at]
-        value=re.sub(r"\\s*\\d+>>\\s*$","",value)
+        value=re.sub(r"[0-9]>>\\s*$","",value)
         if i==len(exprs)-1:
-            value=re.sub(r"\\s*\\d+>>\\s*bye\\s*$","",value)
+            value=re.sub(r"[0-9]>>\\s*bye\\s*$","",value)
             value=re.sub(r"\\s*bye\\s*$","",value)
         value=value.strip().rstrip(";").strip()
+        if ">>" in value:raise RuntimeError(f"Unparsed Fermat prompt in sample {i}: {value[:180]!r}")
         if not value:raise RuntimeError(f"Empty Fermat expression for {tag}")
         results.append(value)
     return results,elapsed
