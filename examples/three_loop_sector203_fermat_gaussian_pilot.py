@@ -99,7 +99,9 @@ def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--equations",type=Path)
     ap.add_argument("--rows",type=int,default=12)
-    ap.add_argument("--max-rows",type=int,default=100)
+    ap.add_argument("--max-rows",type=int,default=160)
+    ap.add_argument("--prune-dead-rows",action="store_true",
+        help="omit entire rows not needed for requested verification outputs")
     ap.add_argument("--preflight-only",action="store_true")
     ap.add_argument("--max-commands",type=int,default=4500)
     ap.add_argument("--max-outputs",type=int,default=1000)
@@ -111,7 +113,7 @@ def main():
     ap.add_argument("--fermat",default="/home/yamatoyamato/fermat/Ferl7/fer64")
     a=ap.parse_args()
     assert sp.cancel(sp.sympify(explicit_multiplication("((-z)d+2z+2)/(2z)"),locals={"z":sp.Symbol("z"),"d":sp.Symbol("d")})-(-sp.Symbol("z")*sp.Symbol("d")+2*sp.Symbol("z")+2)/(2*sp.Symbol("z")))==0
-    if not 1<=a.rows<=a.max_rows<=100:ap.error("pilot bounded to 1..100 rows")
+    if not 1<=a.rows<=a.max_rows<=160:ap.error("pilot bounded to 1..160 rows")
     if a.max_commands<100 or a.max_outputs<1:ap.error("invalid command/output cap")
     if a.verify_last_rows<0:ap.error("--verify-last-rows must be >=0")
     paths=[a.equations.resolve()] if a.equations else sorted(FOLDER.glob("vp05_candidate4_witness_*.equations.json"))
@@ -134,8 +136,29 @@ def main():
     # Assign once; make row reduction factors from the current lead coefficient
     # since normalized stored pivots have leading coefficient 1.
     script=["&(t=0)","&(J=z)","&(J=d)"]
+    first_verify=max(0,len(rows)-a.verify_last_rows) if a.verify_last_rows else 0
+    needed=set(range(first_verify,len(rows)))
+    if a.prune_dead_rows:
+        # Backward dependency closure of rows whose final expressions are emitted.
+        # Never decide symbolic zero from modular samples: only skip complete rows
+        # that cannot influence ANY chosen verification row in this fixed schedule.
+        for i in sorted(tuple(needed),reverse=True):
+            needed.update(owner for owner,_ in schedule[i][0])
+        # Newly added owners can themselves require earlier owners.
+        stack=list(needed)
+        while stack:
+            i=stack.pop()
+            for owner,_ in schedule[i][0]:
+                if owner not in needed:
+                    needed.add(owner)
+                    stack.append(owner)
+    else:
+        needed=set(range(len(rows)))
     expected=[]
     for i,r in enumerate(rows):
+        if i not in needed:
+            expected.append(())
+            continue
         values={}
         for t in r["terms"]:
             k=tuple(t["key"])
@@ -169,7 +192,6 @@ def main():
                 script.append(f"r{i}c{bycol[k]} := r{i}c{bycol[k]}/{divisor}")
         expected.append(tuple(sorted(cur,key=order)))
     output_keys=[]
-    first_verify=max(0,len(rows)-a.verify_last_rows) if a.verify_last_rows else 0
     for i,cols in enumerate(expected):
         if i<first_verify:continue
         for k in cols:
@@ -179,9 +201,9 @@ def main():
     script.append("&q")
     print("FERMAT_GAUSS_PILOT_START "+json.dumps({"rows":len(rows),"columns":len(columns),
         "rank":len(basepivots),"operations":sum(len(x[0]) for x in schedule),
-        "outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"file":str(path)}),flush=True)
+        "outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"file":str(path)}),flush=True)
     if a.preflight_only:
-        print("FERMAT_GAUSS_PREFLIGHT "+json.dumps({"rows":len(rows),"rank":len(basepivots),"columns":len(columns),"operations":sum(len(x[0]) for x in schedule),"outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"max_commands":a.max_commands,"max_outputs":a.max_outputs,"within_caps":len(script)<=a.max_commands and len(output_keys)<=a.max_outputs,"result":"ESTIMATE_ONLY","proof":False}),flush=True)
+        print("FERMAT_GAUSS_PREFLIGHT "+json.dumps({"rows":len(rows),"rank":len(basepivots),"columns":len(columns),"operations":sum(len(x[0]) for x in schedule),"outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"max_commands":a.max_commands,"max_outputs":a.max_outputs,"within_caps":len(script)<=a.max_commands and len(output_keys)<=a.max_outputs,"result":"ESTIMATE_ONLY","proof":False}),flush=True)
         return
     try:
         if len(script)>a.max_commands or len(output_keys)>a.max_outputs:
@@ -210,6 +232,7 @@ def main():
             rr=mod_rows(rows,p,z,d)
             basis={}
             for i,((ops,lead),original,cols) in enumerate(zip(schedule,rr,expected)):
+                if i not in needed:continue
                 vec=original.copy()
                 for owner,pivot in ops:
                     factor=vec.get(pivot,0)
@@ -230,7 +253,7 @@ def main():
                     raise AssertionError(f"Mismatch row={i}, col={k}, p={p}: Fermat {observed}, modular {expected_val}, text={v[:120]!r}")
         print("FERMAT_GAUSS_PILOT "+json.dumps({"result":"PASS_SAMPLED","rows":len(rows),
             "rank":len(basepivots),"operations":sum(len(x[0]) for x in schedule),
-            "verified_primes":[p for p,_,_ in POINTS],"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"seconds_including_wsl_startup":round(duration,3),
+            "verified_primes":[p for p,_,_ in POINTS],"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"seconds_including_wsl_startup":round(duration,3),
             "scope":"Exact-function elimination executed in Fermat; equality sampled, no symbolic proof"}),flush=True)
     except (RuntimeError,AssertionError,subprocess.TimeoutExpired,ValueError) as exc:
         print("FERMAT_GAUSS_PILOT_ERROR "+json.dumps({"error":str(exc)}),flush=True)
