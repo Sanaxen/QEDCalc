@@ -100,6 +100,8 @@ def main():
     ap.add_argument("--equations",type=Path)
     ap.add_argument("--rows",type=int,default=12)
     ap.add_argument("--max-rows",type=int,default=320)
+    ap.add_argument("--reuse-packed-maps",action="store_true",
+        help="reuse one pair of packed index arrays between rows (experimental)")
     ap.add_argument("--packed-sparse-maps",action="store_true",
         help="pack mapping arrays once per row, reducing two map assignments per elimination")
     ap.add_argument("--sparse-array-rows",action="store_true",
@@ -126,6 +128,7 @@ def main():
     if not 1<=a.rows<=a.max_rows<=320:ap.error("pilot bounded to 1..320 rows")
     if a.sparse_array_rows and a.array_loop_rows:ap.error("select only one array mode")
     if a.packed_sparse_maps and not a.sparse_array_rows:ap.error("--packed-sparse-maps requires --sparse-array-rows")
+    if a.reuse_packed_maps and not a.packed_sparse_maps:ap.error("--reuse-packed-maps requires --packed-sparse-maps")
     if a.sparse_array_rows and not a.prune_eliminated_pivots:ap.error("sparse arrays require --prune-eliminated-pivots")
     if a.max_commands<100 or a.max_outputs<1:ap.error("invalid command/output cap")
     if a.max_array_cells<1 or a.max_map_cells<1:ap.error("invalid array/map cell cap")
@@ -318,6 +321,7 @@ def main():
                 script.append("{} := r{}[{}]".format(divisor,i,bycol[lead]+1))
                 script.append("for j = 1,{} do r{}[j] := r{}[j]/{} od".format(len(columns),i,i,divisor))
     sparse_cells=0
+    max_packed_row_cells=0
     if a.sparse_array_rows:
         # Each live row stores the UNION of original and encountered pivot-row
         # supports. This structural upper bound never relies on sampled zeros.
@@ -355,14 +359,16 @@ def main():
                     packed_dst.extend(row_maps[i][k] for k in terms)
                     packed_src.extend(row_maps[owner][k] for k in terms)
                     spans.append((owner,pivot,first,len(packed_dst)))
+                max_packed_row_cells=max(max_packed_row_cells,2*len(packed_dst))
+                map_tag="" if a.reuse_packed_maps else str(i)
                 if packed_dst:
-                    script.append("[dm{}] := [(".format(i)+",".join(map(str,packed_dst))+")]")
-                    script.append("[sm{}] := [(".format(i)+",".join(map(str,packed_src))+")]")
+                    script.append("[dm{}] := [(".format(map_tag)+",".join(map(str,packed_dst))+")]")
+                    script.append("[sm{}] := [(".format(map_tag)+",".join(map(str,packed_src))+")]")
                 for owner,pivot,first,last in spans:
                     factor="f{}x{}".format(i,owner)
                     script.append("{} := r{}[{}]".format(factor,i,row_maps[i][pivot]))
                     if first<=last:
-                        script.append("for j = {},{} do r{}[dm{}[j]] := r{}[dm{}[j]] - {}*r{}[sm{}[j]] od".format(first,last,i,i,i,i,factor,owner,i))
+                        script.append("for j = {},{} do r{}[dm{}[j]] := r{}[dm{}[j]] - {}*r{}[sm{}[j]] od".format(first,last,i,map_tag,i,map_tag,factor,owner,map_tag))
             else:
                 for owner,pivot in schedule[i][0]:
                     local=row_maps[i]
@@ -395,10 +401,11 @@ def main():
                 script.append(f"!('QEDGAUSS_{n:05d}=',r{i}c{bycol[k]})")
     script.append("&q")
     storage_cells=sparse_cells if a.sparse_array_rows else array_cells
-    packed_map_cells=sum(len(expected[owner])-int(pivot in expected[owner]) for i in needed for owner,pivot in schedule[i][0])*2 if a.packed_sparse_maps else 0
+    packed_map_cells_written=sum(len(expected[owner])-int(pivot in expected[owner]) for i in needed for owner,pivot in schedule[i][0])*2 if a.packed_sparse_maps else 0
+    packed_map_cells=max_packed_row_cells if a.reuse_packed_maps else packed_map_cells_written
     print("FERMAT_GAUSS_PILOT_START "+json.dumps({"rows":len(rows),"columns":len(columns),
         "rank":len(basepivots),"operations":sum(len(x[0]) for x in schedule),
-        "outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"file":str(path)}),flush=True)
+        "outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"packed_map_cells_written":packed_map_cells_written,"reuse_packed_maps":a.reuse_packed_maps,"file":str(path)}),flush=True)
     if a.preflight_only:
         print("FERMAT_GAUSS_PREFLIGHT "+json.dumps({"rows":len(rows),"rank":len(basepivots),"columns":len(columns),"operations":sum(len(x[0]) for x in schedule),"outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"max_map_cells":a.max_map_cells,"max_array_cells":a.max_array_cells,"max_commands":a.max_commands,"max_outputs":a.max_outputs,"within_caps":len(script)<=a.max_commands and len(output_keys)<=a.max_outputs and storage_cells<=a.max_array_cells and packed_map_cells<=a.max_map_cells,"result":"ESTIMATE_ONLY","proof":False}),flush=True)
         return
