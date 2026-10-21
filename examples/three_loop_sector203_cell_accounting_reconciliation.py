@@ -72,11 +72,6 @@ def main():
         actual,per_row=reconcile(rows,schedule)
         memory=profile(rows,schedule,20000)
         scope=estimates(rows,schedule,set(range(166)))
-        differences=[]
-        for row,item in enumerate(per_row):
-            other=memory["top_rows_by_allocation"]
-            # Full per-row memory profile calculated below independently.
-            pass
         result={"point":[p,z,d],"rank":len(pivots),
                 "same_schedule_as_first":first is None or first==schedule,
                 **actual,
