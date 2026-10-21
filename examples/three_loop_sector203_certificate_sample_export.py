@@ -12,7 +12,7 @@ from examples.three_loop_sector203_fermat_gaussian_pilot import mod_rows
 from examples.three_loop_sector203_target_rowspace_audit import residue
 
 TRAIN=((1000037,21,15),(1001003,19,53),(1001107,36,64),(1002101,47,83))
-HOLD=((1003001,17,71),(1004003,43,29))
+HOLD=((1003001,17,71),(1004027,43,29))
 
 def main():
     ap=argparse.ArgumentParser()
