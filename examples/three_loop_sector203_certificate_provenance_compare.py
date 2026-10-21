@@ -62,7 +62,10 @@ def main():
     ambiguity.append({"identity":list(key),"reason":"duplicate equation head has distinct raw rows or is missing"})
     continue
    mapped.append((i,int(item["coefficient"])%prime,len(candidates)))
-  ambiguous_support=sum(n>1 and "row_index" not in item for (_,_,n),item in zip(mapped,saved)) if not ambiguity else None
+  explicit_ids=all("row_index" in item for item in saved)
+  resolved_ids={i for i,_,_ in mapped}
+  if len(resolved_ids)!=len(mapped):
+   ambiguity.append({"reason":"multiple coefficients map to one original row index"})
   # For ambiguous duplicate identities with identical terms, replay is valid,
   # but original row-ID overlap is not established.
   actual={}
@@ -82,7 +85,11 @@ def main():
    "new_unambiguous_only":len(new_ids-old_set),
    "old_unambiguous_only":len(old_unambiguous-new_ids),
    "replay_from_saved_coefficients_verified":not ambiguity and actual==expected,
-   "exact_support_identity_verified":not ambiguity and all(n==1 for _,_,n in mapped) and len(new_ids)==len(saved) and new_ids==old_set,
+   "exact_support_identity_verified":not ambiguity and explicit_ids and len(resolved_ids)==len(saved) and resolved_ids==old_set,
+   "resolved_original_row_count":len(resolved_ids),
+   "full_row_index_intersection":len(resolved_ids & old_set) if explicit_ids else None,
+   "full_row_index_only_new":len(resolved_ids-old_set) if explicit_ids else None,
+   "full_row_index_only_old":len(old_set-resolved_ids) if explicit_ids else None,
    "source_reported_replay":entry["replay_verified"]})
  result={"old_source":str(oldpath),"new_source":str(a.new_audit),
   "old_source_sha256":hashlib.sha256(oldpath.read_bytes()).hexdigest(),
@@ -91,7 +98,7 @@ def main():
   "old_rows":len(old),"old_rows_valid_by_original_index":len(old_indices),
   "old_invalid_count":len(old_bad),"old_invalid_sample":old_bad[:10],
   "points":outcomes,"symbolic_proof":False,
-  "warning":"Legacy saved modular coefficients lack original row_index. Equal duplicate-head rows permit replay but not exact per-row provenance. Distinct duplicate-head rows are unresolved until modular export records original row_index."}
+  "warning":"Legacy saved modular coefficients without row_index cannot prove exact support identity for duplicate heads; newly regenerated entries with explicit indices can be compared and replayed."}
  a.output.parent.mkdir(parents=True,exist_ok=True)
  a.output.write_text(json.dumps(result,indent=2)+"\n",encoding="utf-8")
  print("VP05_CERTIFICATE_PROVENANCE_COMPARE "+json.dumps({**result,"output":str(a.output)}),flush=True)
