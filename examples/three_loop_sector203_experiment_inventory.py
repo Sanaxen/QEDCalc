@@ -21,6 +21,16 @@ def sha(path):
   for chunk in iter(lambda:fh.read(1024*1024),b""):h.update(chunk)
  return h.hexdigest()
 
+def equivalent_local_paths(recorded, actual):
+ """Compare a Windows path and its WSL /mnt/<drive> representation without filesystem mutation."""
+ def normalize(value):
+  if not isinstance(value,str) or not value.strip():return None
+  v=value.strip().replace("\\\\","/").rstrip("/")
+  windows=re.fullmatch(r"([A-Za-z]):/(.*)",v)
+  if windows:v="/mnt/"+windows.group(1).lower()+"/"+windows.group(2)
+  return v.casefold()
+ return normalize(recorded)==normalize(actual) and normalize(actual) is not None
+
 def main():
  p=argparse.ArgumentParser()
  p.add_argument("--run-dir",type=Path,default=DEFAULT_RUN)
@@ -63,7 +73,7 @@ def main():
  if GUARD.is_file():
   try:guard=json.loads(GUARD.read_text(encoding="utf-8-sig"))
   except (OSError,ValueError):pass
- ck("guard_record_for_this_run",guard.get("destination")==str(run)
+ ck("guard_record_for_this_run",equivalent_local_paths(guard.get("destination"),str(run))
     and guard.get("kira_executed") is True
     and guard.get("process_reaped") is True
     and guard.get("process_group_gone") is True)
