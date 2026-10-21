@@ -87,6 +87,7 @@ def calculate(rows,schedule,full,cap_terms,checkpoint=None,fingerprint=None,chec
     if not full:
         return {"rows_checked":len(rows),"prefix_exact_pivots_verified":True,
                 "target_symbolic_proof":False,"original_528_row_replay":False}
+    print("VP05_EXACT_TARGET_STAGE "+json.dumps({"stage":"target_elimination_start","rows":len(rows)}),flush=True)
     pivot_map={lead:i for i,lead in enumerate(leads)}
     target={k:parse_coeff(v,z,d) for k,v in TARGET.items()}
     original=dict(target);g={}
@@ -101,6 +102,7 @@ def calculate(rows,schedule,full,cap_terms,checkpoint=None,fingerprint=None,chec
             if n:target[k]=n
             else:target.pop(k,None)
         if len(target)>cap_terms:raise RuntimeError("Target elimination column cap")
+    print("VP05_EXACT_TARGET_STAGE "+json.dumps({"stage":"reverse_substitution_start","pivot_owners":len(g)}),flush=True)
     cert={}
     for i in range(len(rows)-1,-1,-1):
         gi=sp.cancel(g.get(i,0))
@@ -109,6 +111,7 @@ def calculate(rows,schedule,full,cap_terms,checkpoint=None,fingerprint=None,chec
         cert[i]=ci
         for j,fac in factors[i]:
             g[j]=sp.cancel(g.get(j,0)-ci*fac)
+    print("VP05_EXACT_TARGET_STAGE "+json.dumps({"stage":"exact_replay_start","certificate_support":len(cert)}),flush=True)
     rebuilt={}
     for i,ci in cert.items():
         for k,v in sources[i].items():
@@ -120,9 +123,21 @@ def calculate(rows,schedule,full,cap_terms,checkpoint=None,fingerprint=None,chec
        "target_symbolic_proof":True,"compressed_source_exact_replay":True,
        "original_528_row_replay":False}
 
-def child(rows,schedule,full,cap_terms,result_queue,checkpoint,fingerprint,checkpoint_every):
-    try:result_queue.put(("ok",calculate(rows,schedule,full,cap_terms,checkpoint,fingerprint,checkpoint_every)))
-    except Exception as e:result_queue.put(("error",str(type(e).__name__)+": "+str(e)))
+def child(rows,schedule,full,cap_terms,result_queue,checkpoint,fingerprint,checkpoint_every,result_path):
+    try:
+        payload=calculate(rows,schedule,full,cap_terms,checkpoint,fingerprint,checkpoint_every)
+        # Never pass the potentially enormous certificate through multiprocessing.Queue:
+        # the Queue feeder can block at process shutdown while parent waits on join.
+        result_path.parent.mkdir(parents=True,exist_ok=True)
+        tmp=result_path.with_suffix(result_path.suffix+".tmp")
+        with tmp.open("w",encoding="utf-8") as f:
+            json.dump(payload,f)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp,result_path)
+        result_queue.put(("ok",str(result_path)))
+    except Exception as e:
+        result_queue.put(("error",str(type(e).__name__)+": "+str(e)))
 
 def main():
     p=argparse.ArgumentParser()
@@ -155,9 +170,11 @@ def main():
     checkpoint=a.checkpoint if a.full and not a.no_checkpoint else None
     if checkpoint and checkpoint.exists() and not a.resume:p.error("Checkpoint exists; use --resume or choose a new --checkpoint path")
     if a.resume and not checkpoint.exists():p.error("No existing checkpoint")
+    result_path=a.output.with_suffix(a.output.suffix+".worker")
+    if result_path.exists():result_path.unlink()
     q=mp.Queue()
     proc=mp.Process(target=child,args=(data["rows"][:n],plan["points"][0]["schedule"][:n],
-                                       a.full,a.max_intermediate_columns,q,checkpoint,fingerprint,a.checkpoint_every))
+                                       a.full,a.max_intermediate_columns,q,checkpoint,fingerprint,a.checkpoint_every,result_path))
     proc.start()
     proc.join(a.timeout)
     if proc.is_alive():
@@ -170,11 +187,13 @@ def main():
     if status!="ok":
         print("VP05_EXACT_TARGET_STATUS "+json.dumps({"status":"FAILED","reason":payload,"symbolic_proof":False}),flush=True)
         raise SystemExit(1)
+    payload=json.loads(result_path.read_text(encoding="utf-8"))
     result={"source":str(a.equations),"source_sha256":hashlib.sha256(raw).hexdigest(),
             "mode":"full" if a.full else "prefix","symbolic_result":payload,
             "warning":"Only compressed source symbolic identity is certified if full PASS; exact lift to original 528 SYSTEM rows remains unverified."}
     a.output.parent.mkdir(parents=True,exist_ok=True)
     a.output.write_text(json.dumps(result,indent=2)+"\n",encoding="utf-8")
+    result_path.unlink()
     print("VP05_EXACT_TARGET_STATUS "+json.dumps({"status":"PASS",**{k:v for k,v in payload.items() if k!="certificate_coefficients"},
         "output":str(a.output)}),flush=True)
 if __name__=="__main__":main()
