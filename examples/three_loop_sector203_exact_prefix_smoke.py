@@ -25,7 +25,7 @@ def main():
     ap.add_argument("--rows",type=int,default=3)
     ap.add_argument("--max-seconds",type=float,default=30)
     args=ap.parse_args()
-    if not 1<=args.rows<=6:ap.error("Exact prefix smoke test is strictly limited to 1..6 rows")
+    if not 1<=args.rows<=7:ap.error("Exact prefix smoke test is strictly limited to 1..7 rows")
     if args.max_seconds<=0:ap.error("--max-seconds must be positive")
     source=json.loads(args.equations.read_text(encoding="utf-8-sig"))
     plan=json.loads(args.plan.read_text(encoding="utf-8-sig"))
