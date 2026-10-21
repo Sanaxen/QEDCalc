@@ -5490,3 +5490,8 @@ User ran group batch with max 10 and maximum group size eight: `attempted=5`, cu
 ### 2026-10-22 VP05 exact group lift remaining 13 groups size audit
 
 User `VP05_GROUP_REMAINING`: 153/166 exact group lifts verified; 13 not attempted (`attempts=0` for all). Remaining (row, group size): (12,9), (10,10), (11,10), (9,11), (8,13), (7,14), (6,15), (5,16), (4,17), (3,20), (2,33), (1,36), (0,68). Therefore next bounded batch with `--max-groups 10 --max-group-size 20 --per-group-timeout 120 --stop-on-failure` targets 10 groups of size 9..20 while preserving prior 153; remaining three large groups size 33,36,68 demand separate budgets/strategies. All groups were not attempted rather than failed. Exact source target composition and 528-row replay remain false.
+
+
+### 2026-10-22 VP05 exact group lift 163/166 PASS; target single large row
+
+User ran ten size<=20 group exact lifts: `attempted=10`, `total_verified=163`, remaining precisely rows 2 (33 original), 1 (36 original), 0 (68 original), with original 528-row target replay still false. Added `--only-row` to `examples/three_loop_sector203_exact_group_batch.py` to target a single large remaining compressed row while preserving persistent manifest and verified proof artifacts. Next `git pull`; `.\run_vp05_exact_group_batch.bat --only-row 2 --max-groups 1 --max-group-size 33 --per-group-timeout 300 --stop-on-failure`. If successful, next test rows 1 and 0 separately. Completion of all 166 lifts must be followed by separate strict final original witness source target coefficient composition/replay before claiming full 528-row proof.
