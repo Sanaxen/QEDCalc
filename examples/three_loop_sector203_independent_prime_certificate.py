@@ -25,7 +25,7 @@ def main():
     ap.add_argument("--training",type=int,default=70)
     ap.add_argument("--holdouts",type=int,default=10)
     ap.add_argument("--max-attempts",type=int,default=130)
-    ap.add_argument("--columns",type=int,default=13,help="Grid width; >=7 distinct d-levels required for degree six")
+    ap.add_argument("--columns",type=int,default=9,help="Grid width; >=7 distinct d-levels required for degree six")
     ap.add_argument("--output",type=Path,default=ROOT/"vp05_independent_prime_certificate.json")
     a=ap.parse_args()
     if not sp.isprime(a.prime) or a.prime<=1000 or a.prime==1000037:ap.error("Choose an independent prime >1000")
@@ -45,7 +45,7 @@ def main():
     if (a.training-1)//a.columns+1<7:
         ap.error("Training grid requires at least 7 distinct d levels for degree-6 fits")
     p=a.prime;samples=[];rejected=[]
-    # 13-column shifted lattice distinct from all training grids at p0.
+    # Shifted lattice; ensure at least 7 independent d-levels for degree-6.
     for i in range(a.max_attempts):
         if len(samples)==a.training+a.holdouts:break
         z=(47+53*(i%a.columns))%p
