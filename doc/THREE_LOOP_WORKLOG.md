@@ -4998,3 +4998,20 @@ Look for `VP05_SAME_PRIME_PROGRESS`, `VP05_SAME_PRIME_SUMMARY`. Sampling work is
 Added `examples/three_loop_sector203_certificate_interpolation_trial.py` and `run_vp05_certificate_interpolation_trial.bat`. For each of 166 compressed certificate coefficients, fit an **independent homogeneous rational ansatz over one prime**: numerator and denominator polynomial total degrees <=3, 10 monomials each, 20 coefficients up to overall scaling = 19 degrees of freedom. Uses training rows only to solve a 19x20 homogeneous modular linear system; accepts a hypothesis only with a **one-dimensional kernel** (rank 19), denominator nonzero at each training point, and all 8 saved holdout values satisfied. Rejects underdetermined/nonunique or singular candidates; prints the number of holdout passes, failures and nonunique/singular rows, and persists the candidate coefficient vectors in `output/three_loop_integral_family_audit/vp05_certificate_interpolation_trial.json`. *Modular hypotheses, even if all holdouts pass, are not exact Q(z,d) reconstruction, cannot prove the target relation, and cannot certify sector alias mapping.* No Fermat/Kira and no memory-cap relaxation.
 
 The preceding 27-sample generation has not yet been confirmed by the user in this session. To run this trial, first get valid same-prime sample JSON from `run_vp05_same_prime_certificate_samples.bat`, then run `run_vp05_certificate_interpolation_trial.bat`. Performance is finite-field 166x modest dense 19x20 elimination; no large symbolic elimination.
+
+
+### 2026-10-21 VP05 27-point interpolation failure diagnosed: sampling geometry rank deficient
+
+User ran original same-prime sampling: 19 training + 8 holdouts at p=1000037, no rejected points, source SHA256 `905d64eb4156b7e332d0445193c851d6a683ef89582df9de0a79612929a3d9fc`. Degree-3 rational interpolation returned `holdout_pass=0`, `holdout_fail=0`, `nonunique=166`, `singular_training=0`. **This is not 166 failed holdouts**: no candidate passed the one-dimensional kernel requirement, so no holdouts were reached.
+
+Important cause: legacy points `z=17+37*i+11*i^2, d=29+61*i+7*i^3 (mod p)` lie on a single parametrized algebraic curve. Reproducing their first 19 training points, the degree<=3 monomial evaluation matrix has rank **9/10**, so the points cannot identify all degree-3 bivariate polynomial coefficients, irrespective of the certificate data. Other non-uniqueness (lower true degrees / common factors) remains possible even with full-rank sampling.
+
+Added `examples/three_loop_sector203_interpolation_rank_diagnostic.py` and `run_vp05_interpolation_rank_diagnostic.bat` for direct rank/kernel histograms. Modified `three_loop_sector203_same_prime_certificate_samples.py` with `--grid-v2` and separate-output requirement; new 2D Cartesian-style grid uses `z=17+37*(i%5)`, `d=29+61*(i//5)` mod p, giving a verified **10/10 degree-3 monomial evaluation rank for the first 19 points**. Added runners `run_vp05_same_prime_certificate_grid_v2.bat` and `run_vp05_interpolation_grid_v2.bat` (the latter runs rank diagnostic then trial and retains separate JSON outputs). Original archive is not overwritten. No Fermat/Kira, no exact proof; 20000 symbolic cap unchanged.
+
+Next local:
+```powershell
+git pull
+.\run_vp05_same_prime_certificate_grid_v2.bat
+.\run_vp05_interpolation_grid_v2.bat
+```
+Holdouts remain separate; require rank-aware model diagnosis, not blanket degree inflation, if nullity is still >1.
