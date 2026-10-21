@@ -7,9 +7,16 @@ from __future__ import annotations
 import argparse,hashlib,json,os,resource,shutil,signal,subprocess,time
 from pathlib import Path
 from examples.three_loop_sector203_kira_schema_isolated_probe import find_fermat,memory,GIB
-from examples.three_loop_sector203_execution_guard_preflight import CAPSULE,FILES
-from examples.three_loop_sector203_single_nonmaster_prepare import TARGET
-from examples.three_loop_sector203_weight_audit import parse_file_integrals
+CAPSULE=Path("output/vp05_full_stage_execution_capsule")
+FILES=("config/integralfamilies.yaml","config/kinematics.yaml","mandatory_single_nonmaster.txt","preferred_provisional64_sector203.txt","jobs.yaml")
+TARGET=(1,1,0,1,0,0,1,1,0,0,0,0)
+
+def parse_one_target(path):
+ import re
+ lines=[line.strip() for line in path.read_text(encoding="utf-8-sig").splitlines() if line.strip() and not line.lstrip().startswith("#")]
+ if len(lines)!=1:return False
+ m=re.fullmatch(r"VP05_full\[([+-]?\d+(?:\s*,\s*[+-]?\d+){11})\]",lines[0])
+ return bool(m and tuple(int(x.strip()) for x in m.group(1).split(","))==TARGET)
 
 ACK="EXECUTE_ISOLATED_VP05_SINGLE_TARGET"
 AUDIT=Path("output/three_loop_integral_family_audit")
@@ -54,7 +61,7 @@ def main():
  hashes=data.get("files_sha256",{})
  check["hashes_match"]=isinstance(hashes,dict) and set(hashes)==set(FILES) and all(
   (CAPSULE/f).is_file() and not (CAPSULE/f).is_symlink() and digest(CAPSULE/f)==hashes[f] for f in FILES)
- check["target_exact"]=(CAPSULE/"mandatory_single_nonmaster.txt").is_file() and parse_file_integrals(CAPSULE/"mandatory_single_nonmaster.txt")==[TARGET]
+ check["target_exact"]=(CAPSULE/"mandatory_single_nonmaster.txt").is_file() and parse_one_target(CAPSULE/"mandatory_single_nonmaster.txt")
  check["disk_free_20_gib"]=shutil.disk_usage(Path("output")).free>=20*GIB
  check["memory_safe"]=resources(a.min_mem_available_gib,a.max_swap_used_gib) is None
  kira=shutil.which("kira");fermat=find_fermat(a.fermat)
