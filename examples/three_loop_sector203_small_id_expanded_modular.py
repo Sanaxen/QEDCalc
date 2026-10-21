@@ -36,7 +36,8 @@ def main():
         if name=="entire_system" and not a.include_full_system:
             continue
         active,rounds=peel(rows,selected,TARGETS|{ANCHOR})
-        scoped=[rows[i] for i in sorted(active)]
+        source_indices=sorted(active)
+        scoped=[rows[i] for i in source_indices]
         for prime,z,d in POINTS:
             sample=mod_rows(scoped,prime,z,d)
             targets={
@@ -53,9 +54,9 @@ def main():
                     "target_remainder_sample":check["target_remainder_sample"],
                     "replay_verified":check["certificate_original_equation_replay_verified"],
                     "certificate_support_count":check["certificate_support_count"],
-                    "certificate_original_equation_ids":[{"file":scoped[i]["file"],"equation_id":scoped[i]["equation_id"]}
+                    "certificate_original_equation_ids":[{"row_index":source_indices[i],"file":scoped[i]["file"],"equation_id":scoped[i]["equation_id"]}
                         for i in check["certificate_row_ids"]] if check["target_in_rowspace"] else [],
-                    "coefficients_mod_prime":[{"file":scoped[int(i)]["file"],
+                    "coefficients_mod_prime":[{"row_index":source_indices[int(i)],"file":scoped[int(i)]["file"],
                         "equation_id":scoped[int(i)]["equation_id"],"coefficient":v}
                         for i,v in sorted(check["certificate_coefficients"].items())]
                         if check["target_in_rowspace"] else []})
