@@ -5276,3 +5276,7 @@ Correct L2 `results/VP05_full/masters` contains 5 masters, while raw SYSTEM feat
 ### 2026-10-21 VP05 small-ID metadata inventory result
 
 User ran the L2 project metadata inventory. Found only `config/integralfamilies.yaml` (`top_level_sectors: [203]`), `config/kinematics.yaml`, and five-line `results/VP05_full/masters`. No explicit mapping from raw SYSTEM small IDs 1..10 to physical 12-index integrals was established. The search was limited to those candidate files; it is NOT an exhaustive Kira source/database audit. Next investigate SYSTEM output encoding conventions or other source-side metadata rather than assuming master-list ordinal positions. Exact symbolic SYSTEM-row identity remains verified; physical interpretation remains pending.
+
+### 2026-10-21 VP05 Kira database small-ID schema audit
+
+Metadata inventory showed no explicit mapping of raw SYSTEM small IDs 1..10. Added read-only SQLite schema inspection `examples/three_loop_sector203_kiradb_id_schema_audit.py` and `run_vp05_kiradb_id_schema_audit.bat`, targeting the exact L2 `results/kira.db` with `mode=ro` and `PRAGMA query_only=ON`. It lists schema tables/views, columns, and names suggestive of integral/weight/sector/master metadata, but does not guess any numeric mapping. Next run `git pull` and `.\run_vp05_kiradb_id_schema_audit.bat` to determine if schema contains an explicit mapping table. Physical interpretation still unverified, while saved formal certificate remains exact.
