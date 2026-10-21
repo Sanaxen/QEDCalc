@@ -4881,3 +4881,26 @@ Run:
 git pull
 .\run_vp05_cell_accounting_reconciliation.bat
 ```
+
+
+### 2026-10-21 VP05 exact-map cell reconciliation: local PASS, symbolic scale still blocked
+
+User returned `VP05_CELL_RECONCILE_POINT` at four points `(1000037,21,15)`, `(1001003,19,53)`, `(1001107,36,64)`, `(1002101,47,83)`. All rank=166 and identical echelon schedule. All four report:
+
+```text
+pilot_sparse_allocated_cells = 31840
+memory_profiler_allocated_cells = 31840
+memory_profiler_minus_pilot = 0
+pilot_sparse_lifetime_peak_cells = 27863
+memory_profiler_peak_cells = 27863
+pilot_peak_row = 162 (zero-based); live rows = 138
+target_scope_allocated_cells = 30987
+target_scope_peak_cells = 27093
+target_scope_minus_pilot = -853
+pilot_above_20000 = true
+pilot_release_peak_above_20000 = true
+all_schedules_match_first = true
+fermat_executed = false; proof = false
+```
+
+The difference of 853 cells is between `target_scope` normalized support accounting and the actual pilot sparse-map allocation, which retains intermediate/pivot keys. The earlier pilot's 30788 cells covered just the 162-row closure of the *last-row output*, not the entire 166-row target dependency set; this should not be compared as a same-scope estimate. Reconciled full-row memory accounting is 31840 cells, with a hypothetical peak of 27863 on row-release. Both exceed the unchanged 20000 safety cap. No proof that Fermat will actually reclaim memory, nor any actual RAM/RSS measurement. Do not lift large symbolic execution gate. Next implementation should seek a provably equivalent lower-storage exact elimination or target-certificate method, with correctness audited first on small rows and explicit target residual/alias verification.
