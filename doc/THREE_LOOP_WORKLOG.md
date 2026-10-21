@@ -4991,3 +4991,10 @@ git pull
 .\run_vp05_same_prime_certificate_samples.bat
 ```
 Look for `VP05_SAME_PRIME_PROGRESS`, `VP05_SAME_PRIME_SUMMARY`. Sampling work is finite-field computations, potentially longer than earlier 4-point checks.
+
+
+### 2026-10-21 VP05 same-prime degree-3 interpolation trial implemented
+
+Added `examples/three_loop_sector203_certificate_interpolation_trial.py` and `run_vp05_certificate_interpolation_trial.bat`. For each of 166 compressed certificate coefficients, fit an **independent homogeneous rational ansatz over one prime**: numerator and denominator polynomial total degrees <=3, 10 monomials each, 20 coefficients up to overall scaling = 19 degrees of freedom. Uses training rows only to solve a 19x20 homogeneous modular linear system; accepts a hypothesis only with a **one-dimensional kernel** (rank 19), denominator nonzero at each training point, and all 8 saved holdout values satisfied. Rejects underdetermined/nonunique or singular candidates; prints the number of holdout passes, failures and nonunique/singular rows, and persists the candidate coefficient vectors in `output/three_loop_integral_family_audit/vp05_certificate_interpolation_trial.json`. *Modular hypotheses, even if all holdouts pass, are not exact Q(z,d) reconstruction, cannot prove the target relation, and cannot certify sector alias mapping.* No Fermat/Kira and no memory-cap relaxation.
+
+The preceding 27-sample generation has not yet been confirmed by the user in this session. To run this trial, first get valid same-prime sample JSON from `run_vp05_same_prime_certificate_samples.bat`, then run `run_vp05_certificate_interpolation_trial.bat`. Performance is finite-field 166x modest dense 19x20 elimination; no large symbolic elimination.
