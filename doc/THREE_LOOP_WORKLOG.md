@@ -5067,3 +5067,12 @@ Added `examples/three_loop_sector203_identifiability_diagnostic.py` and `run_vp0
 ### 2026-10-21 Critical correction: VP05 nullity zero means degree-(3,3) model infeasible
 
 User's grid-v3 identifiability log: 39 training points at p=1000037, degree=3, monomial evaluation rank=10/10, and 166 rational homogeneous model kernel nullities `{0:72, 1:80, 3:10, 6:3, 10:1}`. Thus **72 rows have a zero-dimensional kernel, i.e. no nonzero (3,3) coefficient pair fits all 39 sampled equations**, NOT a nonunique model. Prior scripts labeled all nullities !=1 as `nonunique`, conflating impossible fits (nullity 0) with genuinely ambiguous fits (nullity >1). Important correction to prior handoff and interpretation: the 72 unresolved rows are incompatible with degree-(3,3) on the 39 sampled points, barring faults in sample/certificate generation. Degree-4+ or different model forms must be examined with sufficient independent samples and a safe bounded algorithm. Full rank of the 10-monomial polynomial evaluation matrix does not by itself prove every rational fit identifiable. Updated identifiability diagnostic output to explicitly count nullity-zero coefficients in commit `7d6a646`. Fermat/Kira not run; no exact Q(z,d) identity proof or integral alias proof.
+
+### 2026-10-21 VP05 rational higher-degree sampling budget preflight
+
+Added `examples/three_loop_sector203_high_degree_budget.py` and `run_vp05_high_degree_budget.bat`. The user-confirmed 39 training + 8 holdout finite-field sample archive yielded a (3,3) homogeneous kernel dimension of zero for 72 certificate coefficients (an infeasible sampled ansatz, not nonuniqueness). The new read-only preflight tabulates degree pairs from (3,3) to (6,6), projective polynomial coefficient counts, generic minimum extra training points beyond 39, and polynomial evaluation matrix ranks for both numerator and denominator. For equal-degree pairs, theoretical coefficient counts: (3,3)=19; (4,4)=29; (5,5)=41 (at least 2 more training points); (6,6)=55 (at least 16 more). These are necessary generic counts, NOT sufficient conditions and do not prove any certificate coefficient exists in a model. Holdouts stay reserved; no Fermat/Kira or exact rational proof. Next local:
+```powershell
+git pull
+.\run_vp05_high_degree_budget.bat
+```
+Inspect `VP05_HIGH_DEGREE_BUDGET_MODEL` and `VP05_HIGH_DEGREE_BUDGET_SUMMARY` before degree growth/sampling choices.
