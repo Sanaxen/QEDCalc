@@ -98,6 +98,49 @@ def classify(data, bound):
             s["coefficients_by_original_row"][rep] % s["point"][0]
             for i in ids[1:]) for s in holdout)
         equals_info.append({"rows": ids, "size": len(ids), "holdout_pass": ok})
+    # Build ratio-consistent connected components using only relationships
+    # confirmed by all holdouts; weighted disjoint set enforces consistency.
+    parent = list(range(n))
+    weight = [Fraction(1) for _ in range(n)]  # value(node)/value(parent)
+    def find(x):
+        if parent[x] != x:
+            root, factor = find(parent[x])
+            weight[x] *= factor
+            parent[x] = root
+        return parent[x], weight[x]
+    def union(a, b, ratio):
+        ra, wa = find(a)
+        rb, wb = find(b)
+        if ra == rb:
+            return wa == ratio * wb
+        parent[ra] = rb
+        weight[ra] = ratio * wb / wa
+        return True
+    inconsistencies = 0
+    for group in equals_info:
+        if not group["holdout_pass"]:
+            continue
+        for idx in group["rows"][1:]:
+            if not union(idx, group["rows"][0], Fraction(1)):
+                inconsistencies += 1
+    for relation in relations:
+        if relation["holdout_pass"]:
+            if not union(relation["a"], relation["b"], Fraction(relation["ratio"])):
+                inconsistencies += 1
+    components = defaultdict(list)
+    for i in range(n):
+        root, _ = find(i)
+        components[root].append(i)
+    classes = []
+    for members in components.values():
+        representative = min(members)
+        _, repr_weight = find(representative)
+        classes.append({"representative": representative, "size": len(members),
+            "rows": members,
+            "ratios_to_representative": [
+                {"row": i, "ratio": str(find(i)[1] / repr_weight)}
+                for i in members]})
+    classes.sort(key=lambda x: (-x["size"], x["representative"]))
     return {"type": "modular_coefficient_structure_audit",
             "rows": n, "training_points": len(training),
             "holdout_points": len(holdout),
@@ -107,7 +150,12 @@ def classify(data, bound):
             "equal_groups": equals_info,
             "small_rational_ratio_pair_count": len(relations),
             "small_rational_ratio_pairs": relations,
-            "ratio_bound": bound, "proof": False}
+            "ratio_bound": bound,
+            "proportional_class_count": len(classes),
+            "proportional_class_largest": max(len(c["rows"]) for c in classes),
+            "proportional_class_inconsistencies": inconsistencies,
+            "proportional_classes": classes,
+            "proof": False}
 
 
 def main():
@@ -123,9 +171,10 @@ def main():
         ap.error("Not a target certificate file")
     result = classify(data, a.ratio_bound)
     print("TARGET_COEFF_STRUCTURE " + json.dumps({k:v for k,v in result.items()
-          if k not in ("equal_groups","small_rational_ratio_pairs")}), flush=True)
+          if k not in ("equal_groups","small_rational_ratio_pairs","proportional_classes")}), flush=True)
     print("TARGET_COEFF_EQUAL_GROUPS_TOP " + json.dumps(result["equal_groups"][:12]), flush=True)
     print("TARGET_COEFF_RATIO_PAIRS_TOP " + json.dumps(result["small_rational_ratio_pairs"][:12]), flush=True)
+    print("TARGET_COEFF_PROPORTIONAL_CLASSES_TOP " + json.dumps(result["proportional_classes"][:8]), flush=True)
     print("TARGET_COEFF_HOLDOUT " + json.dumps({
         "equal_failed": sum(not x["holdout_pass"] for x in result["equal_groups"]),
         "ratio_failed": sum(not x["holdout_pass"] for x in result["small_rational_ratio_pairs"]),
