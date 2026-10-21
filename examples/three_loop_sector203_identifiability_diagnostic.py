@@ -40,10 +40,11 @@ def main():
             "monomials":len(mons),"polynomial_rank":poly_rank,
             "polynomial_nullity":poly_nullity,
             "rational_kernel_nullity_histogram":dict(sorted(dimensions.items())),
+            "rows_with_no_nonzero_rational_solution":dimensions[0],
             "rows_with_unique_rational_representation":dimensions[1],
             "rows_with_nonunique_rational_representation":sum(n for k,n in dimensions.items() if k>1),
             "rows":entries,"samples_sha256":hashlib.sha256(raw).hexdigest(),
-            "explanation":"Full polynomial rank removes simple monomial-evaluation deficiency; rational kernel >1 can still reflect common factors or insufficient rational constraints.",
+            "explanation":"Kernel nullity 0 means no nonzero degree-bounded rational representation exists at the sampled points; nullity 1 is projectively unique; nullity >1 is genuinely nonunique. Full polynomial evaluation rank does not establish a full rational model.",
             "fermat_executed":False,"proof":False}
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(report,indent=2)+"\n",encoding="utf-8")
