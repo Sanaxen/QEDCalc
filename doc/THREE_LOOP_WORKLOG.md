@@ -4762,3 +4762,7 @@ User confirmed export of three replay-verified points (528 original-equation coe
 ### 2026-10-21 Silent no-op fix in incremental sample collection
 
 User reported `python -m examples.three_loop_sector203_target_rowspace_audit --rows 528 --extra-points 2 --holdout-points 1 --append-certificate ...` immediately returned no output with EXIT_CODE=0; Python `-c` printed normally. Root cause: `--append-certificate` implementation inadvertently removed the terminal `if __name__ == '__main__': main()` invocation. Commit `8e81212` restores it and fixes atomic JSON writer's trailing newline escape. The previously uploaded JSON has only three original samples and was not modified by silent no-op. User must git pull then rerun. This was an assistant-introduced regression; no additional points were computed.
+
+### 2026-10-21 Target modular certificate coefficient grouping
+
+Added `examples/three_loop_sector203_target_coefficient_structure.py` (`5f9cf86`), reading prior JSON with 5 training + 1 holdout point, reporting exactly matching residue-signature groups and small rational proportional pairs (numerator/denominator bounded 4 by default) separately testing each against holdout. Optional full JSON report path. No rerun of Kira/Fermat or modular elimination; no symbolic proof. Windows command: `python -m examples.three_loop_sector203_target_coefficient_structure --output output/three_loop_integral_family_audit/vp05_target_coefficient_structure.json`. Identified equalities are numerical hypotheses only, and holdout checks are not algebraic identities.
