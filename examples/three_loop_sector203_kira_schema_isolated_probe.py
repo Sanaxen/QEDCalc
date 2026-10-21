@@ -102,11 +102,14 @@ def main():
                 (root/"config"/"kinematics.yaml").write_text(KIN)
                 (root/"config"/"integralfamilies.yaml").write_text(FAMILY)
                 (root/"jobs.yaml").write_text(JOB)
-                proc=subprocess.Popen([str(Path(exe).resolve()),"--parallel=1","jobs.yaml"],cwd=root,
-                    stdout=subprocess.PIPE,stderr=subprocess.STDOUT,stdin=subprocess.DEVNULL,
-                    start_new_session=True,preexec_fn=limits)
-                # Use file logging to avoid pipe-buffer deadlock.
-                # The fixture is tiny; drain via communicate with a bounded timeout.
+                log_path=root/"kira_probe.log"
+                env=os.environ.copy()
+                env["FERMATPATH"]=fermat
+                with log_path.open("wb") as log_file:
+                    proc=subprocess.Popen([str(Path(exe).resolve()),"--parallel=1","jobs.yaml"],cwd=root,
+                        stdout=log_file,stderr=subprocess.STDOUT,stdin=subprocess.DEVNULL,
+                        env=env,start_new_session=True,preexec_fn=limits)
+                # A temporary log file avoids blocked stdout pipes.
                 deadline=time.monotonic()+a.max_seconds
                 reason=None
                 while proc.poll() is None:
