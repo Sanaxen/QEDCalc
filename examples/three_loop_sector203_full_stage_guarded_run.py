@@ -20,7 +20,7 @@ def parse_one_target(path):
 
 ACK="EXECUTE_ISOLATED_VP05_SINGLE_TARGET"
 AUDIT=Path("output/three_loop_integral_family_audit")
-DEST=Path("output/vp05_full_stage_kira_experiment_02")
+DEST=Path("output/vp05_full_stage_kira_experiment_03")
 
 def digest(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 def progress_from_log(log):
@@ -56,6 +56,19 @@ def group_members(pgid):
    members.append(-1)
  return sorted(set(members))
 
+def group_memory_mib(pgid):
+ rss=0;vms=0;observed=0
+ for pid in group_members(pgid):
+  if pid<1:continue
+  try:
+   fields={}
+   for line in (Path("/proc")/str(pid)/"status").read_text().splitlines():
+    if line.startswith(("VmRSS:","VmSize:")):
+     key,value=line.split(":",1);fields[key]=int(value.strip().split()[0])
+   rss+=fields.get("VmRSS",0);vms+=fields.get("VmSize",0);observed+=1
+  except (OSError,ValueError,IndexError):continue
+ return {"rss_mib":round(rss/1024,2),"vms_mib":round(vms/1024,2),"processes_observed":observed}
+
 def cleanup_group(proc):
  """Reap leader, terminate all surviving group members even if leader exited."""
  pgid=proc.pid
@@ -88,23 +101,26 @@ def main():
  p.add_argument("--execute-vp05",action="store_true")
  p.add_argument("--acknowledge",default="")
  p.add_argument("--max-seconds",type=int,default=30)
+ p.add_argument("--address-space-gib",type=int,default=0,help="RLIMIT_AS GiB; 0 disables this virtual address cap")
+ p.add_argument("--max-group-rss-gib",type=float,default=4,help="Observed combined process-group resident-memory stop threshold")
  p.add_argument("--min-mem-available-gib",type=float,default=4)
  p.add_argument("--max-swap-used-gib",type=float,default=12)
  p.add_argument("--fermat",default="/home/yamatoyamato/fermat/Ferl7/fer64")
- p.add_argument("--output",type=Path,default=AUDIT/"vp05_full_stage_guarded_run_02.json")
+ p.add_argument("--output",type=Path,default=AUDIT/"vp05_full_stage_guarded_run_03.json")
  a=p.parse_args()
  report_path=a.output if a.execute_vp05 else a.output.with_name(a.output.stem+"_dry_run.json")
- if not 10<=a.max_seconds<=600 or a.min_mem_available_gib<2 or a.max_swap_used_gib<=0:p.error("unsafe limits")
+ if not 10<=a.max_seconds<=600 or a.min_mem_available_gib<2 or a.max_swap_used_gib<=0 or not 0<=a.address_space_gib<=16 or not 2<=a.max_group_rss_gib<=8:p.error("unsafe limits")
  report={"status":"DRY_RUN_NOT_EXECUTED","kira_executed":False,"physical_vp05_reduction_executed":False,
          "ready_to_execute":False,"destination":str(DEST.resolve()),"checks":{},
          "limits":{"max_seconds":a.max_seconds,"min_mem_available_gib":a.min_mem_available_gib,
-                   "max_swap_used_gib":a.max_swap_used_gib,"address_space_gib":2,"parallel":1}}
+                   "max_swap_used_gib":a.max_swap_used_gib,"address_space_gib":a.address_space_gib,"max_group_rss_gib":a.max_group_rss_gib,"parallel":1}}
  check=report["checks"]
  pre=AUDIT/"vp05_full_stage_execution_guard_preflight.json"
  check["preflight_pass"]=pre.is_file() and json.loads(pre.read_text(encoding="utf-8-sig")).get("status")=="EXECUTION_GUARD_PREFLIGHT_PASS_NO_KIRA"
  check["capsule_exists"]=CAPSULE.is_dir()
  check["destination_absent"]=not DEST.exists() and not DEST.is_symlink()
  check["original_experiment_preserved"]=Path("output/vp05_full_stage_kira_experiment").is_dir()
+ check["second_experiment_preserved"]=Path("output/vp05_full_stage_kira_experiment_02").is_dir()
  check["report_path_unused"]=not report_path.exists()
  manifest=CAPSULE/"CAPSULE_REVIEW_ONLY.json"
  data=json.loads(manifest.read_text(encoding="utf-8-sig")) if manifest.is_file() else {}
@@ -132,7 +148,8 @@ def main():
     shutil.copyfile(CAPSULE/f,out)
     if digest(out)!=hashes[f]:raise RuntimeError("copy hash mismatch: "+f)
    def limits():
-    resource.setrlimit(resource.RLIMIT_AS,(2*GIB,2*GIB))
+    if a.address_space_gib:
+     resource.setrlimit(resource.RLIMIT_AS,(a.address_space_gib*GIB,a.address_space_gib*GIB))
     resource.setrlimit(resource.RLIMIT_CORE,(0,0))
    env=os.environ.copy();env["FERMATPATH"]=fermat
    log=DEST/"kira_run.log"
@@ -142,16 +159,32 @@ def main():
    report["kira_executed"]=True;report["physical_vp05_reduction_executed"]=True
    deadline=time.monotonic()+a.max_seconds
    reason=None
-   while proc.poll() is None:
-    reason=resources(a.min_mem_available_gib,a.max_swap_used_gib)
-    if reason:break
-    if time.monotonic()>=deadline:reason="time_ceiling";break
-    time.sleep(.2)
+   measurements=[]
+   peak_rss=0.0
+   monitor_log=DEST/"resource_samples.jsonl"
+   with monitor_log.open("x",encoding="utf-8") as mon:
+    while proc.poll() is None:
+     sample=group_memory_mib(proc.pid)
+     sample["elapsed_seconds"]=round(time.monotonic()-(deadline-a.max_seconds),2)
+     mon.write(json.dumps(sample,ensure_ascii=False)+"\\n")
+     mon.flush()
+     measurements.append(sample)
+     peak_rss=max(peak_rss,sample["rss_mib"])
+     reason=resources(a.min_mem_available_gib,a.max_swap_used_gib)
+     if not reason and sample["rss_mib"]>=a.max_group_rss_gib*1024:reason="group_rss_ceiling"
+     if reason:break
+     if time.monotonic()>=deadline:reason="time_ceiling";break
+     time.sleep(.2)
+   report["peak_observed_group_rss_mib"]=peak_rss
+   report["resource_samples"]=len(measurements)
+   report["resource_log"]=str(monitor_log)
    report["stop_reason"]=reason
    report["returncode"]=proc.poll()
    report["log_tail"]=log.read_bytes()[-4000:].decode("utf-8","replace")
    report["progress"]=progress_from_log(log)
    report["status"]="KIRA_FINISHED_PENDING_CLEANUP"
+   if "std::bad_alloc" in report["log_tail"]:
+    report["failure_classification"]="KIRA_BAD_ALLOC"
   except BaseException as exc:
    report["status"]="GUARDED_VP05_EXCEPTION";report["error"]=repr(exc)
   finally:
