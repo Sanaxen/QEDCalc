@@ -461,7 +461,7 @@ def main():
     packed_map_cells=max_packed_row_cells if a.reuse_packed_maps else packed_map_cells_written
     control_cells=4*max((len(schedule[i][0]) for i in needed),default=0) if a.loop_control_rows else 0
     lifetime_report=None
-    if a.analyze_row_lifetimes:
+    if a.analyze_row_lifetimes or a.release_dead_rows:
         if not (a.sparse_array_rows and a.prune_dead_rows):
             ap.error("row lifetime analysis requires --sparse-array-rows --prune-dead-rows")
         # Owners must remain available through their last dependency. Final
@@ -499,17 +499,26 @@ def main():
             "releasable_rows_before_outputs":releases,
             "releasable_cells_before_outputs":released_cells,
             "retained_cells_for_outputs":sum(sizes[j] for j in active),
-            "analysis_only":True,"memory_reclamation_implemented":False}
-        print("FERMAT_GAUSS_LIFETIMES "+json.dumps(lifetime_report),flush=True)
+            "analysis_only":True,"memory_reclamation_implemented":bool(a.release_dead_rows),
+            "physical_memory_peak_verified":False}
+        if a.analyze_row_lifetimes:
+            print("FERMAT_GAUSS_LIFETIMES "+json.dumps(lifetime_report),flush=True)
+    # Safety accounting in cancellation mode uses live array entries at
+    # allocation time, not all cells allocated over the full script. It is
+    # NOT a Fermat heap/RSS bound: aliases and allocator behavior are unknown.
+    effective_cells=lifetime_report["peak_live_cells"] if a.release_dead_rows else storage_cells
+    within_caps=(len(script)<=a.max_commands and len(output_keys)<=a.max_outputs and
+                 effective_cells<=a.max_array_cells and
+                 packed_map_cells+control_cells<=a.max_map_cells)
     print("FERMAT_GAUSS_PILOT_START "+json.dumps({"rows":len(rows),"columns":len(columns),
         "rank":len(basepivots),"operations":sum(len(x[0]) for x in schedule),
-        "outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"packed_map_cells_written":packed_map_cells_written,"reuse_packed_maps":a.reuse_packed_maps,"loop_control_rows":a.loop_control_rows,"control_cells":control_cells,"release_dead_rows":a.release_dead_rows,"released_rows_planned":released_rows_planned,"file":str(path)}),flush=True)
+        "outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"peak_array_cells_estimate":effective_cells,"array_cap_basis":"live_peak" if a.release_dead_rows else "allocated_total","physical_memory_peak_verified":False,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"packed_map_cells_written":packed_map_cells_written,"reuse_packed_maps":a.reuse_packed_maps,"loop_control_rows":a.loop_control_rows,"control_cells":control_cells,"release_dead_rows":a.release_dead_rows,"released_rows_planned":released_rows_planned,"file":str(path)}),flush=True)
     if a.preflight_only:
-        print("FERMAT_GAUSS_PREFLIGHT "+json.dumps({"rows":len(rows),"rank":len(basepivots),"columns":len(columns),"operations":sum(len(x[0]) for x in schedule),"outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"max_map_cells":a.max_map_cells,"max_array_cells":a.max_array_cells,"max_commands":a.max_commands,"max_outputs":a.max_outputs,"within_caps":len(script)<=a.max_commands and len(output_keys)<=a.max_outputs and storage_cells<=a.max_array_cells and packed_map_cells+control_cells<=a.max_map_cells,"result":"ESTIMATE_ONLY","proof":False}),flush=True)
+        print("FERMAT_GAUSS_PREFLIGHT "+json.dumps({"rows":len(rows),"rank":len(basepivots),"columns":len(columns),"operations":sum(len(x[0]) for x in schedule),"outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"max_map_cells":a.max_map_cells,"max_array_cells":a.max_array_cells,"max_commands":a.max_commands,"max_outputs":a.max_outputs,"within_caps":within_caps,"result":"ESTIMATE_ONLY","proof":False}),flush=True)
         return
     try:
-        if storage_cells>a.max_array_cells:
-            raise RuntimeError(f"array cell cap exceeded: {storage_cells}/{a.max_array_cells}")
+        if effective_cells>a.max_array_cells:
+            raise RuntimeError(f"array cell cap exceeded: {effective_cells}/{a.max_array_cells} (basis={'live_peak' if a.release_dead_rows else 'allocated_total'}, cumulative={storage_cells})")
         if packed_map_cells+control_cells>a.max_map_cells:
             raise RuntimeError(f"packed map cell cap exceeded: {packed_map_cells}/{a.max_map_cells}")
         if len(script)>a.max_commands or len(output_keys)>a.max_outputs:
