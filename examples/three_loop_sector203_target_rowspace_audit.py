@@ -239,7 +239,7 @@ def main():
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as handle:
                 json.dump(manifest, handle, indent=2)
-                handle.write("\\n")
+                handle.write("\n")
             os.replace(temporary, out)
         finally:
             if os.path.exists(temporary):
@@ -250,3 +250,7 @@ def main():
             "training_samples": sum(x.get("role", "training") == "training" for x in manifest["samples"]),
             "holdout_samples": sum(x.get("role") == "holdout" for x in manifest["samples"]),
             "coefficients_per_sample": len(rows), "proof": False}), flush=True)
+
+
+if __name__ == "__main__":
+    main()
