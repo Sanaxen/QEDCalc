@@ -4949,3 +4949,14 @@ Look for `VP05_DUAL_CERT_POINT` and `VP05_DUAL_CERT_SUMMARY`; JSON: `output/thre
 ### 2026-10-21 VP05 dual certificate preflight local results
 
 User reports all four sampled primes `(1000037,21,15)`, `(1001003,19,53)`, `(1001107,36,64)`, `(1002101,47,83)` return rank=166, target remainder size 0, certificate support=166/166, zero certificate rows=0, and `replay_verified=true`. `support_stable_across_points=true`, `symbolic_certificate_found=false`, `alias_mapping_verified=false`, `fermat_executed=false`, `proof=false`. Dense certificate rules out gains from **simple sparsity of this computed basis certificate**; it does not prove every possible certificate or another row basis must use 166 entries. Next focus on rational-function reconstruction of certificate coefficients from fresh evaluations (with independent held-out modular tests), exact `Q(z,d)` identity replay, and lifting the 166 compressed combination coefficients to the original 528 IBP equations. Guard against interpolation degree bounds, unlucky specializations, and the unresolved alias map. No large Fermat execution until certified resources.
+
+
+### 2026-10-21 VP05 compressed certificate sample archive (6 points)
+
+Implemented `examples/three_loop_sector203_certificate_sample_export.py` and `run_vp05_certificate_sample_export.bat` to export the complete 166-component finite-field certificate at each of four training points `(1000037,21,15)`, `(1001003,19,53)`, `(1001107,36,64)`, `(1002101,47,83)` and two separate holdouts `(1003001,17,71)`, `(1004027,43,29)`. The script validates rank and independently replays target reconstruction against all compressed rows at each point before atomic JSON output; includes SHA256 of local compressed source to protect against stale mixup. Output: `output/three_loop_integral_family_audit/vp05_compressed_certificate_samples.json`. No Fermat/Kira and **no rational-function reconstruction/proof yet**. Six individual finite-field samples do not suffice to assert a multivariate rational function without degree bounds and independent symbolic equality. Sample archive and its holdouts should not be reused as training points in a future reconstruction validation; use additional unseen points thereafter. The integral aliasing warning remains.
+
+Local command:
+```powershell
+git pull
+.\run_vp05_certificate_sample_export.bat
+```
