@@ -25,10 +25,11 @@ def main():
     ap.add_argument("--training",type=int,default=70)
     ap.add_argument("--holdouts",type=int,default=10)
     ap.add_argument("--max-attempts",type=int,default=130)
+    ap.add_argument("--columns",type=int,default=13,help="Grid width; >=7 distinct d-levels required for degree six")
     ap.add_argument("--output",type=Path,default=ROOT/"vp05_independent_prime_certificate.json")
     a=ap.parse_args()
     if not sp.isprime(a.prime) or a.prime<=1000 or a.prime==1000037:ap.error("Choose an independent prime >1000")
-    if not 65<=a.training<=90 or not 8<=a.holdouts<=20 or a.max_attempts<a.training+a.holdouts:
+    if not 65<=a.training<=90 or not 8<=a.holdouts<=20 or a.max_attempts<a.training+a.holdouts or not 7<=a.columns<=20:
         ap.error("Invalid bounded sampling counts")
     raw=a.equations.read_bytes()
     eq=json.loads(raw.decode("utf-8-sig"))
@@ -41,12 +42,14 @@ def main():
     model_rows=master["coefficients"]
     if len(model_rows)!=166 or {e["row"] for e in model_rows}!=set(range(166)):
         ap.error("Incomplete or duplicate coefficient models")
+    if (a.training-1)//a.columns+1<7:
+        ap.error("Training grid requires at least 7 distinct d levels for degree-6 fits")
     p=a.prime;samples=[];rejected=[]
     # 13-column shifted lattice distinct from all training grids at p0.
     for i in range(a.max_attempts):
         if len(samples)==a.training+a.holdouts:break
-        z=(47+53*(i%13))%p
-        d=(83+79*(i//13))%p
+        z=(47+53*(i%a.columns))%p
+        d=(83+79*(i//a.columns))%p
         if not z or not d:continue
         try:
             evaluated=mod_rows(eq["rows"],p,z,d)
@@ -75,7 +78,7 @@ def main():
         fits.append({"row":row,"original_degree":[model["numerator_degree"],model["denominator_degree"]],
             "origin":e["origin"],"result":result})
     report={"summary":{"prime":p,"training":len(train),"holdouts":len(hold),
-            "rejected":len(rejected),"rows":166,"outcome_counts":dict(hist),
+            "rejected":len(rejected),"rows":166,"columns":a.columns,"outcome_counts":dict(hist),
             "independent_prime_pass":hist["holdout_pass"],"original_prime":summary["prime"],
             "equations_sha256":hashlib.sha256(raw).hexdigest(),
             "original_models_sha256":hashlib.sha256(a.models.read_bytes()).hexdigest(),
