@@ -28,12 +28,13 @@ def main():
     p=argparse.ArgumentParser()
     p.add_argument("--project",type=Path,default=DEFAULT)
     p.add_argument("--include-full-system",action="store_true",help="Also test 2639-row full peeled scope (slower)")
+    p.add_argument("--full-only",action="store_true",help="Run only full SYSTEM target combination; implies --include-full-system")
     p.add_argument("--output",type=Path,default=Path("output/three_loop_integral_family_audit/vp05_small_id_expanded_modular.json"))
     a=p.parse_args()
     rows=read_rows(a.project)
     results=[]
     for name,selected in scopes(rows):
-        if name=="entire_system" and not a.include_full_system:
+        if (name=="entire_system" and not (a.include_full_system or a.full_only)) or (name!="entire_system" and a.full_only):
             continue
         active,rounds=peel(rows,selected,TARGETS|{ANCHOR})
         source_indices=sorted(active)
@@ -46,6 +47,8 @@ def main():
                 "target_combination":{(10,203):z%prime,(6,203):(-2)%prime,(5,201):2%prime},
             }
             for label,target in targets.items():
+                if a.full_only and label!="target_combination":
+                    continue
                 check=eliminate(sample,target.copy(),prime)
                 results.append({"scope":name,"input_rows":len(selected),"peeled_rows":len(scoped),
                     "point":[prime,z,d],"test":label,
