@@ -27,13 +27,14 @@ def residue(expr, p, z, d):
 
 
 def eliminate(rows, target, p):
-    """Reduce target against row-echelon basis, tracking independent row IDs.
+    """Finite-field row-space test with original-IBP provenance certificate.
 
-    This is finite-field row-space membership, not a rational-function proof.
+    Provenance tracks a linear combination of original equation indices.
+    Every sampled certificate is independently checked against raw rows.
     """
     basis = {}
-    owners = {}
-    ranks = 0
+    combinations = {}
+    owner_ids = {}
     target_appearing_rows = set()
     target_keys = set(target)
     for i, original in enumerate(rows):
@@ -46,28 +47,43 @@ def eliminate(rows, target, p):
             if lead not in basis:
                 inv = pow(vec[lead], -1, p)
                 basis[lead] = {k: v * inv % p for k, v in vec.items()}
-                # Avoid keeping full row provenance: may explode at 528 rows.
-                owners[lead] = i
-                ranks += 1
+                combinations[lead] = {j: val * inv % p for j, val in combo.items() if val % p}
+                owner_ids[lead] = i
                 break
             fac = vec[lead]
             for k, value in basis[lead].items():
                 val = (vec.get(k, 0) - fac * value) % p
                 if val: vec[k] = val
                 else: vec.pop(k, None)
+            for j, value in combinations[lead].items():
+                val = (combo.get(j, 0) - fac * value) % p
+                if val: combo[j] = val
+                else: combo.pop(j, None)
     original_target = target.copy()
     target_ops = []
+    certificate = {}
     while target:
         lead = min(target, key=order)
         if lead not in basis:
             break
         fac = target[lead]
-        target_ops.append({"owner": owners[lead], "pivot": list(lead)})
-        for k, v in basis[lead].items():
-            val = (target.get(k, 0) - fac * v) % p
+        target_ops.append({"owner": owner_ids[lead], "pivot": list(lead)})
+        for k, value in basis[lead].items():
+            val = (target.get(k, 0) - fac * value) % p
             if val: target[k] = val
             else: target.pop(k, None)
-    return {"rank": ranks, "target_in_rowspace": not target,
+        for j, value in combinations[lead].items():
+            val = (certificate.get(j, 0) + fac * value) % p
+            if val: certificate[j] = val
+            else: certificate.pop(j, None)
+    reconstruction = {}
+    for j, factor in certificate.items():
+        for k, value in rows[j].items():
+            val = (reconstruction.get(k, 0) + factor * value) % p
+            if val: reconstruction[k] = val
+            else: reconstruction.pop(k, None)
+    verified = not target and reconstruction == original_target
+    return {"rank": len(basis), "target_in_rowspace": not target,
             "target_remainder_size": len(target),
             "target_remainder_sample": [
                 {"key": list(k), "coefficient": target[k]}
@@ -76,9 +92,14 @@ def eliminate(rows, target, p):
             "target_elimination_first_owners": target_ops[:12],
             "direct_target_support_rows": len(target_appearing_rows),
             "direct_target_support_row_ids": sorted(target_appearing_rows)[:40],
+            "certificate_support_count": len(certificate),
+            "certificate_row_ids": sorted(certificate),
+            "certificate_original_equation_replay_verified": verified,
+            "certificate_nonzero_coefficients_sample": [
+                {"row": j, "coefficient": certificate[j]}
+                for j in sorted(certificate)[:12]],
             "full_target": [{"key": list(k), "coefficient": v}
                             for k, v in original_target.items()]}
-
 
 def main():
     ap = argparse.ArgumentParser()
