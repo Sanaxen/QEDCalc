@@ -4932,3 +4932,15 @@ transient_pivot_key_count_total=697
 fermat_executed=false; proof=false; implementation_ready=false
 ```
 Thus simply separating transient pivot coefficients has limited projected benefit and still exceeds the 20000-cell guard by 7232 even with optimistic release assumptions. Do not implement this experimental layout as the primary scaling fix or raise the resource cap on the strength of this estimate. Prefer a distinct target-certificate algorithm with a bounded no-Fermat preflight, preserving exact original-row provenance and independently verifying the rational-function target identity and integral-key aliases before claiming proof.
+
+
+### 2026-10-21 VP05 dual certificate-first modular feasibility
+
+After the incremental sparse-storage candidate reduced only 631 peak cells (27863 to 27232; still above the 20000 guard, user-supplied 4-point log), focus shifts from sparse-row tweaks to certificate-first feasibility. Added `examples/three_loop_sector203_dual_certificate_preflight.py` and `run_vp05_dual_certificate_preflight.bat`. This computes finite-field row-provenance certificates for the **166 compressed equations**, replays their target reconstruction independently, and measures support density and stability over four points. It is intentionally **not** rational-function coefficient reconstruction and does not run Fermat/Kira. A dense 166-entry modular certificate or unstable support would discourage naive sparse certificate recovery; a sparse stable one warrants an exact-Q(z,d) method but is still not proof. Remember compressed rows are exact linear combinations of original 528 IBP rows; any eventual symbolic certificate must replay through the original rows with exact arithmetic, and sector alias mapping is unresolved.
+
+Local:
+```powershell
+git pull
+.\run_vp05_dual_certificate_preflight.bat
+```
+Look for `VP05_DUAL_CERT_POINT` and `VP05_DUAL_CERT_SUMMARY`; JSON: `output/three_loop_integral_family_audit/vp05_dual_certificate_preflight.json`. No relaxation of symbolic execution caps.
