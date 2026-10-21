@@ -4904,3 +4904,16 @@ fermat_executed = false; proof = false
 ```
 
 The difference of 853 cells is between `target_scope` normalized support accounting and the actual pilot sparse-map allocation, which retains intermediate/pivot keys. The earlier pilot's 30788 cells covered just the 162-row closure of the *last-row output*, not the entire 166-row target dependency set; this should not be compared as a same-scope estimate. Reconciled full-row memory accounting is 31840 cells, with a hypothetical peak of 27863 on row-release. Both exceed the unchanged 20000 safety cap. No proof that Fermat will actually reclaim memory, nor any actual RAM/RSS measurement. Do not lift large symbolic execution gate. Next implementation should seek a provably equivalent lower-storage exact elimination or target-certificate method, with correctness audited first on small rows and explicit target residual/alias verification.
+
+
+### 2026-10-21 Experimental incremental storage candidate, no Fermat execution
+
+Implemented `examples/three_loop_sector203_incremental_storage_preflight.py` and `run_vp05_incremental_storage_preflight.bat` (commits `f635059`, `5c1edc1`, `ec732bf`). The tool compares the existing Fermat pilot's all-166-row sparse map (31840 allocated, 27863 hypothetical released peak from user results) to a **candidate** footprint that reserves initial and normalized supports but hopes to use a separate scalar for temporary pivot factors rather than retaining all eliminated-pivot column slots indefinitely. It uses the same four independently replayed modular pivot schedules and never calls Fermat/Kira. This is exploratory planning, **not** a safe upper bound: intermediate symbolic supports and actual Fermat allocation may exceed the candidate; executable row maps and exact replay are not implemented. A passing 20000-cell candidate estimate must NOT authorize a large symbolic run.
+
+Next command:
+```powershell
+git pull
+.\run_vp05_incremental_storage_preflight.bat
+```
+
+If reduction is material, next engineering stage is a true small-scale incremental sparse row executor with per-operation symbolic support bookkeeping and exact/Fermat replay compared to the existing pilot, plus explicit array/release semantics checks before any 166-row execution. Keep alias and exact Q(z,d) target certificate unresolved.
