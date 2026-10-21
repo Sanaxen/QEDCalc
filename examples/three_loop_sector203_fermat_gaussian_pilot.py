@@ -407,7 +407,8 @@ def main():
                     # Semicolons separate the statements inside its body.
                     script.append("for t = 1,{} do `".format(len(spans)))
                     script.append("fac := r{}[pv[t]]; `".format(i))
-                    script.append("for j = lo[t],hi[t] do r{}[dm[j]] := r{}[dm[j]] - fac*%[ow[t]][sm[j]] od `".format(i,i))
+                    script.append("for j = lo[t],hi[t] do r{}[dm[j]] := r{}[dm[j]] - fac*%[ow[t]][sm[j]] od; `".format(i,i))
+                    script.append("r{}[pv[t]] := 0 `".format(i))
                     script.append("od")
                 else:
                     for owner,pivot,first,last in spans:
@@ -415,6 +416,7 @@ def main():
                         script.append("{} := r{}[{}]".format(factor,i,row_maps[i][pivot]))
                         if first<=last:
                             script.append("for j = {},{} do r{}[dm{}[j]] := r{}[dm{}[j]] - {}*r{}[sm{}[j]] od".format(first,last,i,map_tag,i,map_tag,factor,owner,map_tag))
+                        script.append("r{}[{}] := 0".format(i,row_maps[i][pivot]))
             else:
                 for owner,pivot in schedule[i][0]:
                     local=row_maps[i]
@@ -429,6 +431,7 @@ def main():
                         script.append("[d{}] := [(".format(tag)+",".join(map(str,dst))+")]")
                         script.append("[s{}] := [(".format(tag)+",".join(map(str,src))+")]")
                         script.append("for j = 1,{} do r{}[d{}[j]] := r{}[d{}[j]] - {}*r{}[s{}[j]] od".format(len(terms),i,tag,i,tag,factor,owner,tag))
+                    script.append("r{}[{}] := 0".format(i,local[pivot]))
             if lead is not None:
                 divisor="n{}".format(i)
                 script.append("{} := r{}[{}]".format(divisor,i,row_maps[i][lead]))
