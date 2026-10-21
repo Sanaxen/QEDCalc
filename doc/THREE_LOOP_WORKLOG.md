@@ -5212,3 +5212,7 @@ User uploaded exact replay log for `--max-columns 200 --max-input-terms 20000`. 
 ### 2026-10-21 VP05 full exact compressed replay
 
 User's 400-column run reports `exact_zero=400`, `exact_compressed_certificate_verified=true`, no nonzero or inconclusive columns. There are 166 compressed equations and 1985 input terms. The reconstructed rational certificate is established over Q(z,d) for the compressed equation system. Remaining: original 528-row lineage and integral alias mapping. Neither Fermat nor Kira was used.
+
+### 2026-10-21 VP05 original-528 exact lineage audit pilot implemented
+
+Following 400/400 exact-zero compressed symbolic certificate replay, added `examples/three_loop_sector203_original_528_exact_lineage_audit.py` and `run_vp05_original_528_exact_lineage_pilot.bat`. The new verifier reads the original 528-row witness path recorded in the compressed archive, the 166 proportional-class weight groups and 166 compressed equations. It first checks disjoint/exhaustive original-row coverage and representative weights, then for selected groups recomputes each weighted original coefficient column, subtracts the saved compressed coefficient and tests the exact residual in Q(z,d) via SymPy. Default five groups, with `--max-groups 166` for all groups if the pilot passes. The global 20,000 input-term cap is retained. This tests algebraic original-row lineage, not integral alias/physical interpretation; Fermat/Kira not run. Run `git pull` and `.\run_vp05_original_528_exact_lineage_pilot.bat`; inspect `VP05_ORIGINAL_528_LINEAGE`.
