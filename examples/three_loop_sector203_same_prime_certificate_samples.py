@@ -18,6 +18,7 @@ def main():
     ap.add_argument("--training",type=int,default=19)
     ap.add_argument("--holdouts",type=int,default=8)
     ap.add_argument("--max-attempts",type=int,default=120)
+    ap.add_argument("--grid-v2",action="store_true",help="Use independent 5-column x 2D grid; choose a new output path")
     ap.add_argument("--output",type=Path,default=Path("output/three_loop_integral_family_audit/vp05_same_prime_certificate_samples.json"))
     a=ap.parse_args()
     if a.training<1 or a.holdouts<1 or a.training+a.holdouts>120 or a.max_attempts<a.training+a.holdouts:
@@ -28,14 +29,20 @@ def main():
     data=json.loads(raw.decode("utf-8-sig"))
     if data.get("type")!="symbolic_exact_linear_combinations" or len(data.get("rows",[]))!=166:
         ap.error("Expected exactly 166 compressed symbolic equations")
+    if a.grid_v2 and a.output.name=="vp05_same_prime_certificate_samples.json":
+        ap.error("--grid-v2 requires a separate --output to preserve old sample archive")
     rows=data["rows"]
     samples=[]
     rejected=[]
     for i in range(a.max_attempts):
         if len(samples)>=a.training+a.holdouts:break
         # Distinct, non-collinear grid points for generic two-variable interpolation.
-        z=(17+37*i+11*i*i)%a.prime
-        d=(29+61*i+7*i*i*i)%a.prime
+        if a.grid_v2:
+            z=(17+37*(i%5))%a.prime
+            d=(29+61*(i//5))%a.prime
+        else:
+            z=(17+37*i+11*i*i)%a.prime
+            d=(29+61*i+7*i*i*i)%a.prime
         if not z or not d:continue
         try:
             evaluated=mod_rows(rows,a.prime,z,d)
@@ -60,6 +67,7 @@ def main():
     report={"type":"same_prime_modular_certificate_samples","source":str(a.equations),
         "source_sha256":hashlib.sha256(raw).hexdigest(),"prime":a.prime,
         "rows":166,"training":a.training,"holdouts":a.holdouts,
+        "sampling_strategy":"grid_v2_5_columns" if a.grid_v2 else "legacy_curve",
         "samples":samples,"rejected_points":rejected,
         "symbolic_reconstruction":False,"proof":False,"fermat_executed":False}
     a.output.parent.mkdir(parents=True,exist_ok=True)
