@@ -5272,3 +5272,7 @@ The small-weight source diagnostic found exactly raw values 1..10 failing the ex
 ### 2026-10-21 Small SYSTEM identifier classification
 
 Correct L2 `results/VP05_full/masters` contains 5 masters, while raw SYSTEM features small key IDs 1..10. Therefore small IDs are not simply 1-based positions in this five-item master list. External weight codec cannot decode IDs 1..10, but handles many large integral weights. Added `examples/three_loop_sector203_small_id_provenance_inventory.py` and `run_vp05_small_id_provenance_inventory.bat` to examine saved Kira configuration/results metadata for explicit conventions. Do not equate small IDs to physical integrals without source-supported mapping; algebraic certificate stays verified for raw encoded columns.
+
+### 2026-10-21 VP05 small-ID metadata inventory result
+
+User ran the L2 project metadata inventory. Found only `config/integralfamilies.yaml` (`top_level_sectors: [203]`), `config/kinematics.yaml`, and five-line `results/VP05_full/masters`. No explicit mapping from raw SYSTEM small IDs 1..10 to physical 12-index integrals was established. The search was limited to those candidate files; it is NOT an exhaustive Kira source/database audit. Next investigate SYSTEM output encoding conventions or other source-side metadata rather than assuming master-list ordinal positions. Exact symbolic SYSTEM-row identity remains verified; physical interpretation remains pending.
