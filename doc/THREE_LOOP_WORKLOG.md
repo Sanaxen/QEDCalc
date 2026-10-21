@@ -4870,3 +4870,14 @@ Added `examples/three_loop_sector203_memory_pressure_audit.py` (`b15677b`) and `
 User ran `run_vp05_memory_pressure_audit.bat` on the compressed 166-row symbolic input. At all four points `(1000037,21,15)`, `(1001003,19,53)`, `(1001107,36,64)`, `(1002101,47,83)`: rank 166, same modular schedule, `allocated_cells_total=31840`, `lifetime_peak_cells=27863`, `peak_row=162`, `peak_live_rows=138`, `above_cap_allocated=11840`, `above_cap_even_if_released=7863`. No Fermat/Kira run; no exact target proof.
 
 The profile's allocated 31840 differs from the Fermat pilot preflight 30788 and target-scope preflight 30987; the 27863 live peak agrees with the Fermat pilot's lifetime-only estimate, while target-scope estimated 27093 under a different structural accounting convention. These numbers must **not** be silently combined or treated as actual memory consumption. The newer profiler includes structural pivot/support bookkeeping that may differ from the exact Fermat array map allocation. Diagnose row-by-row support convention discrepancies against `three_loop_sector203_fermat_gaussian_pilot.py`; use the pilot's own exact mapped-cell count as authoritative for its current generated script. Even optimistic 27863 cells exceed 20000 cap. Keep full symbolic VP05 execution blocked; continue with accurately reconciled structural accounting and alternative algorithm design. The JSON with per-row contributors is local-only: `output/three_loop_integral_family_audit/vp05_memory_pressure_profile.json`.
+
+
+### 2026-10-21 Cell-accounting reconciliation audit introduced
+
+Added `examples/three_loop_sector203_cell_accounting_reconciliation.py` and `run_vp05_cell_accounting_reconciliation.bat`. This reconstructs the existing Fermat Gaussian pilot's full-row sparse array maps and contrasts that accounting with the memory-pressure profiler and target-scope support-only estimator on the same four prime points. Detailed per-row pilot map sizes and summaries are exported to `output/three_loop_integral_family_audit/vp05_cell_accounting_reconciliation.json`. Crucial distinction: original pilot `--verify-last-rows 1 --prune-dead-rows` only included a 162-row backward closure (30788 cells), whereas the full-target closure includes all 166 rows; these are different comparison scopes. The target-scope estimator counts normalized surviving support, not every allocated pivot/intermediate cell. The new audit must be run locally before treating any cross-tool discrepancy as resolved. No Fermat/Kira launched; 20000-cell cap remains; symbolic proof and alias mapping remain pending.
+
+Run:
+```powershell
+git pull
+.\run_vp05_cell_accounting_reconciliation.bat
+```
