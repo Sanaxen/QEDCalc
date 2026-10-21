@@ -27,11 +27,14 @@ def scopes(rows):
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--project",type=Path,default=DEFAULT)
+    p.add_argument("--include-full-system",action="store_true",help="Also test 2639-row full peeled scope (slower)")
     p.add_argument("--output",type=Path,default=Path("output/three_loop_integral_family_audit/vp05_small_id_expanded_modular.json"))
     a=p.parse_args()
     rows=read_rows(a.project)
     results=[]
     for name,selected in scopes(rows):
+        if name=="entire_system" and not a.include_full_system:
+            continue
         active,rounds=peel(rows,selected,TARGETS|{ANCHOR})
         scoped=[rows[i] for i in sorted(active)]
         for prime,z,d in POINTS:
