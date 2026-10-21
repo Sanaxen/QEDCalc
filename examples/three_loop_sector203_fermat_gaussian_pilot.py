@@ -100,6 +100,8 @@ def main():
     ap.add_argument("--equations",type=Path)
     ap.add_argument("--rows",type=int,default=12)
     ap.add_argument("--max-rows",type=int,default=320)
+    ap.add_argument("--release-dead-rows",action="store_true",
+        help="EXPERIMENTAL: Fermat @([rN]) after last scheduled use; validate on 30 rows")
     ap.add_argument("--analyze-row-lifetimes",action="store_true",
         help="preflight only: estimate peak retained row coefficient cells by last owner use")
     ap.add_argument("--loop-control-rows",action="store_true",
@@ -140,6 +142,8 @@ def main():
     if a.max_array_cells<1 or a.max_map_cells<1:ap.error("invalid array/map cell cap")
     if a.verify_last_rows<0:ap.error("--verify-last-rows must be >=0")
     if a.analyze_row_lifetimes and not a.preflight_only:ap.error("--analyze-row-lifetimes requires --preflight-only")
+    if a.release_dead_rows and not (a.sparse_array_rows and a.prune_dead_rows and a.loop_control_rows):
+        ap.error("--release-dead-rows requires --sparse-array-rows --prune-dead-rows --loop-control-rows")
     paths=[a.equations.resolve()] if a.equations else sorted(FOLDER.glob("vp05_candidate4_witness_*.equations.json"))
     if not paths:ap.error("No exported witness file")
     path=paths[-1]
@@ -269,6 +273,20 @@ def main():
                     stack.append(owner)
     else:
         needed=set(range(len(rows)))
+    # The *last consuming row* of each owner, not merely its own row.
+    # Verification rows are held for the final output block.
+    last_use={i:i for i in needed}
+    for i in needed:
+        for owner,_ in schedule[i][0]:
+            if owner not in needed:raise RuntimeError("missing owner in live dependency closure")
+            last_use[owner]=max(last_use[owner],i)
+    for i in range(first_verify,len(rows)):
+        if i in needed:last_use[i]=len(rows)
+    releases_at={}
+    for owner,final_index in last_use.items():
+        if final_index<len(rows):
+            releases_at.setdefault(final_index,[]).append(owner)
+    for outgoing in releases_at.values():outgoing.sort()
     expected=[]
     for i,r in enumerate(rows):
         if i not in needed:
@@ -415,6 +433,12 @@ def main():
                 divisor="n{}".format(i)
                 script.append("{} := r{}[{}]".format(divisor,i,row_maps[i][lead]))
                 script.append("for j = 1,{} do r{}[j] := r{}[j]/{} od".format(len(ordered),i,i,divisor))
+            if a.release_dead_rows:
+                for previous in releases_at.get(i,()):
+                    # Fermat manual: @([array]) cancels a named array.
+                    # Pointer alias behavior must be tested, and actual RSS
+                    # reduction is not inferred from the lifetime estimate.
+                    script.append("@([r{}])".format(previous))
     output_keys=[]
     for i,cols in enumerate(expected):
         if i<first_verify:continue
@@ -429,6 +453,7 @@ def main():
                 script.append(f"!('QEDGAUSS_{n:05d}=',r{i}c{bycol[k]})")
     script.append("&q")
     storage_cells=sparse_cells if a.sparse_array_rows else array_cells
+    released_rows_planned=sum(map(len,releases_at.values())) if a.release_dead_rows else 0
     packed_map_cells_written=sum(len(expected[owner])-int(pivot in expected[owner]) for i in needed for owner,pivot in schedule[i][0])*2 if a.packed_sparse_maps else 0
     packed_map_cells=max_packed_row_cells if a.reuse_packed_maps else packed_map_cells_written
     control_cells=4*max((len(schedule[i][0]) for i in needed),default=0) if a.loop_control_rows else 0
@@ -475,7 +500,7 @@ def main():
         print("FERMAT_GAUSS_LIFETIMES "+json.dumps(lifetime_report),flush=True)
     print("FERMAT_GAUSS_PILOT_START "+json.dumps({"rows":len(rows),"columns":len(columns),
         "rank":len(basepivots),"operations":sum(len(x[0]) for x in schedule),
-        "outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"packed_map_cells_written":packed_map_cells_written,"reuse_packed_maps":a.reuse_packed_maps,"loop_control_rows":a.loop_control_rows,"control_cells":control_cells,"file":str(path)}),flush=True)
+        "outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"packed_map_cells_written":packed_map_cells_written,"reuse_packed_maps":a.reuse_packed_maps,"loop_control_rows":a.loop_control_rows,"control_cells":control_cells,"release_dead_rows":a.release_dead_rows,"released_rows_planned":released_rows_planned,"file":str(path)}),flush=True)
     if a.preflight_only:
         print("FERMAT_GAUSS_PREFLIGHT "+json.dumps({"rows":len(rows),"rank":len(basepivots),"columns":len(columns),"operations":sum(len(x[0]) for x in schedule),"outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"max_map_cells":a.max_map_cells,"max_array_cells":a.max_array_cells,"max_commands":a.max_commands,"max_outputs":a.max_outputs,"within_caps":len(script)<=a.max_commands and len(output_keys)<=a.max_outputs and storage_cells<=a.max_array_cells and packed_map_cells+control_cells<=a.max_map_cells,"result":"ESTIMATE_ONLY","proof":False}),flush=True)
         return
