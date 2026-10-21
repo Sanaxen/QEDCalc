@@ -5076,3 +5076,7 @@ git pull
 .\run_vp05_high_degree_budget.bat
 ```
 Inspect `VP05_HIGH_DEGREE_BUDGET_MODEL` and `VP05_HIGH_DEGREE_BUDGET_SUMMARY` before degree growth/sampling choices.
+
+### 2026-10-21 VP05 degree-(4,4) finite-field trial
+
+User's high-degree budget preflight on grid-v3: 39 training, 8 reserved holdouts; polynomial evaluation ranks full for (3,3):10/10, (4,4):15/15, (5,5):21/21, (6,6):28/28. Projective coefficient counts 19,29,41,55 respectively; (4,4) is point-count feasible with 39 training, (5,5) and (6,6) need at least 2 and 16 extra generically. Added `examples/three_loop_sector203_certificate_degree4_trial.py` and `run_vp05_certificate_degree4_trial.bat` to test only the 72 v3-unresolved components with separate (4,4) numerator/denominator degree bounds, require a unique nonzero finite-field kernel solution and check all 8 holdouts; preserve the original 94 prior verified finite-field candidates in the accounting. Output `output/three_loop_integral_family_audit/vp05_certificate_degree4_trial.json`. This is strictly modular feasibility, not proof of exact Q(z,d) coefficients, and no Fermat/Kira. Run `git pull` then `.\run_vp05_certificate_degree4_trial.bat`, inspect `VP05_DEGREE4_TRIAL`.
