@@ -22,8 +22,13 @@ def main():
     ap.add_argument("--output",type=Path,default=OUT)
     ap.add_argument("--extra-training",type=int,default=20)
     ap.add_argument("--max-attempts",type=int,default=100)
+    ap.add_argument("--z-base",type=int,default=23)
+    ap.add_argument("--z-step",type=int,default=41)
+    ap.add_argument("--d-base",type=int,default=47)
+    ap.add_argument("--d-step",type=int,default=67)
+    ap.add_argument("--columns",type=int,default=7)
     a=ap.parse_args()
-    if not 1<=a.extra_training<=60 or a.max_attempts<a.extra_training or a.max_attempts>500:
+    if not 1<=a.extra_training<=60 or a.max_attempts<a.extra_training or a.max_attempts>500 or not 2<=a.columns<=30:
         ap.error("Invalid bounded extra-training / max-attempts")
     if a.output.resolve() in (a.base.resolve(),a.equations.resolve()):
         ap.error("Output must be separate from source inputs")
@@ -49,8 +54,8 @@ def main():
     for i in range(a.max_attempts):
         if len(additional)==a.extra_training:break
         # New lattice shifted from old grid (z=17+37*k, d=29+61*l).
-        z=(23+41*(i%7))%p
-        d=(47+67*(i//7))%p
+        z=(a.z_base+a.z_step*(i%a.columns))%p
+        d=(a.d_base+a.d_step*(i//a.columns))%p
         key=(p,z,d)
         if key in seen or not z or not d:continue
         try:
@@ -72,7 +77,8 @@ def main():
         raise RuntimeError("Insufficient valid new training points; output not written")
     combined=[s for s in old if s["role"]=="training"]+additional+original_holdouts
     report={**{k:v for k,v in base.items() if k not in ("samples","training","holdouts")},
-            "sampling_strategy":"grid_v3_shifted_independent_lattice",
+            "sampling_strategy":"shifted_independent_lattice",
+            "lattice_parameters":{"z_base":a.z_base,"z_step":a.z_step,"d_base":a.d_base,"d_step":a.d_step,"columns":a.columns},
             "training":len(combined)-len(original_holdouts),
             "holdouts":len(original_holdouts),
             "samples":combined,
