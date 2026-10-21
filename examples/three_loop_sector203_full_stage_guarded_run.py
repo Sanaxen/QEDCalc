@@ -28,14 +28,47 @@ def resources(floor,swap_limit):
  if m.get("MemAvailable",0)<=floor*GIB:return "ram_floor"
  if (m.get("SwapTotal",0)-m.get("SwapFree",0))>=swap_limit*GIB:return "swap_ceiling"
  return None
-def kill_group(proc):
- try:os.killpg(proc.pid,signal.SIGTERM)
- except ProcessLookupError:pass
+def group_members(pgid):
+ """Live /proc members, excluding zombies; conservative on read errors."""
+ members=[]
+ for entry in Path("/proc").iterdir():
+  if not entry.name.isdigit():continue
+  try:
+   content=(entry/"stat").read_text()
+   tail=content[content.rfind(")")+2:].split()
+   if len(tail)>=3 and int(tail[2])==pgid and tail[0] not in ("Z","X"):
+    members.append(int(entry.name))
+  except (FileNotFoundError,ProcessLookupError):continue
+  except (OSError,ValueError,IndexError):
+   members.append(-1)
+ return sorted(set(members))
+
+def cleanup_group(proc):
+ """Reap leader, terminate all surviving group members even if leader exited."""
+ pgid=proc.pid
+ before=group_members(pgid)
+ sent=[]
+ def sig(kind):
+  try:
+   os.killpg(pgid,kind)
+   sent.append(signal.Signals(kind).name)
+  except ProcessLookupError:pass
+ if before:
+  sig(signal.SIGTERM)
+  until=time.monotonic()+2.0
+  while group_members(pgid) and time.monotonic()<until:time.sleep(.1)
+  if group_members(pgid):
+   sig(signal.SIGKILL)
  try:proc.wait(timeout=3)
  except subprocess.TimeoutExpired:
-  try:os.killpg(proc.pid,signal.SIGKILL)
-  except ProcessLookupError:pass
-  proc.wait(timeout=3)
+  sig(signal.SIGKILL)
+  try:proc.wait(timeout=3)
+  except subprocess.TimeoutExpired:pass
+ remaining=group_members(pgid)
+ return {"group_id":pgid,"members_before_cleanup":before,
+         "signals_sent":sent,"members_after_cleanup":remaining,
+         "process_reaped":proc.poll() is not None,
+         "process_group_gone":not remaining}
 
 def main():
  p=argparse.ArgumentParser()
@@ -96,16 +129,21 @@ def main():
     if reason:break
     if time.monotonic()>=deadline:reason="time_ceiling";break
     time.sleep(.2)
-   if reason:kill_group(proc)
-   else:proc.wait(timeout=3)
-   report.update({"status":"KIRA_COMPLETED_REQUIRES_RESULT_AUDIT" if proc.returncode==0 and not reason else "KIRA_STOPPED_OR_FAILED",
+   leader_returncode=proc.poll()
+   cleanup=cleanup_group(proc)
+   report.update(cleanup)
+   report.update({"status":"KIRA_COMPLETED_REQUIRES_RESULT_AUDIT" if proc.returncode==0 and not reason and cleanup["process_group_gone"] else "KIRA_STOPPED_OR_FAILED",
                   "returncode":proc.returncode,"stop_reason":reason,
                   "process_reaped":proc.poll() is not None,
                   "log_tail":log.read_bytes()[-4000:].decode("utf-8","replace")})
   except Exception as exc:
    report["status"]="GUARDED_VP05_EXCEPTION";report["error"]=repr(exc)
   finally:
-   if proc is not None and proc.poll() is None:kill_group(proc)
+   if proc is not None:
+    final_cleanup=cleanup_group(proc)
+    report.update(final_cleanup)
+    if not final_cleanup["process_group_gone"] or not final_cleanup["process_reaped"]:
+     report["status"]="KIRA_PROCESS_CLEANUP_FAILED"
  a.output.parent.mkdir(parents=True,exist_ok=True)
  a.output.write_text(json.dumps(report,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
  print("VP05_FULL_STAGE_GUARDED_RUN "+json.dumps(report,ensure_ascii=False),flush=True)
