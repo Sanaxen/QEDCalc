@@ -82,7 +82,9 @@ def main():
  a=p.parse_args()
  if not 10<=a.max_seconds<=120 or a.min_mem_available_gib<2 or a.max_swap_used_gib<=0:p.error("unsafe limits")
  report={"status":"DRY_RUN_NOT_EXECUTED","kira_executed":False,"physical_vp05_reduction_executed":False,
-         "ready_to_execute":False,"destination":str(DEST.resolve()),"checks":{}}
+         "ready_to_execute":False,"destination":str(DEST.resolve()),"checks":{},
+         "limits":{"max_seconds":a.max_seconds,"min_mem_available_gib":a.min_mem_available_gib,
+                   "max_swap_used_gib":a.max_swap_used_gib,"address_space_gib":2,"parallel":1}}
  check=report["checks"]
  pre=AUDIT/"vp05_full_stage_execution_guard_preflight.json"
  check["preflight_pass"]=pre.is_file() and json.loads(pre.read_text(encoding="utf-8-sig")).get("status")=="EXECUTION_GUARD_PREFLIGHT_PASS_NO_KIRA"
@@ -129,21 +131,21 @@ def main():
     if reason:break
     if time.monotonic()>=deadline:reason="time_ceiling";break
     time.sleep(.2)
-   leader_returncode=proc.poll()
-   cleanup=cleanup_group(proc)
-   report.update(cleanup)
-   report.update({"status":"KIRA_COMPLETED_REQUIRES_RESULT_AUDIT" if proc.returncode==0 and not reason and cleanup["process_group_gone"] else "KIRA_STOPPED_OR_FAILED",
-                  "returncode":proc.returncode,"stop_reason":reason,
-                  "process_reaped":proc.poll() is not None,
-                  "log_tail":log.read_bytes()[-4000:].decode("utf-8","replace")})
-  except Exception as exc:
+   report["stop_reason"]=reason
+   report["returncode"]=proc.poll()
+   report["log_tail"]=log.read_bytes()[-4000:].decode("utf-8","replace")
+   report["status"]="KIRA_FINISHED_PENDING_CLEANUP"
+  except BaseException as exc:
    report["status"]="GUARDED_VP05_EXCEPTION";report["error"]=repr(exc)
   finally:
    if proc is not None:
     final_cleanup=cleanup_group(proc)
     report.update(final_cleanup)
+    report["returncode"]=proc.poll()
     if not final_cleanup["process_group_gone"] or not final_cleanup["process_reaped"]:
      report["status"]="KIRA_PROCESS_CLEANUP_FAILED"
+    elif report["status"]=="KIRA_FINISHED_PENDING_CLEANUP":
+     report["status"]="KIRA_COMPLETED_REQUIRES_RESULT_AUDIT" if proc.returncode==0 and report["stop_reason"] is None else "KIRA_STOPPED_OR_FAILED"
  a.output.parent.mkdir(parents=True,exist_ok=True)
  a.output.write_text(json.dumps(report,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
  print("VP05_FULL_STAGE_GUARDED_RUN "+json.dumps(report,ensure_ascii=False),flush=True)
