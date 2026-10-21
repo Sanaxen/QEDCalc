@@ -5390,3 +5390,8 @@ User `VP05_EXACT_PREFIX_ROW` for rows 0/1/2: normalized columns 183,54,29 respec
 ### 2026-10-21 VP05 first nontrivial exact pivot test (six rows)
 
 User `VP05_EXACT_ELIMINATION_PROBE`: first scheduled nontrivial elimination is zero-based row 5, one operation using owner row 2, lead `[47313359732737,194]`; 122/166 rows have at least one scheduled pivot elimination. Previously the 3-row SymPy exact smoke only checked standalone normalizations. Raised exact-prefix smoke hard row cap from 5 to 6 and changed its BAT default to `--rows 6`, retaining exact symbolic normalized-row/source-row replay and per-operation soft timeout check. No Fermat invocation or 166-row symbolic proof. Next run git pull; `.\run_vp05_exact_prefix_smoke.bat`, confirm row 5 `pivot_elimination_operations=1` and symbolic replay verified.
+
+
+### 2026-10-21 VP05 six-row exact symbolic source replay PASS; seven-row next
+
+User 6-row exact SymPy smoke: all six normalized rows replay symbolically against original compressed source rows. Row index 5 has one genuine elimination using two original source equations, 100 columns after normalization, `symbolic_source_replay_verified=true`. This is a real rational-function pivot-subtraction check but not the 166-row target identity or original 528-row replay. The next row (index 6) has two scheduled eliminations, with owners 2 and 5; raised bounded smoke hard limit to 7 and BAT default to seven rows for chained elimination verification. No full Fermat invocation and no claim of target proof.
