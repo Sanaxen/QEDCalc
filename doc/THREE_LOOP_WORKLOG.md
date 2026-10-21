@@ -5395,3 +5395,8 @@ User `VP05_EXACT_ELIMINATION_PROBE`: first scheduled nontrivial elimination is z
 ### 2026-10-21 VP05 six-row exact symbolic source replay PASS; seven-row next
 
 User 6-row exact SymPy smoke: all six normalized rows replay symbolically against original compressed source rows. Row index 5 has one genuine elimination using two original source equations, 100 columns after normalization, `symbolic_source_replay_verified=true`. This is a real rational-function pivot-subtraction check but not the 166-row target identity or original 528-row replay. The next row (index 6) has two scheduled eliminations, with owners 2 and 5; raised bounded smoke hard limit to 7 and BAT default to seven rows for chained elimination verification. No full Fermat invocation and no claim of target proof.
+
+
+### 2026-10-21 VP05 seven-row exact symbolic chained elimination PASS
+
+User log: `VP05_EXACT_PREFIX_ROW` for indices 0..6 all report `symbolic_source_replay_verified=true`. Index 5 performed one pivot elimination and replayed a combination of two original compressed equations; index 6 performed two chained pivot eliminations, had 112 normalized columns, support of three compressed source rows, and exact symbolic replay passed. `VP05_EXACT_PREFIX_SUMMARY` reports 7/7 rows verified. This validates local SymPy rational-function pivot/replay mechanics but does not establish the 166-row target identity nor replay against the original 528 SYSTEM witness. Avoid treating further small-prefix successes as proof of full identity. Next engineering step should shift from repeatedly increasing the bounded prefix toward target-specific exact certificate with robust resource limits and exact provenance checking.
