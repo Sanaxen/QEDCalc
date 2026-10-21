@@ -5260,3 +5260,7 @@ Updated `examples/three_loop_sector203_target_codec_alias_audit.py` to use the c
 ### 2026-10-21 VP05 codec decode still fails with correct L2 SYSTEM project
 
 Correct L2 source has 2678 equations and all three target keys, but `WeightCodec.decode` reports `ppw 10/6/5 out of range (1 comps)` for the three small target integer IDs. Previous and present audit DB SHA256 are both `d63e6452b1c8c6ccdf337719cdcd8312d9c0ff1c06df73dc83286353f1bf56ee`; changing project path therefore did not establish a different codec database. This is a remaining namespace/codec issue, **not** evidence of physical alias decoding. Added `examples/three_loop_sector203_codec_namespace_probe.py` and `run_vp05_codec_namespace_probe.bat` to compare small and large SYSTEM IDs, report database bit metadata and decode/encode results under the same configuration. Next run `git pull` and `.\run_vp05_codec_namespace_probe.bat <path-to-pyred_weight.py>`. Correct-origin 528-row/3769-term transcription, 166/166 compression, and 400/400 certificate remain exact in raw saved key space; physical-integral semantics unverified.
+
+### 2026-10-21 Small-weight codec investigation
+
+The L2 source has 2954 distinct key pairs. A sample of 80 gave 70 successful codec round trips and 10 decoding errors, including target weights 5, 6 and 10. Added `examples/three_loop_sector203_small_weight_diagnostic.py` and `run_vp05_small_weight_diagnostic.bat` to inspect the external codec's decode conditions and the exact use of small IDs in stored SYSTEM records. No physical mapping is claimed yet.
