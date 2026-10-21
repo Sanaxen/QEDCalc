@@ -5034,3 +5034,14 @@ After 125/166 finite-field candidate coefficients passed eight holdouts with ada
 ### 2026-10-21 VP05 unresolved 41 adaptive coefficients classified
 
 User ran `run_vp05_adaptive_unresolved_diagnostic.bat`. Of 41 unresolved coefficient rows, classification by **attempted-model counters**: `only_nonunique=2`, `only_holdout_failure=0`, `both=39`, `other=0`. Every unresolved row has at least one nonunique candidate; 39 also had other models producing a unique fit that failed the 8 held-out points. These are not mathematical proofs of a minimum rational-function degree; they reflect only the model pairs explored using 19 training points. Source sample digest `378559de8c0bfc52aa4bb10e6733f006618c7df817c5e1ee1f17a071864adf9a`. Next prefer new, geometrically independent same-prime training samples, holding the original 8 out entirely, and rank/degree diagnostics before extending models. Retain the 125 earlier holdout-passing finite-field candidates for independent checking. Fermat/Kira not run; exact symbolic proof and alias mapping remain unresolved.
+
+### 2026-10-21 Extend same-prime VP05 certificate training (grid-v3)
+
+Added `examples/three_loop_sector203_certificate_extend_training.py` and `run_vp05_extend_training_grid_v3.bat`. The former reads the previously replay-verified grid-v2 sample archive (19 training, 8 reserved holdouts), verifies its compressed-equation SHA256 against the local 166-row input, creates 20 extra independent same-prime training evaluations using a shifted 7-column grid, checks each through full modular certificate replay and rank=166, and writes a separate grid-v3 JSON (39 training, **original eight holdouts left unchanged**) atomically. It never overwrites v2. The runner then invokes the existing adaptive numerator/denominator (0..3) fitter against grid-v3 and outputs a separate adaptive grid-v3 JSON. The user has NOT yet run this new workflow. No Fermat/Kira, no exact Q(z,d) certificate or alias proof. The 125/166 previous successes and 41 unresolved (2 only nonunique, 39 mixed nonunique and failed candidates) motivated collecting more training points before increasing polynomial degree.
+
+Next user command:
+```powershell
+git pull
+.\run_vp05_extend_training_grid_v3.bat
+```
+Look for `VP05_TRAIN_EXTEND_SUMMARY` and `VP05_ADAPTIVE_DEGREE_SUMMARY` and compare to previous resolved_finite_field=125. The original eight holdouts remain reserved and should not enter the fitting equations.
