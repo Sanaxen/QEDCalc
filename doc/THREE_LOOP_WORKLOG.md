@@ -4944,3 +4944,8 @@ git pull
 .\run_vp05_dual_certificate_preflight.bat
 ```
 Look for `VP05_DUAL_CERT_POINT` and `VP05_DUAL_CERT_SUMMARY`; JSON: `output/three_loop_integral_family_audit/vp05_dual_certificate_preflight.json`. No relaxation of symbolic execution caps.
+
+
+### 2026-10-21 VP05 dual certificate preflight local results
+
+User reports all four sampled primes `(1000037,21,15)`, `(1001003,19,53)`, `(1001107,36,64)`, `(1002101,47,83)` return rank=166, target remainder size 0, certificate support=166/166, zero certificate rows=0, and `replay_verified=true`. `support_stable_across_points=true`, `symbolic_certificate_found=false`, `alias_mapping_verified=false`, `fermat_executed=false`, `proof=false`. Dense certificate rules out gains from **simple sparsity of this computed basis certificate**; it does not prove every possible certificate or another row basis must use 166 entries. Next focus on rational-function reconstruction of certificate coefficients from fresh evaluations (with independent held-out modular tests), exact `Q(z,d)` identity replay, and lifting the 166 compressed combination coefficients to the original 528 IBP equations. Guard against interpolation degree bounds, unlucky specializations, and the unresolved alias map. No large Fermat execution until certified resources.
