@@ -6,7 +6,10 @@ verified against the actual witness column encoding before conclusions.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
+import tempfile
 from pathlib import Path
 
 from examples.three_loop_sector203_fermat_probe import FOLDER
@@ -108,10 +111,20 @@ def main():
     ap.add_argument("--rows", type=int, default=528)
     ap.add_argument("--export-certificate", type=Path,
                     help="Write all sampled modular coefficient vectors and replay status to JSON")
+    ap.add_argument("--append-certificate", action="store_true",
+                    help="Append verified new samples to existing export, never overwrite incompatible source")
+    ap.add_argument("--extra-points", type=int, default=0,
+                    help="Number of additional deterministic modular points beyond original three (max 24)")
+    ap.add_argument("--holdout-points", type=int, default=0,
+                    help="Number of extra points reserved for independent validation (max 12)")
     ap.add_argument("--target-term", action="append", nargs=3,
                     metavar=("KEY", "SECTOR", "COEFFICIENT"),
                     help="Override default keys for I10,I6,I5; repeated triple")
     a = ap.parse_args()
+    if not 0 <= a.extra_points <= 24 or not 0 <= a.holdout_points <= 12:
+        ap.error("extra-points must be 0..24 and holdout-points 0..12")
+    if a.append_certificate and not a.export_certificate:
+        ap.error("--append-certificate requires --export-certificate")
     if not 1 <= a.rows <= 528:
         ap.error("rows must be 1..528")
     files = [a.equations.resolve()] if a.equations else sorted(
@@ -141,8 +154,25 @@ def main():
             "next": "Resolve key mapping against witness metadata; do not interpret missing keys as independent integrals",
             "proof": False}), flush=True)
         return
+    # Prime selections are deterministic; reserve later points as holdouts.
+    # Each point has a distinct modulus and avoids zero z,d.
+    extra_primes = (1000039, 1000087, 1000099, 1000117, 1000121, 1000133,
+        1000151, 1000159, 1000171, 1000183, 1000193, 1000199,
+        1000211, 1000213, 1000231, 1000249, 1000253, 1000273,
+        1000289, 1000291, 1000303, 1000313, 1000333, 1000357,
+        1000367, 1000381, 1000393, 1000397, 1000403, 1000423,
+        1000427, 1000429, 1000453, 1000457, 1000507, 1000537)
+    import sympy as sp
+    selected_primes = [p for p in extra_primes if sp.isprime(p) and p not in {x[0] for x in POINTS}]
+    required = a.extra_points + a.holdout_points
+    if required > len(selected_primes):
+        ap.error("Not enough distinct confirmed primes in configured grid")
+    grid = [(p, 31 + 2*i, 37 + 4*i) for i, p in enumerate(selected_primes[:required])]
+    point_roles = [(pt, "training") for pt in POINTS]
+    point_roles += [(pt, "training") for pt in grid[:a.extra_points]]
+    point_roles += [(pt, "holdout") for pt in grid[a.extra_points:]]
     exported = []
-    for p, z, d in POINTS:
+    for (p, z, d), role in point_roles:
         try:
             matrix = mod_rows(rows, p, z, d)
             target = {(k, sec): residue(v, p, z, d) for k, sec, v in terms}
@@ -153,26 +183,70 @@ def main():
                 "point": [p, z, d], "error": str(exc)}), flush=True)
             continue
         coeffs = result.pop("certificate_coefficients")
-        exported.append({"point": [p, z, d],
+        exported.append({"point": [p, z, d], "role": role,
                          "coefficients_by_original_row": [coeffs.get(j, 0) for j in range(len(rows))],
                          "replay_verified": result["certificate_original_equation_replay_verified"]})
         result.update({"point": [p, z, d], "proof": False})
         print("TARGET_ROWSPACE_POINT " + json.dumps(result), flush=True)
     if a.export_certificate:
-        if len(exported) != len(POINTS) or not all(x["replay_verified"] for x in exported):
+        if len(exported) != len(point_roles) or not all(x["replay_verified"] for x in exported):
             raise SystemExit("Certificate export blocked: not all points replay-verified")
         out = a.export_certificate.resolve()
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps({"type": "modular_target_certificate_samples",
-            "source": str(path), "rows": len(rows),
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        manifest = {"type": "modular_target_certificate_samples",
+            "source": str(path), "source_sha256": digest, "rows": len(rows),
             "target": [{"key": [k, sec], "coefficient": v} for k, sec, v in terms],
-            "alias_mapping_verified": False,
-            "proof": False,
-            "samples": exported}, indent=2) + "\n", encoding="utf-8")
+            "alias_mapping_verified": False, "proof": False, "samples": []}
+        existing_count = 0
+        if a.append_certificate and out.exists():
+            old = json.loads(out.read_text(encoding="utf-8-sig"))
+            # Earlier exports lacked an equation digest: refuse mixing without
+            # first verifying source and original three saved point vectors.
+            for field in ("type", "rows", "target"):
+                if old.get(field) != manifest[field]:
+                    raise SystemExit("Append blocked: mismatched "+field)
+            if old.get("source_sha256") not in (None, digest):
+                raise SystemExit("Append blocked: source SHA256 mismatch")
+            if old.get("source_sha256") is None:
+                if Path(old.get("source", "")).resolve() != path:
+                    raise SystemExit("Append blocked: legacy source path differs")
+            old_samples = old.get("samples", [])
+            if not isinstance(old_samples, list):
+                raise SystemExit("Append blocked: invalid prior samples")
+            fresh = {tuple(x["point"]): x for x in exported}
+            seen = set()
+            for old_sample in old_samples:
+                key = tuple(old_sample["point"])
+                if key in seen or not old_sample.get("replay_verified"):
+                    raise SystemExit("Append blocked: repeated or unverified prior point")
+                seen.add(key)
+                if key in fresh:
+                    if old_sample["coefficients_by_original_row"] != fresh[key]["coefficients_by_original_row"]:
+                        raise SystemExit("Append blocked: saved coefficient vector differs from recomputation")
+                    if old_sample.get("role", "training") != fresh[key]["role"]:
+                        raise SystemExit("Append blocked: saved role differs")
+                if len(old_sample["coefficients_by_original_row"]) != len(rows):
+                    raise SystemExit("Append blocked: incorrect saved vector length")
+            manifest["samples"] = old_samples[:]
+            existing_count = len(old_samples)
+        occupied = {tuple(x["point"]) for x in manifest["samples"]}
+        manifest["samples"].extend(x for x in exported if tuple(x["point"]) not in occupied)
+        if len({tuple(x["point"]) for x in manifest["samples"]}) != len(manifest["samples"]):
+            raise SystemExit("Append blocked: duplicate points")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        # Atomic replacement prevents a failed write corrupting prior samples.
+        fd, temporary = tempfile.mkstemp(prefix=out.name+".", suffix=".tmp", dir=str(out.parent))
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                json.dump(manifest, handle, indent=2)
+                handle.write("\\n")
+            os.replace(temporary, out)
+        finally:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
         print("TARGET_ROWSPACE_CERTIFICATE_EXPORTED " + json.dumps({
-            "file": str(out), "samples": len(exported),
+            "file": str(out), "samples": len(manifest["samples"]),
+            "prior_samples": existing_count, "new_samples": len(manifest["samples"])-existing_count,
+            "training_samples": sum(x.get("role", "training") == "training" for x in manifest["samples"]),
+            "holdout_samples": sum(x.get("role") == "holdout" for x in manifest["samples"]),
             "coefficients_per_sample": len(rows), "proof": False}), flush=True)
-
-
-if __name__ == "__main__":
-    main()
