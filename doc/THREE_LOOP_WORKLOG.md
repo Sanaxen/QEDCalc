@@ -5500,3 +5500,8 @@ User ran ten size<=20 group exact lifts: `attempted=10`, `total_verified=163`, r
 ### 2026-10-22 VP05 exact lift row 2 (33 witness source rows) PASS
 
 User `VP05_GROUP_BATCH_SUMMARY` from `--only-row 2 --max-groups 1 --max-group-size 33 --per-group-timeout 300 --stop-on-failure`: attempted 1, cumulative 164/166 exact local group provenance verified, remaining only compressed row 1 (36 witness rows) and row 0 (68 witness rows). No original-528 target replay yet. Next run `.\run_vp05_exact_group_batch.bat --only-row 1 --max-groups 1 --max-group-size 36 --per-group-timeout 300 --stop-on-failure`; preserve manifest and existing certificates.
+
+
+### 2026-10-22 VP05 exact group lift 165/166 PASS; final group row 0 size 68
+
+User `VP05_GROUP_BATCH_SUMMARY`: `attempted=1`, `total_verified=165`, `all_166_groups_verified=false`, `original_528_row_target_replay_verified=false`; targeted row 1 (36 witness rows) succeeds. Only compressed row 0 (68 witness rows) remains for exact groupwise provenance. Next run `.\run_vp05_exact_group_batch.bat --only-row 0 --max-groups 1 --max-group-size 68 --per-group-timeout 600 --stop-on-failure`, preserving existing manifest and proof files. Even if all 166 pass, must compose the existing 166-row target certificate through source lift weights and replay symbolic identity over the 528 original witness source equations separately before claiming original SYSTEM proof.
