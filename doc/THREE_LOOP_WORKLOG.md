@@ -4802,3 +4802,15 @@ Added `examples/three_loop_sector203_target_compressed_preflight.py` (`95731c9`)
 ### 2026-10-21 Compressed 166-row modular preflight succeeded locally
 
 User ran `python -m examples.three_loop_sector203_target_compressed_preflight`: input 166 rows, 400 columns, 1985 terms. All four points `(1000037,21,15)`, `(1001003,19,53)`, `(1001107,36,64)`, `(1002101,47,83)` reported rank 166, exactly 1745 modular echelon operations, target z I10 - 2 I6 + 2 I5 in rowspace, zero remainder, 27 target elimination steps, 166 nonzero original-compressed-row certificate coefficients, and replay verification true. Summary: `all_rank_166=true`, `all_target_in_rowspace=true`, `all_replayed=true`, `all_under_operation_cap=true`, `proof=false`. Compared with original 528-row case (18171 operations), modular operation reduction is about 90.4%. **These metrics are NOT a Fermat runtime preflight; symbolic coefficient growth and resource usage are unmeasured.** Next phase: adapt Fermat pilot to accept compressed witness format and run its preflight-only size/resource audit before enabling a strictly capped experimental symbolic run. The original 528-row Fermat gate remains in effect; alias mapping and Q(z,d) target identity still unproven.
+
+
+### 2026-10-21 Session restart: safe compressed Fermat resource preflight
+
+On resuming from the 166-row / 400-column / 1985-term modular preflight, confirmed that `examples/three_loop_sector203_fermat_gaussian_pilot.py` already supports an explicit `--equations` file, `--rows 166`, sparse-array modes, and `--preflight-only`. No new Kira/Fermat calculation has been executed in this session. Run the following **resource-estimate-only** command on the user's Windows checkout (active branch `feature/master-basis-initiate-only`):
+
+```powershell
+git pull
+python -m examples.three_loop_sector203_fermat_gaussian_pilot --equations output/three_loop_integral_family_audit/vp05_target_symbolic_compressed.equations.json --rows 166 --max-rows 320 --preflight-only --prune-eliminated-pivots --sparse-array-rows --packed-sparse-maps --reuse-packed-maps --loop-control-rows --prune-dead-rows --verify-last-rows 1 --analyze-row-lifetimes
+```
+
+Inspect `FERMAT_GAUSS_PILOT_START`, `FERMAT_GAUSS_LIFETIMES`, and `FERMAT_GAUSS_PREFLIGHT` for operations, emitted outputs, commands, peak live cells and caps. The last-row verification is a **planning proxy only**, not proof of target membership; symbolic Fermat cost is not inferred from 1745 modular operations. Do not launch full symbolic run or loosen caps until preflight figures are reviewed. Next implement an exact **target-only** elimination/certificate path that proves `z I_(10,203) - 2 I_(6,203) + 2 I_(5,201) = 0` by symbolic zero residual; preserve the original 528-row provenance and verify alias assumptions separately.
