@@ -38,7 +38,7 @@ def target_trace(rows, pivots, p, z, d):
 
 def dependency_closure(schedule, initial):
     needed=set(initial)
-    pending=list(initial)
+    pending=list(needed)
     while pending:
         row=pending.pop()
         for owner,_ in schedule[row][0]:
