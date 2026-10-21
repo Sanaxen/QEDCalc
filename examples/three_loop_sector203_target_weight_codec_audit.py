@@ -16,7 +16,7 @@ TARGET=((10,203),(6,203),(5,201))
 def main():
  p=argparse.ArgumentParser()
  p.add_argument("--project",type=Path,default=DEFAULT_PROJECT)
- p.add_argument("--codec-file",type=Path,required=True,help="External Kira bootloops-tools pyred_weight.py (GPL), never vendored")
+ p.add_argument("--codec-file",type=Path,default=Path("output/tools/pyred_weight.py"),help="External Kira bootloops-tools pyred_weight.py (default: output/tools/pyred_weight.py; never vendored)")
  p.add_argument("--certificate",type=Path,default=CERT)
  p.add_argument("--witness",type=Path,default=WITNESS)
  p.add_argument("--output",type=Path,default=Path("output/three_loop_integral_family_audit/vp05_target_weight_codec_audit.json"))
