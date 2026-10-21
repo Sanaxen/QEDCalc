@@ -4917,3 +4917,18 @@ git pull
 ```
 
 If reduction is material, next engineering stage is a true small-scale incremental sparse row executor with per-operation symbolic support bookkeeping and exact/Fermat replay compared to the existing pilot, plus explicit array/release semantics checks before any 166-row execution. Keep alias and exact Q(z,d) target certificate unresolved.
+
+
+### 2026-10-21 Incremental storage preflight outcome: insufficient gain
+
+User ran `run_vp05_incremental_storage_preflight.bat`. All four finite-field points reported the same schedule and:
+```text
+pilot_total=31840; pilot_peak=27863
+persistent_candidate_total=31143; persistent_candidate_peak=27232
+potential_allocated_cell_reduction=697
+potential_peak_cell_reduction=631 (~2.26%)
+candidate_within_20000=false
+transient_pivot_key_count_total=697
+fermat_executed=false; proof=false; implementation_ready=false
+```
+Thus simply separating transient pivot coefficients has limited projected benefit and still exceeds the 20000-cell guard by 7232 even with optimistic release assumptions. Do not implement this experimental layout as the primary scaling fix or raise the resource cap on the strength of this estimate. Prefer a distinct target-certificate algorithm with a bounded no-Fermat preflight, preserving exact original-row provenance and independently verifying the rational-function target identity and integral-key aliases before claiming proof.
