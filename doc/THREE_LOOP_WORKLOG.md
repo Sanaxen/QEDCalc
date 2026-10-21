@@ -4841,3 +4841,15 @@ within_caps=false; result=ESTIMATE_ONLY; proof=false
 ```
 
 Interpretation: the original array cap is exceeded by 10788 cells (53.94%). Even the purely modeled lifetime-based peak of 27863 cells exceeds the same 20000-cell cap by 7863 cells (39.315%). Thus **merely enabling experimental row release would not pass the existing cap**. The 27863 figure is an accounting estimate, not RSS or Fermat allocation measurement. Also, verifying the last row is not a certificate for the specific target. Do not raise `--max-array-cells`, run the 166-row symbolic pilot, or imply 1745 modular operations represent Fermat expression growth. Next work: engineer target-specific backward reachability, output only a target residual/certificate (rather than 370 final-row coefficients), and repeat the non-executing resource preflight. Then separately validate pointer aliasing and row-release correctness on a tiny symbolic run before considering an exact VP05 target run. Preserve original 528-row provenance and the outstanding integral-key alias caveat.
+
+
+### 2026-10-21 VP05 target-only dependency-scope preflight implemented
+
+Added `examples/three_loop_sector203_target_scope_preflight.py` and `run_vp05_target_scope_preflight.bat` (commits `a35445b`, `3ab8964`, `70fb723`). The new script reads the user's local compressed symbolic 166-row equations, performs four independent finite-field checks, derives each sampled target-elimination pivot-owner trace, walks the owner-row backward-dependency graph in the matching modular row-echelon schedule, and prints dependency-row counts, dependency operations, estimated retained-array cells and a hypothetical live-cell peak. It writes `output/three_loop_integral_family_audit/vp05_target_scope_preflight.json`. **No Fermat or Kira call is made.** These are finite-field scheduling hypotheses, not authorization to prune any rows symbolically; pointwise-zero factors may be generically nonzero. Exact target identity and integral-key aliases are still unresolved. Next local command:
+
+```powershell
+git pull
+.\run_vp05_target_scope_preflight.bat
+```
+
+Compare `VP05_TARGET_SCOPE_POINT` across points, especially pivot schedule agreement and dependency-row/operation counts. An absent or different sampled pivot schedule must be handled conservatively before implementing target-only Fermat execution. The new tool has not yet been run on the user's local 166-row JSON.
