@@ -4814,3 +4814,8 @@ python -m examples.three_loop_sector203_fermat_gaussian_pilot --equations output
 ```
 
 Inspect `FERMAT_GAUSS_PILOT_START`, `FERMAT_GAUSS_LIFETIMES`, and `FERMAT_GAUSS_PREFLIGHT` for operations, emitted outputs, commands, peak live cells and caps. The last-row verification is a **planning proxy only**, not proof of target membership; symbolic Fermat cost is not inferred from 1745 modular operations. Do not launch full symbolic run or loosen caps until preflight figures are reviewed. Next implement an exact **target-only** elimination/certificate path that proves `z I_(10,203) - 2 I_(6,203) + 2 I_(5,201) = 0` by symbolic zero residual; preserve the original 528-row provenance and verify alias assumptions separately.
+
+
+### 2026-10-21 One-command VP05 compressed Fermat preflight runner
+
+Added `run_vp05_target_fermat_preflight.bat` (commit `d4761a9`) to run the existing 166-row Gaussian pilot in **preflight-only** mode against `output/three_loop_integral_family_audit/vp05_target_symbolic_compressed.equations.json`. It checks the local JSON exists, selects compatible modular schedules using `--auto-points`, estimates last-row backward dependency closure, sparse arrays/maps and live-cell occupancy, and propagates a nonzero exit code on error. It **does not start Fermat/Kira** and **does not prove** the target identity; last-row verification is a resource-planning proxy only. The runner has not yet been tested on the user's locally generated 166-row JSON. Next user command: `git pull` then `.\run_vp05_target_fermat_preflight.bat`; inspect `FERMAT_GAUSS_PREFLIGHT` and lifetime summaries before deciding whether to engineer a target-only exact certificate path. The original 528-row >320 Fermat guard remains unchanged.
