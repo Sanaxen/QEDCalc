@@ -36,7 +36,7 @@ def main():
    "memory_or_swap_observation_present":bool(re.search(r"MemAvailable|Swap|memory|swap|meminfo",code,re.I)),
    "elapsed_time_observation_present":bool(re.search(r"monotonic|time\.time|perf_counter",code)),
    "stop_threshold_option_present":any("stop" in s for s in options),
-   "maximum_runtime_option_present":any(x in s for s in options for x in ("duration","timeout","max-hours")),
+   "maximum_runtime_option_present":any(x in s for s in options for x in ("duration","timeout","max-hours","max-seconds")),
    "project_root_guard_present":bool(re.search(r"project root",code,re.I)),
    "log_overwrite_refusal_present":bool(re.search(r"refusing to overwrite",code,re.I))
   }
