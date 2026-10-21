@@ -3,22 +3,13 @@ from __future__ import annotations
 import argparse,json,os,resource,shutil,signal,subprocess,tempfile,time
 from pathlib import Path
 from examples.three_loop_sector203_kira_schema_isolated_probe import FAMILY,JOB,KIN,GIB,find_fermat,memory
+from examples.three_loop_sector203_full_stage_guarded_run import cleanup_group
 
 def resource_alarm(floor,ceil):
  d=memory()
  if d.get("MemAvailable",0)<=floor*GIB:return "ram_floor"
  if (d.get("SwapTotal",0)-d.get("SwapFree",0))>=ceil*GIB:return "swap_ceiling"
  return None
-
-def stop(proc):
- try:os.killpg(proc.pid,signal.SIGKILL)
- except ProcessLookupError:pass
- try:proc.wait(timeout=3)
- except subprocess.TimeoutExpired:pass
-
-def gone(pgid):
- try:os.killpg(pgid,0);return False
- except ProcessLookupError:return True
 
 def exercise(kira,fermat,root,name,force,seconds,floor,ceil):
  work=root/name
@@ -47,10 +38,10 @@ def exercise(kira,fermat,root,name,force,seconds,floor,ceil):
    if time.monotonic()-start>=seconds:reason="time_ceiling";break
    time.sleep(.1)
   if reason=="completed":proc.wait(timeout=3)
- finally:stop(proc)
+ finally:cleanup=cleanup_group(proc)
  output=logpath.read_bytes()[-3500:].decode("utf-8","replace")
  return {"case":name,"reason":reason,"returncode":proc.returncode,"samples":samples,
-  "process_reaped":proc.poll() is not None,"process_group_gone":gone(proc.pid),
+  **cleanup,
   "toy_reduction_finished":reason=="completed" and proc.returncode==0 and "Back substitution" in output,
   "stdout_tail":output[-1600:]}
 
@@ -76,10 +67,10 @@ def main():
     root=Path(td)
     normal=exercise(str(Path(kira).resolve()),fermat,root,"normal",False,a.normal_max_seconds,a.min_mem_available_gib,a.max_swap_used_gib)
     report["cases"].append(normal)
-    if normal["toy_reduction_finished"] and normal["process_group_gone"]:
+    if normal["toy_reduction_finished"] and normal["process_group_gone"] and normal["process_reaped"] and not normal["members_after_cleanup"]:
      forced=exercise(str(Path(kira).resolve()),fermat,root,"forced",True,a.forced_stop_seconds,a.min_mem_available_gib,a.max_swap_used_gib)
      report["cases"].append(forced)
-     report["status"]="PASS_REAL_KIRA_MONITOR_SMOKE" if forced["reason"]=="time_ceiling" and forced["process_reaped"] and forced["process_group_gone"] else "FORCED_STOP_NOT_VERIFIED"
+     report["status"]="PASS_REAL_KIRA_MONITOR_SMOKE" if forced["reason"]=="time_ceiling" and forced["process_reaped"] and forced["process_group_gone"] and not forced["members_after_cleanup"] else "FORCED_STOP_NOT_VERIFIED"
     else:report["status"]="NORMAL_KIRA_CASE_FAILED"
  except Exception as exc:report["status"]="MONITOR_SMOKE_ERROR";report["error"]=repr(exc)
  finally:
