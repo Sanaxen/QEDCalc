@@ -5015,3 +5015,10 @@ git pull
 .\run_vp05_interpolation_grid_v2.bat
 ```
 Holdouts remain separate; require rank-aware model diagnosis, not blanket degree inflation, if nullity is still >1.
+
+
+### 2026-10-21 VP05 corrected 2D-grid interpolation results
+
+User executed `run_vp05_same_prime_certificate_grid_v2.bat`: p=1000037, 19 training and 8 holdouts, no rejected points; compressed source SHA256 `905d64eb4156b7e332d0445193c851d6a683ef89582df9de0a79612929a3d9fc`. Then `run_vp05_interpolation_grid_v2.bat`: degree=3, monomial evaluation rank=10/10 (no grid deficiency), kernel nullity histogram `{1:93,2:56,3:1,4:7,6:5,7:3,10:1}`. Of 166 compressed certificate components, **55** one-dimensional rational ansatz candidates passed all eight holdouts, **38** were unique on training points but failed holdouts, **73** were nonunique and were not holdout-tested. No singular-training cases. Sample SHA256 `378559de8c0bfc52aa4bb10e6733f006618c7df817c5e1ee1f17a071864adf9a`. `all_holdouts_pass=false,proof=false,fermat_executed=false`.
+
+The 55 are finite-field hypotheses, not exact rational coefficient proofs. Important: `nonunique` does not imply higher minimal degree; polynomial gcd/common-factor normalization and adaptive (numerator_degree,denominator_degree) fitting should be attempted. For 38 failures, consider genuinely higher degrees, additional independent training/holdout points and evaluation design. Avoid approving large symbolic Fermat; keep 20000-cell guard. Eventually verify reconstructed coefficients over Q(z,d), replay certificate against compressed rows and original 528 equations, and resolve integral-key aliases.
