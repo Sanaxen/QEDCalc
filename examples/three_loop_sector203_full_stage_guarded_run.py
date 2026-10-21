@@ -20,7 +20,7 @@ def parse_one_target(path):
 
 ACK="EXECUTE_ISOLATED_VP05_SINGLE_TARGET"
 AUDIT=Path("output/three_loop_integral_family_audit")
-DEST=Path("output/vp05_full_stage_kira_experiment_03")
+DEST=Path("output/vp05_full_stage_kira_experiment_04")
 
 def digest(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 def progress_from_log(log):
@@ -102,11 +102,11 @@ def main():
  p.add_argument("--acknowledge",default="")
  p.add_argument("--max-seconds",type=int,default=30)
  p.add_argument("--address-space-gib",type=int,default=0,help="RLIMIT_AS GiB; 0 disables this virtual address cap")
- p.add_argument("--max-group-rss-gib",type=float,default=4,help="Observed combined process-group resident-memory stop threshold")
+ p.add_argument("--max-group-rss-gib",type=float,default=8,help="Observed combined process-group resident-memory stop threshold")
  p.add_argument("--min-mem-available-gib",type=float,default=4)
  p.add_argument("--max-swap-used-gib",type=float,default=12)
  p.add_argument("--fermat",default="/home/yamatoyamato/fermat/Ferl7/fer64")
- p.add_argument("--output",type=Path,default=AUDIT/"vp05_full_stage_guarded_run_03.json")
+ p.add_argument("--output",type=Path,default=AUDIT/"vp05_full_stage_guarded_run_04.json")
  a=p.parse_args()
  report_path=a.output if a.execute_vp05 else a.output.with_name(a.output.stem+"_dry_run.json")
  if not 10<=a.max_seconds<=600 or a.min_mem_available_gib<2 or a.max_swap_used_gib<=0 or not 0<=a.address_space_gib<=16 or not 2<=a.max_group_rss_gib<=8:p.error("unsafe limits")
@@ -121,6 +121,7 @@ def main():
  check["destination_absent"]=not DEST.exists() and not DEST.is_symlink()
  check["original_experiment_preserved"]=Path("output/vp05_full_stage_kira_experiment").is_dir()
  check["second_experiment_preserved"]=Path("output/vp05_full_stage_kira_experiment_02").is_dir()
+ check["third_experiment_preserved"]=Path("output/vp05_full_stage_kira_experiment_03").is_dir()
  check["report_path_unused"]=not report_path.exists()
  manifest=CAPSULE/"CAPSULE_REVIEW_ONLY.json"
  data=json.loads(manifest.read_text(encoding="utf-8-sig")) if manifest.is_file() else {}
@@ -166,7 +167,7 @@ def main():
     while proc.poll() is None:
      sample=group_memory_mib(proc.pid)
      sample["elapsed_seconds"]=round(time.monotonic()-(deadline-a.max_seconds),2)
-     mon.write(json.dumps(sample,ensure_ascii=False)+"\\n")
+     mon.write(json.dumps(sample,ensure_ascii=False)+"\n")
      mon.flush()
      measurements.append(sample)
      peak_rss=max(peak_rss,sample["rss_mib"])
