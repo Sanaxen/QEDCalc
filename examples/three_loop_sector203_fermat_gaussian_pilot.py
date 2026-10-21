@@ -381,9 +381,12 @@ def main():
                     script.append("[pv] := [("+",".join(str(row_maps[i][p]) for _,p,_,_ in spans)+")]")
                     script.append("[lo] := [("+",".join(str(first) for _,_,first,_ in spans)+")]")
                     script.append("[hi] := [("+",".join(str(last) for _,_,_,last in spans)+")]")
-                    script.append("for t = 1,{} do".format(len(spans)))
-                    script.append("fac := r{}[pv[t]]".format(i))
-                    script.append("for j = lo[t],hi[t] do r{}[dm[j]] := r{}[dm[j]] - fac*%[ow[t]][sm[j]] od".format(i,i))
+                    # Fermat's interactive terminal input REQUIRES backtick
+                    # continuation between physical lines of a compound loop.
+                    # Semicolons separate the statements inside its body.
+                    script.append("for t = 1,{} do `".format(len(spans)))
+                    script.append("fac := r{}[pv[t]]; `".format(i))
+                    script.append("for j = lo[t],hi[t] do r{}[dm[j]] := r{}[dm[j]] - fac*%[ow[t]][sm[j]] od `".format(i,i))
                     script.append("od")
                 else:
                     for owner,pivot,first,last in spans:
