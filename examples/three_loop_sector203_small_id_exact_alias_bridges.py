@@ -63,7 +63,7 @@ def main():
         consistent=all_decoded and len(decoded)>=1
         results.append({"small_key":list(key),"exact_unit_two_term_bridges":len(items),
             "all_decoded":all_decoded,"all_bridges_decoded":consistent,"different_but_equivalent_exponent_tuples":len(decoded),
-            "alias_exponents":list(next(iter(decoded))) if consistent else None,
+            "alias_exponents":list(sorted(decoded)[0]) if consistent else None,
             "bridges":items})
     bykey={tuple(x["small_key"]):x for x in results}
     target_results=[]
