@@ -4977,3 +4977,17 @@ git pull
 .\run_vp05_certificate_reconstruction_design.bat
 ```
 Output `VP05_RECON_DESIGN_SUMMARY`, `VP05_RECON_DEGREE` and JSON `output/three_loop_integral_family_audit/vp05_certificate_reconstruction_design.json`. No 166-row symbolic execution has been authorized.
+
+
+### 2026-10-21 VP05 rational reconstruction design PASS and same-prime sampling implemented
+
+User ran `run_vp05_certificate_reconstruction_design.bat`. Results: six saved certificate samples, four training plus two holdouts, all six in **different** prime fields (`max_training_points_at_one_prime=1`). All 166 coefficients included, `models_count=49`. Generic projective coefficient counts for (numerator,total denominator degree) equal bounds: (1,1)->5, (2,2)->11, (3,3)->19, (4,4)->29, (6,6)->55. Suggested points with eight holdouts: 13,19,27,37,63. These are generic unknown-count lower bounds; must verify interpolation matrix rank, degree bounds, denominator nonzeros, and independent checks. No exact symbolic proof.
+
+New `examples/three_loop_sector203_same_prime_certificate_samples.py` and `run_vp05_same_prime_certificate_samples.bat` collect 19 training + 8 reserved holdout coefficient vectors from a single prime `1000037` at distinct deterministic two-variable points (bounded 120 attempts), checking rank=166 and independently replaying target at every accepted point. Save source-SHA256-anchored JSON `output/three_loop_integral_family_audit/vp05_same_prime_certificate_samples.json` atomically. The sampling grid is for eventual bounded-degree (3,3) hypotheses and may still be degenerate; rank test for interpolation is a separate future step. The 8 holdouts must not be used for fitting. No Fermat/Kira, no proof and no cap changes.
+
+Local:
+```powershell
+git pull
+.\run_vp05_same_prime_certificate_samples.bat
+```
+Look for `VP05_SAME_PRIME_PROGRESS`, `VP05_SAME_PRIME_SUMMARY`. Sampling work is finite-field computations, potentially longer than earlier 4-point checks.
