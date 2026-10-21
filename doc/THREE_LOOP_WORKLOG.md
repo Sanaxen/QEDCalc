@@ -5252,3 +5252,7 @@ The witness producer was identified unambiguously as `examples/three_loop_sector
 ### 2026-10-21 VP05 528-row raw SYSTEM replay passed
 
 Correct L2 producer project has 2678 equations in 14 SYSTEM files. The exact transcription replay confirmed all 528 selected rows, all 3769 terms, zero mismatches (`exact_source_transcription_verified=true`). Target key counts in raw source: (10,203)=37, (6,203)=24, (5,201)=51. Selected rows: 29, 7, 10. This completes literal source linkage for the previously verified 166-group compressed and 400-column rational certificate. Correct-project codec/exponent mapping and propagator semantics remain unverified.
+
+### 2026-10-21 Correct-project VP05 target codec audit
+
+Updated `examples/three_loop_sector203_target_codec_alias_audit.py` to use the correct `r6s6d1_truncate_sp_l2` witness-producer project by default (importing `DEFAULT` from `three_loop_sector203_l2_witness_subset`), rather than the unrelated older `r5s6d0` project. Added source guard: exactly 2678 SYSTEM records and all three target keys present in raw terms before attempting database codec decoding. Project provenance to original 528 rows is already exact (528 rows, 3769 terms). The corrected codec audit has **not yet run**; check results after user runs `.\run_vp05_target_codec_alias_audit.bat <external pyred_weight.py path>`. No physical 12-exponent mapping is claimed until codec and explicit topology alignment are verified.
