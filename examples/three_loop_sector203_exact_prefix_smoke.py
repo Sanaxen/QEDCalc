@@ -25,7 +25,7 @@ def main():
     ap.add_argument("--rows",type=int,default=3)
     ap.add_argument("--max-seconds",type=float,default=30)
     args=ap.parse_args()
-    if not 1<=args.rows<=5:ap.error("Exact prefix smoke test is strictly limited to 1..5 rows")
+    if not 1<=args.rows<=6:ap.error("Exact prefix smoke test is strictly limited to 1..6 rows")
     if args.max_seconds<=0:ap.error("--max-seconds must be positive")
     source=json.loads(args.equations.read_text(encoding="utf-8-sig"))
     plan=json.loads(args.plan.read_text(encoding="utf-8-sig"))
@@ -75,7 +75,7 @@ def main():
         if time.monotonic()-start>args.max_seconds:raise TimeoutError("Exact-prefix budget reached")
         print("VP05_EXACT_PREFIX_ROW "+json.dumps({
             "row_zero_based":i,"normalized_columns":len(normalized[i]),
-            "source_rows_in_certificate":len(combinations[i]),"symbolic_source_replay_verified":True,
+            "source_rows_in_certificate":len(combinations[i]),"pivot_elimination_operations":len(ops),"symbolic_source_replay_verified":True,
             "full_target_proof":False}),flush=True)
     print("VP05_EXACT_PREFIX_SUMMARY "+json.dumps({
         "rows_verified":args.rows,"symbolic_replay_all":True,
