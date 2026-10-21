@@ -4960,3 +4960,8 @@ Local command:
 git pull
 .\run_vp05_certificate_sample_export.bat
 ```
+
+
+### 2026-10-21 VP05 compressed modular certificate sample export PASS
+
+User executed `run_vp05_certificate_sample_export.bat`. All 4 training points `(1000037,21,15)`, `(1001003,19,53)`, `(1001107,36,64)`, `(1002101,47,83)` and 2 reserved holdouts `(1003001,17,71)`, `(1004027,43,29)` passed modular target replay. Each sample has all 166 nonzero coefficients. Output `output/three_loop_integral_family_audit/vp05_compressed_certificate_samples.json` SHA256 of source compressed symbolic equations `905d64eb4156b7e332d0445193c851d6a683ef89582df9de0a79612929a3d9fc`. `fermat_executed=false`, `proof=false`. This confirms six consistent numerical certificates but does not bound rational-function degrees, show unique interpolation, verify exact zero over Q(z,d), or establish integral alias mapping. Before interpolation implementation, design a bounded-degree or adaptive reconstruction using sufficiently many distinct points, independent fresh holdouts, and exact symbolic replay.
