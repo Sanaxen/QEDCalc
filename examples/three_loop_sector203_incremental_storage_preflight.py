@@ -3,7 +3,7 @@
 No Fermat/Kira. This is a structural proposal, NOT an executable proof.
 A row's intermediate pivot coefficients are needed only until that pivot is
 eliminated. The original sparse pilot permanently reserves every such key.
-This audit computes a safe per-row upper bound for incremental mutable storage:
+This audit computes an exploratory lower-storage candidate, NOT a safe upper bound:
 initial support + normalized destination support + maximum simultaneous pivot
 scratch (one factor). Does not assume modular zeros are symbolic zeros.
 """
@@ -47,7 +47,7 @@ def estimate(rows,schedule):
             if val>mx:mx,at=val,i
             live={j for j in live if last[j]>i}
         return mx,at
-    # Candidate persistent keys = union of input and post-elimination support.
+    # Candidate persistent keys = union of input and post-elimination support.\n    # Intermediate supports can be larger: savings are hypotheses only.
     # Scratch is a separate scalar factor and is not a persistent row cell.
     fixed_peak,fixed_at=peak(fixed_sizes)
     pilot_peak,pilot_at=peak(pilot_sizes)
