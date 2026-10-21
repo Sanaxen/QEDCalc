@@ -131,7 +131,9 @@ def main():
     ap.add_argument("--fermat",default="/home/yamatoyamato/fermat/Ferl7/fer64")
     a=ap.parse_args()
     assert sp.cancel(sp.sympify(explicit_multiplication("((-z)d+2z+2)/(2z)"),locals={"z":sp.Symbol("z"),"d":sp.Symbol("d")})-(-sp.Symbol("z")*sp.Symbol("d")+2*sp.Symbol("z")+2)/(2*sp.Symbol("z")))==0
-    if not 1<=a.rows<=a.max_rows<=320:ap.error("pilot bounded to 1..320 rows")
+    if not 1<=a.rows<=a.max_rows<=528:ap.error("pilot bounded to 1..528 rows")
+    if a.rows>320 and not a.preflight_only:
+        ap.error("rows above 320 are PRE-FLIGHT ONLY pending scale and memory validation; use --preflight-only")
     if a.sparse_array_rows and a.array_loop_rows:ap.error("select only one array mode")
     if a.packed_sparse_maps and not a.sparse_array_rows:ap.error("--packed-sparse-maps requires --sparse-array-rows")
     if a.reuse_packed_maps and not a.packed_sparse_maps:ap.error("--reuse-packed-maps requires --packed-sparse-maps")
@@ -149,7 +151,7 @@ def main():
     path=paths[-1]
     rows=json.loads(path.read_text(encoding="utf-8-sig"))["rows"][:a.rows]
     columns=sorted({tuple(t["key"]) for r in rows for t in r["terms"]},key=order)
-    if len(columns)>600:ap.error("too many distinct columns for this pilot")
+    if len(columns)>800:ap.error("too many distinct columns for this pilot")
     bycol={k:n for n,k in enumerate(columns)}
     start=time.perf_counter()
     points=POINTS
