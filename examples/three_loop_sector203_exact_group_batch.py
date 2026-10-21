@@ -25,7 +25,9 @@ def main():
  p.add_argument("--max-group-size",type=int,default=4)
  p.add_argument("--per-group-timeout",type=int,default=120)
  p.add_argument("--stop-on-failure",action="store_true")
+ p.add_argument("--only-row",type=int,default=None,help="Attempt only this compressed row index")
  a=p.parse_args()
+ if a.only_row is not None and not 0<=a.only_row<166:p.error("only-row out of bounds")
  if not 1<=a.max_groups<=166:p.error("max-groups out of bounds")
  if not 1<=a.max_group_size<=68:p.error("max-group-size out of bounds")
  if not 1<=a.per_group_timeout<=3600:p.error("per-group-timeout out of bounds")
@@ -42,7 +44,7 @@ def main():
  else:
   state={**identity,"success":{},"attempts":{},"full_exact_lift_verified":False,
          "original_528_row_target_replay_verified":False}
- todo=sorted(range(166),key=lambda i:(len(groups[i]["original_rows"]),i))
+ todo=([a.only_row] if a.only_row is not None else sorted(range(166),key=lambda i:(len(groups[i]["original_rows"]),i)))
  attempts=0
  for i in todo:
   n=len(groups[i]["original_rows"])
