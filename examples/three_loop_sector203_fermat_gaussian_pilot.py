@@ -100,6 +100,8 @@ def main():
     ap.add_argument("--equations",type=Path)
     ap.add_argument("--rows",type=int,default=12)
     ap.add_argument("--max-rows",type=int,default=320)
+    ap.add_argument("--analyze-row-lifetimes",action="store_true",
+        help="preflight only: estimate peak retained row coefficient cells by last owner use")
     ap.add_argument("--loop-control-rows",action="store_true",
         help="EXPERIMENTAL: Fermat pointer-based row elimination control loop")
     ap.add_argument("--reuse-packed-maps",action="store_true",
@@ -137,6 +139,7 @@ def main():
     if a.max_commands<100 or a.max_outputs<1:ap.error("invalid command/output cap")
     if a.max_array_cells<1 or a.max_map_cells<1:ap.error("invalid array/map cell cap")
     if a.verify_last_rows<0:ap.error("--verify-last-rows must be >=0")
+    if a.analyze_row_lifetimes and not a.preflight_only:ap.error("--analyze-row-lifetimes requires --preflight-only")
     paths=[a.equations.resolve()] if a.equations else sorted(FOLDER.glob("vp05_candidate4_witness_*.equations.json"))
     if not paths:ap.error("No exported witness file")
     path=paths[-1]
@@ -429,6 +432,47 @@ def main():
     packed_map_cells_written=sum(len(expected[owner])-int(pivot in expected[owner]) for i in needed for owner,pivot in schedule[i][0])*2 if a.packed_sparse_maps else 0
     packed_map_cells=max_packed_row_cells if a.reuse_packed_maps else packed_map_cells_written
     control_cells=4*max((len(schedule[i][0]) for i in needed),default=0) if a.loop_control_rows else 0
+    lifetime_report=None
+    if a.analyze_row_lifetimes:
+        if not (a.sparse_array_rows and a.prune_dead_rows):
+            ap.error("row lifetime analysis requires --sparse-array-rows --prune-dead-rows")
+        # Owners must remain available through their last dependency. Final
+        # verification rows must remain until output emission after the loop.
+        last_use={i:i for i in needed}
+        for i in needed:
+            for owner,_ in schedule[i][0]:
+                if owner not in needed:
+                    raise RuntimeError("owner row absent from dependency closure")
+                last_use[owner]=max(last_use[owner],i)
+        for i in range(first_verify,len(rows)):
+            if i in needed:last_use[i]=len(rows)
+        sizes={i:len(row_maps[i]) for i in needed}
+        active=set()
+        peak=0
+        peak_row=-1
+        peak_rows=0
+        releases=0
+        released_cells=0
+        # At each row: allocate the current coefficient array, execute the
+        # scheduled reductions, then release owners with no future use.
+        for i in range(len(rows)):
+            if i in needed:active.add(i)
+            total=sum(sizes[j] for j in active)
+            if total>peak:
+                peak=total
+                peak_row=i
+                peak_rows=len(active)
+            finished={j for j in active if last_use[j]<=i}
+            releases+=len(finished)
+            released_cells+=sum(sizes[j] for j in finished)
+            active.difference_update(finished)
+        lifetime_report={"peak_live_cells":peak,"peak_row_zero_based":peak_row,
+            "peak_live_rows":peak_rows,"allocated_cells_total":sum(sizes.values()),
+            "releasable_rows_before_outputs":releases,
+            "releasable_cells_before_outputs":released_cells,
+            "retained_cells_for_outputs":sum(sizes[j] for j in active),
+            "analysis_only":True,"memory_reclamation_implemented":False}
+        print("FERMAT_GAUSS_LIFETIMES "+json.dumps(lifetime_report),flush=True)
     print("FERMAT_GAUSS_PILOT_START "+json.dumps({"rows":len(rows),"columns":len(columns),
         "rank":len(basepivots),"operations":sum(len(x[0]) for x in schedule),
         "outputs":len(output_keys),"commands":len(script),"verified_rows":len(rows)-first_verify,"pivot_pruning":a.prune_eliminated_pivots,"dead_row_pruning":a.prune_dead_rows,"live_rows":len(needed),"array_loop_rows":a.array_loop_rows,"array_cells":storage_cells,"sparse_array_rows":a.sparse_array_rows,"packed_sparse_maps":a.packed_sparse_maps,"packed_map_cells":packed_map_cells,"packed_map_cells_written":packed_map_cells_written,"reuse_packed_maps":a.reuse_packed_maps,"loop_control_rows":a.loop_control_rows,"control_cells":control_cells,"file":str(path)}),flush=True)
