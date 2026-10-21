@@ -115,14 +115,16 @@ def main():
                     help="Append verified new samples to existing export, never overwrite incompatible source")
     ap.add_argument("--extra-points", type=int, default=0,
                     help="Number of additional deterministic modular points beyond original three (max 24)")
+    ap.add_argument("--offgrid-holdouts", type=int, default=0,
+                    help="Add independent-prime holdouts away from the two existing z,d lines (max 8)")
     ap.add_argument("--holdout-points", type=int, default=0,
                     help="Number of extra points reserved for independent validation (max 12)")
     ap.add_argument("--target-term", action="append", nargs=3,
                     metavar=("KEY", "SECTOR", "COEFFICIENT"),
                     help="Override default keys for I10,I6,I5; repeated triple")
     a = ap.parse_args()
-    if not 0 <= a.extra_points <= 24 or not 0 <= a.holdout_points <= 12:
-        ap.error("extra-points must be 0..24 and holdout-points 0..12")
+    if not 0 <= a.extra_points <= 24 or not 0 <= a.holdout_points <= 12 or not 0 <= a.offgrid_holdouts <= 8:
+        ap.error("extra-points must be 0..24, holdout-points 0..12 and offgrid-holdouts 0..8")
     if a.append_certificate and not a.export_certificate:
         ap.error("--append-certificate requires --export-certificate")
     if not 1 <= a.rows <= 528:
@@ -171,6 +173,13 @@ def main():
     point_roles = [(pt, "training") for pt in POINTS]
     point_roles += [(pt, "training") for pt in grid[:a.extra_points]]
     point_roles += [(pt, "holdout") for pt in grid[a.extra_points:]]
+    offgrid = [(int(sp.nextprime(1001000 + 100*i)), 19 + 17*i, 53 + 11*i)
+               for i in range(a.offgrid_holdouts)]
+    if any(d in (2*z-27, 2*z-25) for _, z, d in offgrid):
+        raise RuntimeError("Off-grid points unexpectedly lie on legacy sampling lines")
+    if len({tuple(point) for point, _ in point_roles + [(pt,"holdout") for pt in offgrid]}) != len(point_roles) + len(offgrid):
+        raise RuntimeError("Duplicate field points")
+    point_roles += [(pt, "holdout") for pt in offgrid]
     exported = []
     for (p, z, d), role in point_roles:
         try:
