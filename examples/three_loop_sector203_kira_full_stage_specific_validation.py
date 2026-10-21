@@ -38,16 +38,16 @@ def main():
         proposal=raw[len(header):] if raw.startswith(header) else ""
         expected=original
         for flag in ("run_triangular","run_back_substitution"):
-            expected=re.sub(r"(^\\s*"+flag+r":\\s*)false(\\s*$)",
-                            r"\\g<1>true\\g<2>",expected,count=1,flags=re.M)
+            expected=re.sub(r"(^\s*"+flag+r":\s*)false(\s*$)",
+                            r"\g<1>true\g<2>",expected,count=1,flags=re.M)
         checks["only_two_stage_flags_differ"]=bool(proposal) and proposal==expected and expected!=original
-        checks["sector203_seed"]=bool(re.search(r"sectors:\\s*\\[203\\],\\s*r:\\s*6,\\s*s:\\s*6,\\s*d:\\s*1",proposal))
-        checks["truncate_sp_l2"]=bool(re.search(r"truncate_sp:\\s*\\n\\s*-\\s*\\{topologies:\\s*\\[VP05_full\\],\\s*l:\\s*2\\}",proposal))
+        checks["sector203_seed"]=bool(re.search(r"sectors:\s*\[203\],\s*r:\s*6,\s*s:\s*6,\s*d:\s*1",proposal))
+        checks["truncate_sp_l2"]=bool(re.search(r"truncate_sp:\s*\n\s*-\s*\{topologies:\s*\[VP05_full\],\s*l:\s*2\}",proposal))
         checks["mandatory_list_reference"]=proposal.count("[VP05_full,mandatory_single_nonmaster.txt]")==1
         checks["preferred_masters_reference"]=proposal.count('preferred_provisional64_sector203.txt')==1
         for flag,value in (("run_initiate","true"),("run_triangular","true"),
                            ("run_back_substitution","true"),("run_firefly","false")):
-            checks[flag]=len(re.findall(r"^\\s*"+flag+r":\\s*"+value+r"\\s*$",proposal,re.M))==1
+            checks[flag]=len(re.findall(r"^\s*"+flag+r":\s*"+value+r"\s*$",proposal,re.M))==1
     if checks["plan_exists"] and checks["prepared_job_exists"]:
         data=json.loads(plan.read_text(encoding="utf-8-sig"))
         checks["plan_status"]=data.get("status")=="FULL_STAGE_PLAN_ONLY"
