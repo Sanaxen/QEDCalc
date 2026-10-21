@@ -1,5 +1,5 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-python -m examples.three_loop_sector203_exact_prefix_smoke --rows 6 %*
+python -m examples.three_loop_sector203_exact_prefix_smoke --rows 7 %*
 exit /b %ERRORLEVEL%
