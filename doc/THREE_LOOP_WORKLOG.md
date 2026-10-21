@@ -5485,3 +5485,8 @@ User ran group batch with `--max-groups 5 --max-group-size 8 --per-group-timeout
 ### 2026-10-22 VP05 group provenance 153/166 PASS; remaining-size inspector
 
 User ran group batch with max 10 and maximum group size eight: `attempted=5`, cumulative `total_verified=153`, with 13 groups pending, no final original 528-row target replay. Since only five eligible groups were attempted, remaining group sizes may exceed eight, but this needs verification. Added read-only `examples/three_loop_sector203_group_remaining.py` and `run_vp05_group_remaining.bat` to print exact remaining group sizes and previous attempt counts from manifest; no symbolic work is repeated. Next `git pull`; `.\run_vp05_group_remaining.bat`; choose a safe cap according to remaining groups. Final composition and original witness replay remain to be implemented after all 166 exact provenance rows are verified.
+
+
+### 2026-10-22 VP05 exact group lift remaining 13 groups size audit
+
+User `VP05_GROUP_REMAINING`: 153/166 exact group lifts verified; 13 not attempted (`attempts=0` for all). Remaining (row, group size): (12,9), (10,10), (11,10), (9,11), (8,13), (7,14), (6,15), (5,16), (4,17), (3,20), (2,33), (1,36), (0,68). Therefore next bounded batch with `--max-groups 10 --max-group-size 20 --per-group-timeout 120 --stop-on-failure` targets 10 groups of size 9..20 while preserving prior 153; remaining three large groups size 33,36,68 demand separate budgets/strategies. All groups were not attempted rather than failed. Exact source target composition and 528-row replay remain false.
