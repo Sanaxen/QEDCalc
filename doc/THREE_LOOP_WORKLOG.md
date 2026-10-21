@@ -5480,3 +5480,8 @@ User ran next batch of 30 under `--max-group-size 4 --per-group-timeout 120`: ro
 ### 2026-10-22 VP05 exact lift cumulative 148/166
 
 User ran group batch with `--max-groups 5 --max-group-size 8 --per-group-timeout 120 --stop-on-failure`: `attempted=5`, `total_verified=148`, leaving 18; all five newly attempted groups evidently passed. The final original 528-row target replay remains false. Continue with bounded group size <=8 and inspect any timeout/failure before increasing limits; manifest and group proof files remain authoritative. After completing all 166, implement final composition of exact compressed certificate and verified group weights with rigorous original-row replay.
+
+
+### 2026-10-22 VP05 group provenance 153/166 PASS; remaining-size inspector
+
+User ran group batch with max 10 and maximum group size eight: `attempted=5`, cumulative `total_verified=153`, with 13 groups pending, no final original 528-row target replay. Since only five eligible groups were attempted, remaining group sizes may exceed eight, but this needs verification. Added read-only `examples/three_loop_sector203_group_remaining.py` and `run_vp05_group_remaining.bat` to print exact remaining group sizes and previous attempt counts from manifest; no symbolic work is repeated. Next `git pull`; `.\run_vp05_group_remaining.bat`; choose a safe cap according to remaining groups. Final composition and original witness replay remain to be implemented after all 166 exact provenance rows are verified.
