@@ -874,3 +874,42 @@ formal input
 ```
 
 This hold is deliberate so that the currently running master-basis computation remains the main execution priority and is not disturbed by unrelated pipeline restructuring.
+
+---
+
+## 2026-10-21: VP05 compressed symbolic preflight — session handoff
+
+This note records the latest numerical preflight results supplied from the preceding QEDCalc VP05 session. The numerical tests and local output artifacts have **not** been independently rerun in this GitHub session; do not relabel these checks as an exact symbolic proof.
+
+Target compressed input:
+
+```text
+output/three_loop_integral_family_audit/vp05_target_symbolic_compressed.equations.json
+rows=166; columns=400; nonzero terms=1985; proof=false
+```
+
+Comparison with the uncompressed 528-equation system:
+
+| Metric | Original | Compressed | Reduction |
+| --- | ---: | ---: | ---: |
+| Equations | 528 | 166 | 68.6% |
+| Integral columns | 756 | 400 | 47.1% |
+| Nonzero terms | 3769 | 1985 | 47.3% |
+| Elimination operations | 18171 | 1745 | 90.4% |
+| Target elimination steps | 107 | 27 | 74.8% |
+
+The prior session reports checks at four finite-field points, all yielding rank 166, target in rowspace, and successful reconstruction from the 166 original-equation coefficients:
+
+```text
+all_rank_166=true
+all_target_in_rowspace=true
+all_replayed=true
+certificate_original_equation_replay_verified=true
+proof=false
+```
+
+These are strong randomized/preflight checks, **not** an identity proof over the rational-function coefficient field. In particular, rank at the sampled points does not by itself prove a symbolic identity, and any modular reconstruction still needs exact verification.
+
+Next work item: perform exact symbolic target-only elimination or certificate reconstruction for the compressed 166-equation VP05 system, preferentially using the existing Fermat integration. Preserve the mapping/certificate back to the original equations, verify the target identity exactly (not just at four modular points), and record resulting expression size, runtime, artifact paths, and any remaining assumptions. Avoid a full 400-column RREF unless required. Keep formal input-to-family front-end extensions on the previously agreed hold.
+
+The branch worklog before this addition predates the VP05 checks; the previous master-basis-stage historical notes and status counters above must not be interpreted as a fresh current run status.
