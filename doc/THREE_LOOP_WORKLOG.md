@@ -4819,3 +4819,25 @@ Inspect `FERMAT_GAUSS_PILOT_START`, `FERMAT_GAUSS_LIFETIMES`, and `FERMAT_GAUSS_
 ### 2026-10-21 One-command VP05 compressed Fermat preflight runner
 
 Added `run_vp05_target_fermat_preflight.bat` (commit `d4761a9`) to run the existing 166-row Gaussian pilot in **preflight-only** mode against `output/three_loop_integral_family_audit/vp05_target_symbolic_compressed.equations.json`. It checks the local JSON exists, selects compatible modular schedules using `--auto-points`, estimates last-row backward dependency closure, sparse arrays/maps and live-cell occupancy, and propagates a nonzero exit code on error. It **does not start Fermat/Kira** and **does not prove** the target identity; last-row verification is a resource-planning proxy only. The runner has not yet been tested on the user's locally generated 166-row JSON. Next user command: `git pull` then `.\run_vp05_target_fermat_preflight.bat`; inspect `FERMAT_GAUSS_PREFLIGHT` and lifetime summaries before deciding whether to engineer a target-only exact certificate path. The original 528-row >320 Fermat guard remains unchanged.
+
+
+### 2026-10-21 VP05 166-row Fermat resource preflight results (user local)
+
+The user ran `run_vp05_target_fermat_preflight.bat` on the actual compressed symbolic JSON. The preflight returned successfully, but `within_caps=false`; **no Fermat/Kira launched**.
+
+```text
+selected points: (1000033,19,11), (1000037,21,15), (1000039,23,19)
+rank=166; distinct schedules seen=2; 3 matching points selected
+rows=166; columns=400; modular elimination operations=1745
+verification: last row only; output coefficients=370
+backward dependency live rows=162
+Fermat commands=2320
+allocated array cells=30788 (cap 20000)
+packed map cells=44198 (cap 100000); control cells=444
+lifetime-analysis live-cell peak=27863 (row 162, 138 live rows)
+releasable rows=161; releasable cells total=30407
+with --release-dead-rows: NOT tested; no actual memory reclamation proven
+within_caps=false; result=ESTIMATE_ONLY; proof=false
+```
+
+Interpretation: the original array cap is exceeded by 10788 cells (53.94%). Even the purely modeled lifetime-based peak of 27863 cells exceeds the same 20000-cell cap by 7863 cells (39.315%). Thus **merely enabling experimental row release would not pass the existing cap**. The 27863 figure is an accounting estimate, not RSS or Fermat allocation measurement. Also, verifying the last row is not a certificate for the specific target. Do not raise `--max-array-cells`, run the 166-row symbolic pilot, or imply 1745 modular operations represent Fermat expression growth. Next work: engineer target-specific backward reachability, output only a target residual/certificate (rather than 370 final-row coefficients), and repeat the non-executing resource preflight. Then separately validate pointer aliasing and row-release correctness on a tiny symbolic run before considering an exact VP05 target run. Preserve original 528-row provenance and the outstanding integral-key alias caveat.
