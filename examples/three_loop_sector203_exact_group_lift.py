@@ -94,10 +94,18 @@ def main():
     p.add_argument("--witness",type=Path,default=WITNESS)
     p.add_argument("--output",type=Path,default=OUT)
     p.add_argument("--start",type=int,default=82)
+    p.add_argument("--first-multi",action="store_true",help="Select smallest multi-source group deterministically")
     p.add_argument("--count",type=int,default=1)
     p.add_argument("--max-group-size",type=int,default=4)
     p.add_argument("--timeout",type=int,default=120)
     a=p.parse_args()
+    if a.first_multi:
+        rows=json.loads(a.equations.read_text(encoding="utf-8-sig"))["rows"]
+        candidates=[(len(row["original_rows"]),i) for i,row in enumerate(rows) if len(row["original_rows"])>1 and len(row["original_rows"])<=a.max_group_size]
+        if not candidates:p.error("No multi-source group within --max-group-size")
+        a.start=min(candidates)[1]
+        a.count=1
+        print("VP05_EXACT_GROUP_LIFT_SELECTED "+json.dumps({"row":a.start,"group_size":len(rows[a.start]["original_rows"])}),flush=True)
     if not 0<=a.start<166 or not 1<=a.count<=10 or a.start+a.count>166:
         p.error("Invalid bounded group range")
     if not 1<=a.max_group_size<=68:p.error("Invalid group cap")
