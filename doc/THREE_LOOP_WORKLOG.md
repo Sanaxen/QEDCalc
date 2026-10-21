@@ -5470,3 +5470,8 @@ User exact lift probe selected compressed row 35 (two original witness-list rows
 ### 2026-10-22 VP05 group exact-lift batch first 10/10 PASS
 
 User ran `run_vp05_exact_group_batch.bat --max-groups 10 --max-group-size 4 --per-group-timeout 120`: witness singleton groups 60..69 each returned `exact_replay_verified=true`, all 10 PASS, cumulative manifest `total_verified=10`, `remaining=156`, persisted under `output/three_loop_integral_family_audit/vp05_exact_group_lifts/manifest.json`. The batch resumes by skipping successful groups; this proves only ten individual group lifts (singleton), not global 528-row exact identity. Previously row 35 multi-member exact replay PASS was outside this manifest and therefore not counted. Suggested next run with same caps and --max-groups 30 to accumulate additional small groups safely. 166-group completion and composition with the existing target certificate remain pending.
+
+
+### 2026-10-22 VP05 group exact lift batch cumulative 40/166 PASS
+
+User ran next batch of 30 under `--max-group-size 4 --per-group-timeout 120`: rows 70..99 all exact group replay PASS; cumulative manifest now 40 unique verified groups, 126 remaining, no failures or timeouts. These 40 groups are all singleton witness groups, confirming durable skip/resume behavior. Multi-group full-batch exact provenance and composition of 166 compressed target coefficients against original 528 SYSTEM rows remain pending. Next practical run: `.\run_vp05_exact_group_batch.bat --max-groups 66 --max-group-size 4 --per-group-timeout 120`, which should attempt remaining 66 singleton rows before multi-group rows, though actual ordering and outcomes depend on input groups. Keep tracking durable `manifest.json` and per-group files.
