@@ -5045,3 +5045,7 @@ git pull
 .\run_vp05_extend_training_grid_v3.bat
 ```
 Look for `VP05_TRAIN_EXTEND_SUMMARY` and `VP05_ADAPTIVE_DEGREE_SUMMARY` and compare to previous resolved_finite_field=125. The original eight holdouts remain reserved and should not enter the fitting equations.
+
+### 2026-10-21 VP05 grid-v3 extra training reveals non-generalizing candidates
+
+User ran grid-v3 workflow: 20/20 new same-prime training points accepted, rejected=0; resulting archive p=1000037, 39 training, original 8 holdouts unchanged, sample digest `26d9a35f3d2578bc3231395fe724e540d979657ea3c29d4d2f4926bd93248929`, original equations digest `905d64eb4156b7e332d0445193c851d6a683ef89582df9de0a79612929a3d9fc`. Adaptive degree pairs <=3 now pass **94/166**, 72 unresolved, versus 125/166 and 41 unresolved for 19 training. Degree histogram: `(0,2):1, (0,1):1, (1,3):24, (2,3):45, (1,2):8, (0,3):2, (1,1):2, (0,0):1, (3,3):9, (2,2):1`. In particular (3,3) passing candidates fell 41 -> 9. This suggests many prior degree-(3,3) candidates overfit 19 training points and 8 holdouts or lost one-dimensional kernel because of low-degree common factors; neither cause is yet distinguished row-by-row. Additional training improves the diagnostic even if accepted candidate count falls. Need row-wise comparison and nullspace-rank classification, and potentially 2D unisolvent point design and gcd normalization. No Fermat/Kira, symbolic proof=false.
