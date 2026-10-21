@@ -5208,3 +5208,7 @@ User uploaded log from `python -m examples.three_loop_sector203_exact_compressed
 ### 2026-10-21 VP05 200/400 exact compressed-certificate replay
 
 User uploaded exact replay log for `--max-columns 200 --max-input-terms 20000`. Result: **200/200 `exact_zero`**, zero `exact_nonzero`, zero `inconclusive`; checked columns include incidence four. Remaining 200 compressed integral columns are not yet checked. Input still 166 rows, 400 columns, 1985 terms; CRT SHA256 `0a9072d4c216d396a9973205588edef4725fe15347d33b2916e31e129ce63600`, equation SHA256 `905d64eb4156b7e332d0445193c851d6a683ef89582df9de0a79612929a3d9fc`. `exact_compressed_certificate_verified=false` is correct until all 400 columns pass; original 528-equation replay and integral alias mapping remain pending. Next trial `--max-columns 400 --max-input-terms 20000`, being aware that high-incidence columns may be much costlier and the per-column duration guard is retrospective, not an interrupt. No Fermat/Kira.
+
+### 2026-10-21 VP05 full exact compressed replay
+
+User's 400-column run reports `exact_zero=400`, `exact_compressed_certificate_verified=true`, no nonzero or inconclusive columns. There are 166 compressed equations and 1985 input terms. The reconstructed rational certificate is established over Q(z,d) for the compressed equation system. Remaining: original 528-row lineage and integral alias mapping. Neither Fermat nor Kira was used.
