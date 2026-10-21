@@ -5264,3 +5264,7 @@ Correct L2 source has 2678 equations and all three target keys, but `WeightCodec
 ### 2026-10-21 Small-weight codec investigation
 
 The L2 source has 2954 distinct key pairs. A sample of 80 gave 70 successful codec round trips and 10 decoding errors, including target weights 5, 6 and 10. Added `examples/three_loop_sector203_small_weight_diagnostic.py` and `run_vp05_small_weight_diagnostic.bat` to inspect the external codec's decode conditions and the exact use of small IDs in stored SYSTEM records. No physical mapping is claimed yet.
+
+### 2026-10-21 VP05 small-ID versus master-list diagnostic
+
+The small-weight source diagnostic found exactly raw values 1..10 failing the external weight decoder, while larger encoded integral weights often round-trip. The codec reports `ppw out of range (1 comps)` on these small IDs. Added `examples/three_loop_sector203_master_slot_diagnostic.py` and `run_vp05_master_slot_diagnostic.bat` to compare the actual L2 project's `results/VP05_full/masters`, correctly encoded master weights, raw SYSTEM head/term keys, and small-ID range. A matching count is not sufficient to establish which master a small slot denotes. Physical alias mapping remains unverified; previously established raw 528-row transcription and symbolic certificate remain valid.
