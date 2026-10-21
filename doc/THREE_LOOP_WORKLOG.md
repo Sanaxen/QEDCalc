@@ -4717,3 +4717,24 @@ User reports all three 160-row sparse regressions PASS_SAMPLED after explicit pi
 User reported **PASS_SAMPLED** for 320-row sparse-array Fermat elimination with `--packed-sparse-maps --reuse-packed-maps --loop-control-rows --release-dead-rows --prune-eliminated-pivots --prune-dead-rows --verify-last-rows 1 --auto-points`. Its preceding preflight had 320 rows, 466 distinct columns, rank 320, 6732 scheduled eliminations, 4174 Fermat commands, 269 emitted coefficients, 281 live rows, lifetime estimate 14179 coefficient cells vs cumulative 25724, 22146 packed map cells and 404 control cells; 280 scheduled row releases. **Only last row's coefficient outputs** were checked at 3 independent modular points; this is not a proof over Q(z,d), not an exhaustive verification of all 320 rows, and physical memory usage was not measured.
 
 Commit `1839db3` extends parser upper bound from 320 to **528 rows**, and distinct column guard from 600 to **800** (original full witness has ~756 columns), *strictly for preflight*. It explicitly rejects all actual Fermat runs above 320, even if normal accounting estimates fall within configured caps. Default `--max-rows 320` remains intact and must be overridden using `--max-rows 528`. Next commands should use `--rows 400 --max-rows 528 --preflight-only` and subsequently `--rows 528 --max-rows 528 --preflight-only` with all proven 320 flags and `--auto-points --analyze-row-lifetimes`, inspecting pivot-schedule consistency, peak coefficient and map cells, command/output caps. Full 528 can have substantially higher symbolic expression and pointer retention costs; do not lift the explicit preflight gate without review. Need later a certifying exact-identity reconstruction; PASS_SAMPLED remains only sampled validation.
+
+### 2026-10-21 400/528-row preflight results (user WSL)
+
+Both runs were **PRE-FLIGHT ONLY** with auto-selected common modular pivot trace at `(1000037,21,15)`, `(1000081,25,23)`, `(1000117,29,31)`, rank equal to number of rows, not an exact Q(z,d) proof. Flags: sparse packed maps, reuse, native loop, last-use cancellation, pivot pruning, dead-row pruning, verify last 1, lifetime analysis.
+
+| metric | 400 rows | 528 rows |
+|---|---:|---:|
+| columns | 601 | 756 |
+| operations | 11,866 | 18,171 |
+| live rows | 375 | 526 |
+| commands | 5,746 | 7,989 |
+| outputs | 392 | 505 |
+| coefficient total cells | 48,142 | 77,393 |
+| estimated coefficient live peak | 35,800 | 56,821 |
+| packed map peak | 53,694 | 85,364 |
+| control cells | 616 | 900 |
+| total map entries written | 2,259,354 | 5,242,782 |
+| scheduled row releases | 374 | 525 |
+| within_caps | false | false |
+
+Caps remain commands 4500, live coefficient cells 20000, map+control 100000, outputs 1000. **Do not override caps or remove >320 preflight gate.** Next focus: reduce coefficient live peak by changing elimination order or staged exact computations / dependency reductions, and reduce generated commands; investigate target relation via smaller support/certificate. 320 row last-row 3-point PASS_SAMPLED remains a sampled result only.
