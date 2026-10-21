@@ -5280,3 +5280,7 @@ User ran the L2 project metadata inventory. Found only `config/integralfamilies.
 ### 2026-10-21 VP05 Kira database small-ID schema audit
 
 Metadata inventory showed no explicit mapping of raw SYSTEM small IDs 1..10. Added read-only SQLite schema inspection `examples/three_loop_sector203_kiradb_id_schema_audit.py` and `run_vp05_kiradb_id_schema_audit.bat`, targeting the exact L2 `results/kira.db` with `mode=ro` and `PRAGMA query_only=ON`. It lists schema tables/views, columns, and names suggestive of integral/weight/sector/master metadata, but does not guess any numeric mapping. Next run `git pull` and `.\run_vp05_kiradb_id_schema_audit.bat` to determine if schema contains an explicit mapping table. Physical interpretation still unverified, while saved formal certificate remains exact.
+
+### 2026-10-21 VP05 Kira EQUATION samples
+
+Added `examples/three_loop_sector203_kiradb_equation_sample.py` and `run_vp05_kiradb_equation_sample.bat` for read-only bounded inspection of the correct L2 `results/kira.db` EQUATION table. Samples up to 12 records (ID, ARRAYID, AUXILIARY, SECTOR, LENGTH, short coefficient prefix), plus aggregate counts grouped by sector and auxiliary flag. This does not infer mappings; next compare observed record structure with source SYSTEM to investigate small IDs 1..10. Run `git pull`, then `.\run_vp05_kiradb_equation_sample.bat`. Physical integral identification remains unverified; saved symbolic relation remains exact in SYSTEM key namespace.
