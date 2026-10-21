@@ -28,7 +28,7 @@ def progress_from_log(log):
          "generation_completed":False,"triangular_started":False,"back_substitution_started":False}
  if not log.is_file():return result
  content=log.read_text(encoding="utf-8",errors="replace")
- matches=list(re.finditer(r"Generate equations for topology VP05_full, sector (\\d+) \\((\\d+) of (\\d+)\\)",content))
+ matches=list(re.finditer(r"Generate equations for topology VP05_full, sector (\d+) \((\d+) of (\d+)\)",content))
  if matches:
   last=matches[-1]
   result.update(last_generation_sector=int(last[1]),last_generation_ordinal=int(last[2]),generation_total=int(last[3]))
@@ -93,6 +93,7 @@ def main():
  p.add_argument("--fermat",default="/home/yamatoyamato/fermat/Ferl7/fer64")
  p.add_argument("--output",type=Path,default=AUDIT/"vp05_full_stage_guarded_run_02.json")
  a=p.parse_args()
+ report_path=a.output if a.execute_vp05 else a.output.with_name(a.output.stem+"_dry_run.json")
  if not 10<=a.max_seconds<=600 or a.min_mem_available_gib<2 or a.max_swap_used_gib<=0:p.error("unsafe limits")
  report={"status":"DRY_RUN_NOT_EXECUTED","kira_executed":False,"physical_vp05_reduction_executed":False,
          "ready_to_execute":False,"destination":str(DEST.resolve()),"checks":{},
@@ -104,7 +105,7 @@ def main():
  check["capsule_exists"]=CAPSULE.is_dir()
  check["destination_absent"]=not DEST.exists() and not DEST.is_symlink()
  check["original_experiment_preserved"]=Path("output/vp05_full_stage_kira_experiment").is_dir()
- check["report_path_unused"]=not a.output.exists()
+ check["report_path_unused"]=not report_path.exists()
  manifest=CAPSULE/"CAPSULE_REVIEW_ONLY.json"
  data=json.loads(manifest.read_text(encoding="utf-8-sig")) if manifest.is_file() else {}
  check["manifest_status"]=data.get("status")=="CAPSULE_CREATED_NOT_EXECUTED"
@@ -162,8 +163,8 @@ def main():
      report["status"]="KIRA_PROCESS_CLEANUP_FAILED"
     elif report["status"]=="KIRA_FINISHED_PENDING_CLEANUP":
      report["status"]="KIRA_COMPLETED_REQUIRES_RESULT_AUDIT" if proc.returncode==0 and report["stop_reason"] is None else "KIRA_STOPPED_OR_FAILED"
- a.output.parent.mkdir(parents=True,exist_ok=True)
- with a.output.open("x",encoding="utf-8") as stream:
+ report_path.parent.mkdir(parents=True,exist_ok=True)
+ with report_path.open("x",encoding="utf-8") as stream:
   stream.write(json.dumps(report,indent=2,ensure_ascii=False)+"\n")
  print("VP05_FULL_STAGE_GUARDED_RUN "+json.dumps(report,ensure_ascii=False),flush=True)
  if report["status"] not in ("GUARDED_VP05_DRY_RUN_PASS","KIRA_COMPLETED_REQUIRES_RESULT_AUDIT"):raise SystemExit(2)
