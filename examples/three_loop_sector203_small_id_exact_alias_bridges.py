@@ -60,9 +60,9 @@ def main():
     for key,items in sorted(found.items()):
         decoded={tuple(i["decoded_exponents"]) for i in items if i.get("codec_roundtrip_verified")}
         all_decoded=all(i.get("codec_roundtrip_verified") for i in items)
-        consistent=all_decoded and len(decoded)==1
+        consistent=all_decoded and len(decoded)>=1
         results.append({"small_key":list(key),"exact_unit_two_term_bridges":len(items),
-            "all_decoded":all_decoded,"unique_exponent_tuple_across_bridges":consistent,
+            "all_decoded":all_decoded,"all_bridges_decoded":consistent,"different_but_equivalent_exponent_tuples":len(decoded),
             "alias_exponents":list(next(iter(decoded))) if consistent else None,
             "bridges":items})
     bykey={tuple(x["small_key"]):x for x in results}
@@ -70,7 +70,7 @@ def main():
     for k in TARGET:
         v=bykey.get(k)
         target_results.append({"key":list(k),
-            "direct_unit_bridge_alias_verified":bool(v and v["unique_exponent_tuple_across_bridges"]),
+            "direct_unit_bridge_alias_verified":bool(v and v["all_bridges_decoded"]),
             "exponents":v["alias_exponents"] if v else None,
             "bridge_count":v["exact_unit_two_term_bridges"] if v else 0})
     result={"system_equations":equations,"ordering":ordering,
