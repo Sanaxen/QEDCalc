@@ -57,25 +57,37 @@ def terminate(proc):
         except ProcessLookupError: pass
         proc.wait(timeout=3)
 
+def find_fermat(explicit=None):
+    choices=[explicit,os.environ.get("FERMATPATH"),shutil.which("fermat"),
+             shutil.which("fer64"),shutil.which("fermat64"),
+             "/usr/local/bin/fer64","/usr/local/bin/fermat",
+             "/opt/fermat/fer64",str(Path.home()/"bin"/"fer64")]
+    for entry in choices:
+        if entry:
+            resolved=shutil.which(entry) if not Path(entry).is_absolute() else entry
+            if resolved and Path(resolved).is_file() and os.access(resolved,os.X_OK):
+                return str(Path(resolved).resolve())
+    return None
+
 def main():
     p=argparse.ArgumentParser()
-    p.add_argument("--max-seconds",type=int,default=15)
+    p.add_argument("--max-seconds",type=int,default=15)\n    p.add_argument("--fermat",default=None,help="Explicit WSL path to Fermat executable")
     p.add_argument("--min-mem-available-gib",type=float,default=4)
     p.add_argument("--max-swap-used-gib",type=float,default=12)
     p.add_argument("--output",type=Path,default=Path("output/three_loop_integral_family_audit/vp05_kira_schema_isolated_probe.json"))
     a=p.parse_args()
     if os.name!="posix" or not 5<=a.max_seconds<=30 or a.min_mem_available_gib<2 or a.max_swap_used_gib<=0:
         p.error("WSL/Linux and bounded safety limits required")
-    exe=shutil.which("kira")
+    exe=shutil.which("kira")\n    fermat=find_fermat(a.fermat)
     report={"status":"BLOCKED","kira_executable":exe,"original_project_opened":False,
             "vp05_equations_used":False,"physical_vp05_reduction_executed":False,
-            "schema_validated_by_kira":False,"ready_to_execute_vp05":False}
+            "schema_validated_by_kira":False,"ready_to_execute_vp05":False,\n            "fermat_executable":fermat}
     proc=None
     try:
         m=memory()
         if not exe or not Path(exe).is_file():
             report["reason"]="KIRA_NOT_FOUND"
-        elif m.get("MemAvailable",0)<=a.min_mem_available_gib*GIB or (m.get("SwapTotal",0)-m.get("SwapFree",0))>=a.max_swap_used_gib*GIB:
+        elif not fermat:\n            report["reason"]="FERMAT_NOT_FOUND"\n            report["hint"]="Set FERMATPATH in WSL or use --fermat /absolute/path/to/fermat"\n        elif m.get("MemAvailable",0)<=a.min_mem_available_gib*GIB or (m.get("SwapTotal",0)-m.get("SwapFree",0))>=a.max_swap_used_gib*GIB:
             report["reason"]="RESOURCE_PREFLIGHT_FAILED"
         else:
             with tempfile.TemporaryDirectory(prefix="qedcalc_kira31_schema_",dir="/tmp") as d:
@@ -98,7 +110,7 @@ def main():
                     if time.monotonic()>=deadline: reason="TIME_CEILING";break
                     time.sleep(.2)
                 if reason: terminate(proc)
-                out=(proc.communicate(timeout=3)[0] or b"").decode("utf-8","replace")[-12000:]
+                proc.wait(timeout=3)\n                out=log_path.read_bytes()[-12000:].decode("utf-8","replace")
                 report.update({"kira_executed":True,"returncode":proc.returncode,
                     "stop_reason":reason,"stdout_tail":out[-6000:],
                     "status":"ISOLATED_KIRA_JOB_COMPLETED" if reason is None and proc.returncode==0 else "ISOLATED_KIRA_JOB_INCOMPLETE",
