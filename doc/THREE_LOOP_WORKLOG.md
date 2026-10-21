@@ -4853,3 +4853,8 @@ git pull
 ```
 
 Compare `VP05_TARGET_SCOPE_POINT` across points, especially pivot schedule agreement and dependency-row/operation counts. An absent or different sampled pivot schedule must be handled conservatively before implementing target-only Fermat execution. The new tool has not yet been run on the user's local 166-row JSON.
+
+
+### 2026-10-21 VP05 target-only scope audit result: no row pruning
+
+User ran the target-only scope preflight against the local 166-row compressed exact-combination witness. Four points `(1000037,21,15)`, `(1001003,19,53)`, `(1001107,36,64)`, and `(1002101,47,83)` agreed: rank=166, target elimination steps=27 and direct pivot owners=27, but backward dependency closure consumes **all 166 rows** and **1745 elimination operations**. Each point reported exact modular target replay true, full pivot schedules equal, allocated structural support-cell estimate 30987, hypothetical row-release peak 27093 (row index 162), both above existing 20000 cap. Target output union is 400 columns. No Fermat launched; no proof of the exact Q(z,d) target identity. Conclusion: row-dependency pruning with this schedule provides no gain; do not pursue 27-row-only symbolic computation without a different valid certificate/strategy. Next explore sparse symbolic live-memory reduction or certificate-first algorithms with bounded preflight and correctness guards, while retaining caps and alias caveats.
