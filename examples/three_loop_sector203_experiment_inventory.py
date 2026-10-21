@@ -25,7 +25,7 @@ def equivalent_local_paths(recorded, actual):
  """Compare a Windows path and its WSL /mnt/<drive> representation without filesystem mutation."""
  def normalize(value):
   if not isinstance(value,str) or not value.strip():return None
-  v=value.strip().replace("\\\\","/").rstrip("/")
+  v=value.strip().replace(chr(92),"/").rstrip("/")
   windows=re.fullmatch(r"([A-Za-z]):/(.*)",v)
   if windows:v="/mnt/"+windows.group(1).lower()+"/"+windows.group(2)
   return v.casefold()
@@ -73,10 +73,12 @@ def main():
  if GUARD.is_file():
   try:guard=json.loads(GUARD.read_text(encoding="utf-8-sig"))
   except (OSError,ValueError):pass
- ck("guard_record_for_this_run",equivalent_local_paths(guard.get("destination"),str(run))
-    and guard.get("kira_executed") is True
-    and guard.get("process_reaped") is True
-    and guard.get("process_group_gone") is True)
+ ck("guard_path_matches",equivalent_local_paths(guard.get("destination"),str(run)))
+ ck("guard_was_executed",guard.get("kira_executed") is True)
+ ck("guard_process_reaped",guard.get("process_reaped") is True)
+ ck("guard_group_gone",guard.get("process_group_gone") is True)
+ ck("guard_record_for_this_run",checks["guard_path_matches"]
+    and checks["guard_was_executed"] and checks["guard_process_reaped"] and checks["guard_group_gone"])
  log=run/"kira_run.log"
  ck("kira_log_present",log.is_file() and not log.is_symlink())
  progress={"last_generation_sector":None,"last_generation_ordinal":None,
@@ -95,7 +97,8 @@ def main():
  failed=[key for key,val in checks.items() if not val]
  report={"status":"EXPERIMENT_INVENTORY_PASS" if not failed and not errors else "EXPERIMENT_INVENTORY_REVIEW_REQUIRED",
          "checks":checks,"failed":failed,"walk_errors":errors,
-         "run_directory":str(run),"guard_stop_reason":guard.get("stop_reason"),
+         "run_directory":str(run),"guard_recorded_destination":guard.get("destination"),
+         "guard_recorded_status":guard.get("status"),"guard_stop_reason":guard.get("stop_reason"),
          "guard_returncode":guard.get("returncode"),"file_count":len(files),
          "bytes_total":sum(x["bytes"] for x in files),
          "top_level_usage":dict(sorted(by_top.items())),
