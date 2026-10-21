@@ -93,6 +93,7 @@ def eliminate(rows, target, p):
             "direct_target_support_rows": len(target_appearing_rows),
             "direct_target_support_row_ids": sorted(target_appearing_rows)[:40],
             "certificate_support_count": len(certificate),
+            "certificate_coefficients": certificate,
             "certificate_row_ids": sorted(certificate),
             "certificate_original_equation_replay_verified": verified,
             "certificate_nonzero_coefficients_sample": [
@@ -105,6 +106,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--equations", type=Path)
     ap.add_argument("--rows", type=int, default=528)
+    ap.add_argument("--export-certificate", type=Path,
+                    help="Write all sampled modular coefficient vectors and replay status to JSON")
     ap.add_argument("--target-term", action="append", nargs=3,
                     metavar=("KEY", "SECTOR", "COEFFICIENT"),
                     help="Override default keys for I10,I6,I5; repeated triple")
@@ -138,6 +141,7 @@ def main():
             "next": "Resolve key mapping against witness metadata; do not interpret missing keys as independent integrals",
             "proof": False}), flush=True)
         return
+    exported = []
     for p, z, d in POINTS:
         try:
             matrix = mod_rows(rows, p, z, d)
@@ -148,8 +152,26 @@ def main():
             print("TARGET_ROWSPACE_POINT_ERROR " + json.dumps({
                 "point": [p, z, d], "error": str(exc)}), flush=True)
             continue
+        coeffs = result.pop("certificate_coefficients")
+        exported.append({"point": [p, z, d],
+                         "coefficients_by_original_row": [coeffs.get(j, 0) for j in range(len(rows))],
+                         "replay_verified": result["certificate_original_equation_replay_verified"]})
         result.update({"point": [p, z, d], "proof": False})
         print("TARGET_ROWSPACE_POINT " + json.dumps(result), flush=True)
+    if a.export_certificate:
+        if len(exported) != len(POINTS) or not all(x["replay_verified"] for x in exported):
+            raise SystemExit("Certificate export blocked: not all points replay-verified")
+        out = a.export_certificate.resolve()
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps({"type": "modular_target_certificate_samples",
+            "source": str(path), "rows": len(rows),
+            "target": [{"key": [k, sec], "coefficient": v} for k, sec, v in terms],
+            "alias_mapping_verified": False,
+            "proof": False,
+            "samples": exported}, indent=2) + "\n", encoding="utf-8")
+        print("TARGET_ROWSPACE_CERTIFICATE_EXPORTED " + json.dumps({
+            "file": str(out), "samples": len(exported),
+            "coefficients_per_sample": len(rows), "proof": False}), flush=True)
 
 
 if __name__ == "__main__":
