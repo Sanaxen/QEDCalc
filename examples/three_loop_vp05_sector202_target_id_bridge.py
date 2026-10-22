@@ -26,7 +26,7 @@ def main():
    record["error"]="project metadata missing";records.append(record);continue
   try:
    bits,ordering=m.from_kiradb(str(db))
-   if ordering!=5:raise ValueError("nonstandard integral ordering "+str(ordering))
+   if ordering not in (1,5):raise ValueError("unsupported integral ordering "+str(ordering))
    config=cfg.read_text(encoding="utf-8")
    match=re.search(r"top_level_sectors:\s*\[([^]]+)\]",config)
    if not match:raise ValueError("top_level_sectors not explicitly specified")
@@ -35,6 +35,8 @@ def main():
    codec=m.WeightCodec(np=12,bits=bits,iord=ordering,topsectors=tops)
    weights={codec.encode(x):x for x in TARGETS}
    if len(weights)!=len(TARGETS):raise ValueError("target weights collide")
+   for x in TARGETS:
+    if tuple(codec.decode(codec.encode(x)))!=x:raise ValueError("target encode/decode roundtrip failed")
    counts=Counter();heads=Counter();decoded_sector_ranks=defaultdict(Counter)
    eq=0;term=0;invalid=0
    with gzip.open(path,"rt",encoding="utf-8") as fh:
