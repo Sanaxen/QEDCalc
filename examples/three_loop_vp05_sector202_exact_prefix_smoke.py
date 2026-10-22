@@ -30,11 +30,13 @@ def main():
  ap.add_argument("--rows",type=int,default=6)
  ap.add_argument("--max-columns",type=int,default=100)
  ap.add_argument("--max-expression-chars",type=int,default=1200)
+ ap.add_argument("--max-source-support",type=int,default=100)
  ap.add_argument("--mod-prime",type=int,default=1000003)
  ap.add_argument("--mod-z",type=int,default=17)
  ap.add_argument("--mod-d",type=int,default=7)
  args=ap.parse_args()
- if args.rows<1 or args.rows>20:ap.error("--rows must be between 1 and 20")
+ if args.rows<1 or args.rows>50:ap.error("--rows must be between 1 and 50")
+ if min(args.max_columns,args.max_expression_chars,args.max_source_support)<1:ap.error("All symbolic caps must be positive")
  with gzip.open(args.input,"rt",encoding="utf-8") as f:data=json.load(f)
  if data.get("status")!="ORIGINAL_EXACT_SOURCE_ROWS_EXPORTED":raise RuntimeError("Unexpected export format")
  rows=data["rows"]
@@ -47,6 +49,14 @@ def main():
   if not r["terms"]:raise RuntimeError("Empty source row")
  z,d=sp.symbols("z d")
  basis={};stats=[];independent=0
+ def measure(row,trace,stage,idx):
+  max_row=max((len(str(v)) for v in row.values()),default=0)
+  max_trace=max((len(str(v)) for v in trace.values()),default=0)
+  if (len(row)>args.max_columns or len(trace)>args.max_source_support or
+      max(max_row,max_trace)>args.max_expression_chars):
+   raise RuntimeError("Symbolic cap reached at row %d (%s): columns=%d support=%d max_row_chars=%d max_trace_chars=%d" %
+      (idx,stage,len(row),len(trace),max_row,max_trace))
+  return max_row,max_trace
  for ri,record in enumerate(rows[:args.rows]):
   current={}
   for t in record["terms"]:
@@ -60,6 +70,7 @@ def main():
    residue=int(rational.p)%args.mod_prime*pow(int(rational.q)%args.mod_prime,-1,args.mod_prime)%args.mod_prime
    if residue!=modular:raise RuntimeError("Exact/modular coefficient mismatch")
   original=dict(current);trace={ri:sp.S.One};reduced=0
+  measure(current,trace,"initial",ri)
   while current:
    pivot=min(current)
    if pivot not in basis:break
@@ -68,14 +79,12 @@ def main():
    subtract(current,brow,fac)
    subtract(trace,btrace,fac)
    reduced+=1
-   if len(current)>args.max_columns or any(len(str(x))>args.max_expression_chars for x in current.values()):
-    raise RuntimeError("Symbolic cap reached; retry fewer rows")
+   measure(current,trace,"elimination",ri)
   if current:
    lead=min(current);divisor=current[lead]
    current={k:sp.cancel(v/divisor) for k,v in current.items()}
    trace={k:sp.cancel(v/divisor) for k,v in trace.items()}
-   if len(current)>args.max_columns or any(len(str(x))>args.max_expression_chars for x in [*current.values(),*trace.values()]):
-    raise RuntimeError("Symbolic cap reached; retry fewer rows")
+   measure(current,trace,"normalization",ri)
    replay={}
    for idx,factor in trace.items():
     for t in rows[idx]["terms"]:
@@ -86,11 +95,20 @@ def main():
    if set(replay)!=set(current) or any(sp.cancel(replay[k]-current[k])!=0 for k in current):
     raise AssertionError("Exact original row provenance replay mismatch")
    basis[lead]=(current,trace);independent+=1
+  row_chars,trace_chars=measure(current,trace,"complete",ri)
   stats.append({"original_index":record["global_zero_based"],"columns":len(current),
-    "source_support":len(trace),"reduction_steps":reduced,"exact_provenance_replay":True})
+    "source_support":len(trace),"reduction_steps":reduced,
+    "max_row_expression_chars":row_chars,"max_provenance_expression_chars":trace_chars,
+    "exact_provenance_replay":True})
  result={"status":"EXACT_SYMBOLIC_PREFIX_REPLAY_VERIFIED","input":str(args.input),
   "selected_source_rows":len(rows),"rows_checked":args.rows,"exact_prefix_rank":independent,
   "original_files":len(data["source_file_sha256"]),"row_statistics":stats,
+  "symbolic_caps":{"max_columns":args.max_columns,"max_expression_chars":args.max_expression_chars,"max_source_support":args.max_source_support},
+  "observed_maxima":{"columns":max(x["columns"] for x in stats),
+    "source_support":max(x["source_support"] for x in stats),
+    "reduction_steps":max(x["reduction_steps"] for x in stats),
+    "row_expression_chars":max(x["max_row_expression_chars"] for x in stats),
+    "provenance_expression_chars":max(x["max_provenance_expression_chars"] for x in stats)},
   "exact_target_reduction_proven":False,"original_kira_sources_modified":False,
   "interpretation":"Symbolic replay of bounded original-row prefix only; full 2241-row target relation not attempted."}
  print("VP05_SECTOR202_EXACT_PREFIX_SMOKE "+json.dumps(result,ensure_ascii=True),flush=True)
