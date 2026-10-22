@@ -61,7 +61,8 @@ def main():
   raise RuntimeError("target physical ID roundtrip failed")
  small4=(4,73)
  files=sorted((P/"tmp/VP05_full").glob("SYSTEM_VP05_full_*.gz"))
- points=[(1000003,17,7),(1000033,19,11),(1000037,23,13),\n         (1000039,29,17),(1000081,31,19),(1000099,37,23)][:args.points]
+ points=[(1000003,17,7),(1000033,19,11),(1000037,23,13),
+         (1000039,29,17),(1000081,31,19),(1000099,37,23)][:args.points]
  outputs=[]
  for prime,z,d in points:
   pivots={};cols=set();n=0;error=None
