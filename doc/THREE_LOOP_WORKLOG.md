@@ -5685,3 +5685,31 @@ Added `three_loop/vp05_verified_reduction.py`: `load_verified_vp05_rule()` consu
 ### 2026-10-22 VP05 exact reduction opt-in master-coefficient integration
 
 `MasterCoefficientConfig.verified_vp05_artifact: Path | None = None` is now optional. When supplied for `VP05_full`, `synthesize_master_coefficients` loads the exact-attested target via `load_verified_vp05_rule` and injects its one target rule into the existing recursive reduction graph before resolution. Existing Kira masters, zero/rules always take precedence as explicit conflicts cause an error; other integral families reject opt-in. With no artifact, the existing FORM-only behavior is unchanged. New synthetic integration tests cover successful two-master expansion, disabled behavior, conflicts, missing artifact, wrong family. User must run `python -m pytest tests/test_vp05_verified_reduction.py tests/test_vp05_master_coefficient_integration.py -q`. This is opt-in integration only, not a new run of Kira/Fermat or proof of any additional integral.
+
+
+## 2026-10-22 現在の全体進捗表（VP05厳密削減成果を反映）
+
+> 登録済み26/45の正式検証件数・図数は未再集計。VP05単一ターゲットの厳密還元はVP05_full全体master basis確定とは別。VP05 API単体テスト7件PASS、統合テストのユーザー実行結果待ち。
+
+| 段階 | 前回 | 現在 |
+|---|---|---|
+| Q01 reference pipeline | 完了 | **完了** |
+| 72図 topology inventory | 完了 | **72/72 完了** |
+| structural candidate grouping | 完了 | **完了** |
+| canonical family proof | 72/72 完了 | **72/72 完了** |
+| existing-family reuse audit | 72図について自動分類済み | **72図について自動分類済み** |
+| Kira-ready family construction | 45 canonical families 構成済み | **45 canonical families 構成済み** |
+| canonical-family autodiscovery | 全72図 完了 | **全72図 完了** |
+| global canonical registry | 72/72 confirmed、45 families | **72/72 confirmed、45 families** |
+| **master basis identification** | 13/45 families、26/72 diagrams。Q01～Q12・Q17正式確定 | **26/45 families（57.8%）に final 基底IDを登録済み。残り19 families。登録済みQ01～Q20、Q22、Q24、VP01～VP04。正式検証件数・diagram数は再集計待ち。VP05_fullの全体基底は未確定。** |
+| master-basis計算方式 | masters initiate-only中心 + FireFly fallback | **ハイブリッド方式継続。baseline / boundary / union / candidate closure / sector-local / truncate_sp を使用。保存IBPの厳密証明書と証明書付き単一ターゲット再利用をVP05で追加。FireFlyは必要時のみ。** |
+| **VP05_full sector 203** | 未整理 | **r6s6d1 + truncate_sp l=2：Kira約26時間24分、SYSTEM 2,678本、選択master 5本。528元方程式→166圧縮行→400列厳密消去ゼロを検証。preferredの小ID 1～10と12指数・sectorを照合。単一ターゲット `VP05_full[1,1,0,1,0,0,1,1,0,0,0,0]` の厳密還元 `I10=(2/z)(I6-I5)` を確立しJSON保存。全体master基底・図との独立運動量照合は未完了。** |
+| exact coefficient synthesis | Q01完了。共通API化・厳密一致検証済み | **Q01の全60係数は完了。VP05では単一ターゲットの厳密還元を証明書付きAPIとして実装し `master_coefficient_api.py` にオプトイン接続。単体テスト7件PASS、統合テスト5件は実行結果未確認。VP05全振幅の係数合成は未完了。** |
+| **72図 IBP還元リファレンス整備** | 正式な中核成果物として追加 | **canonical family → target set → stable master basis → exact master-coefficient reduction → audit provenance の方針継続。VP05の単一ターゲットについて厳密証明・元SYSTEM系譜・JSON成果物・オプトイン再利用APIを実装。72図全件への展開は未完了。** |
+| 72図 exact master-coefficient archive | 方針確定。未着手 | **方針確定。VP05単一ターゲットの証明付き成果物は作成済みだが、72図全体アーカイブの構築は未着手。** |
+| formal input → graph → canonical-family 追加統合 | 45/45 master basis完了後まで保留 | **保留継続。raw-LaTeX → graph自動化、report統合、all-in-one runner等は後続。** |
+| master evaluation / ε expansion | 未着手 | **未着手** |
+| 各図の renormalized $F_2(0)$ | 未着手 | **未着手** |
+| カテゴリ別 subtotal / 文献照合 | 未着手 | **未着手** |
+| 72図の総和 | 未着手 | **未着手** |
+| 3-loop 電子 $g-2$ 解析解 | 最終目標 | **最終目標のまま** |
