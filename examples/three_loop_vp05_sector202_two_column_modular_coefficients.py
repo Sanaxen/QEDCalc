@@ -13,15 +13,18 @@ from examples.three_loop_vp05_sector202_quotient_sensitivity import P,TARGETS
 
 def residual(vec,pivots,p):
  cur={k:v%p for k,v in vec.items() if v%p}
+ out={}
  while cur:
   lead=min(cur)
-  if lead not in pivots:break
+  if lead not in pivots:
+   out[lead]=cur.pop(lead)
+   continue
   q=cur[lead];base=pivots[lead]
   for k,v in base.items():
    t=(cur.get(k,0)-q*v)%p
    if t:cur[k]=t
    else:cur.pop(k,None)
- return cur
+ return out
 
 def mod_coeff(target,c,m,pivots,p):
  rt=residual({target:1},pivots,p)
