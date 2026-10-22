@@ -52,6 +52,7 @@ def main():
  ap.add_argument("--max-fill",type=int,default=20000)
  ap.add_argument("--points",type=int,choices=(1,2,3,4,5,6),default=6)
  ap.add_argument("--grid",action="store_true",help="Sample independent z and d axes at the same prime for rational-function reconstruction")
+ ap.add_argument("--cross-grid",action="store_true",help="Sample distinct non-axis z,d pairs for bivariate reconstruction")
  args=ap.parse_args()
  m=load_codec((ROOT/"output/tools/pyred_weight.py").resolve())
  bits,ordering=m.from_kiradb(str(P/"results/kira.db"))
@@ -67,6 +68,8 @@ def main():
  if args.grid:
   points=[(1000003,z,7) for z in (11,13,17,19,23,29,31,37,41)]
   points += [(1000003,17,d) for d in (5,9,11,13,17,19,23,29)]
+ if args.cross_grid:
+  points=[(1000003,z,d) for d in (5,9,11,13,17) for z in (11,13,19,23,29)]
  outputs=[]
  for prime,z,d in points:
   pivots={};cols=set();n=0;error=None
