@@ -5906,3 +5906,15 @@ User `python -m examples.three_loop_vp05_sector202_two_column_modular_coefficien
 ### 2026-10-23 VP05 sector202 axis rational fits and cross-grid sampling
 
 User `run_vp05_sector202_axis_rational_fit.bat` PASS: all eight independent axis-coefficient fits have finite-field holdout validation at p=1000003. At d=7, A_C and A_small4 fit degree 1 polynomial (2 training, 7 holdout); B_C and B_small4 degree 2 polynomial (3 training, 6 holdout). At z=17, A_C and A_small4 fit numerator degree 1 / denominator degree 1 (3 training, 6 holdout); B_C and B_small4 fit degree 2 / degree 2 (5 training, 4 holdout). Coefficients are mod-p only; neither axis determines general bivariate mixed terms. Extended read-only `python -m examples.three_loop_vp05_sector202_two_column_modular_coefficients --cross-grid` to evaluate 25 combinations of z=(11,13,19,23,29), d=(5,9,11,13,17) at fixed prime 1000003; distinct from axis z=17 or d=7, with full original 2678-row modular verification at every point. New source commit 76f0df5. Do not claim exact symbolic coefficients, unique interpolation or complete Stage-2 63 closure from these finite-field checks. No Kira reruns or source project mutation.
+
+
+### 2026-10-23 VP05 sector202 25-point cross-grid PASS and candidate bivariate rational coefficients
+
+User 2026-10-22 22:08 output `--cross-grid`: all **25/25** off-axis modular points PASS with 2678-row saved L2 rank 2678 and zero remainders for both physical target reductions against the two formal free columns C (sector202) and smallID `(4,73)`. Together with earlier 17 axis points there are **42 distinct (z,d) values**. Offline modular rational fitting on the 25 cross points (p=1000003) found low-bidegree candidate exact rational expressions (z,d are the same parameters as stored Kira coefficients):
+
+- A_C = `4*(d*z+4*d-8)/(3*(3*d-4))`
+- A_small4 = `(d*z+10*d-z-14)/(3*d-4)`
+- B_C = `(d*d*z*z+8*d*d*z+16*d*d-5*d*z*z-8*d*z-16*d+12*z*z-32*z)/(3*(d-1)*(3*d-4))`
+- B_small4 = `(d*d*z*z+2*d*d*z+10*d*d-4*d*z*z+2*d*z-22*d+4*z*z-8*z+12)/((d-1)*(3*d-4))`
+
+These formulas were also checked against all six earlier multi-prime values offline with matching finite-field evaluations. A read-only reproducible `run_vp05_sector202_bivariate_candidate_verify.bat` now embeds 25 cross-grid samples, imports 17 axis-grid samples from the prior fixture and tests 6 earlier distinct-prime points, verifying congruences at all **25+17+6 samples** (6 include one repeat parameter coordinate under another prime). This script is a candidate verification ONLY, not an original-equation exact symbolic certificate; neither coefficient identities nor the physical mapping of Kira smallIDs are upgraded to exact mathematical proof. Next establish an exact rational-function original 2678-row provenance certificate or bounded symbolic original-row replay without rerunning Kira; do not touch 63 candidate basis and do not mark Stage-2 closure complete.
