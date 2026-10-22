@@ -80,6 +80,6 @@ def main():
   "status":"FINITE_FIELD_AXIS_FITS_WITH_HOLDOUTS","prime":P,
   "grid_samples":len(DATA),"results":reports,
   "exact_bivariate_coefficient_proof":False,
-  "limitations":"Axis-restricted Padé fits using a single prime and independent in-axis holdouts. Cross terms vanish on axes, bivariate coefficients not uniquely determined; exact original-equation replay is required.",
-  "kira_executed":False,"files_modified":False},ensure_ascii=False),flush=True)
+  "limitations":"Axis-restricted Pade fits using a single prime and independent in-axis holdouts. Cross terms vanish on axes, bivariate coefficients not uniquely determined; exact original-equation replay is required.",
+  "kira_executed":False,"files_modified":False},ensure_ascii=True),flush=True)
 if __name__=="__main__":main()
