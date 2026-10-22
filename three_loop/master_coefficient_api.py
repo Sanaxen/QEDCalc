@@ -46,6 +46,7 @@ class MasterCoefficientConfig:
     expected_native_terms: int | None = None
     fermat_group_size: int = 128
     fermat_executable: str = "$HOME/fermat/Ferl7/fer64"
+    verified_vp05_artifact: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -297,6 +298,18 @@ def synthesize_master_coefficients(
     masters, rules, zeros = load_reduction_graph(
         config.form_export, config.masters_file, config.family
     )
+    if config.verified_vp05_artifact is not None:
+        if config.family != "VP05_full":
+            raise ValueError("VP05 verified artifact may only be used for VP05_full")
+        from three_loop.vp05_verified_reduction import load_verified_vp05_rule
+        verified = load_verified_vp05_rule(config.verified_vp05_artifact)
+        if verified.target in masters or verified.target in rules or verified.target in zeros:
+            raise RuntimeError("VP05 verified target conflicts with existing reduction/master")
+        rules[verified.target] = tuple(
+            (coefficient, child) for child, coefficient in verified.terms
+        )
+        if progress is not None:
+            progress("VP05 exact reduction: verified opt-in rule registered")
     resolve, unresolved = make_resolver(masters, rules, zeros, config.family)
     master_parts: dict[IndexTuple, list[sp.Expr]] = defaultdict(list)
     for amplitude_coeff, target in bridge_records:
