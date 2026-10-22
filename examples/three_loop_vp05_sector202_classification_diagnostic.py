@@ -22,13 +22,33 @@ def main():
  if data.get("sector")!=202 or str(data.get("firefly_seed"))!="r6s6d2":
   raise SystemExit("Saved sector/seed mismatch; refusing diagnostic")
  selected={key:data[key] for key in FIELDS if key in data}
+ status=data.get("target_status",{})
+ counts=status.get("counts",{})
+ items=status.get("items",{})
+ target_count=data.get("target_count")
+ classified=sum(int(counts.get(x,0)) for x in ("master","reduced","zero"))
+ if not isinstance(target_count,int) or target_count<=0:
+  raise SystemExit("Missing target count")
+ if not data.get("audit_pass") or counts.get("unresolved")!=0 or classified!=target_count:
+  raise SystemExit("Saved classified audit internally inconsistent")
+ master=list(items.get("master",[]))
+ reduced=list(items.get("reduced",[]))
+ zero=list(items.get("zero",[]))
+ candidates=data.get("targets",[])
+ if sorted(map(str,candidates))!=sorted(map(str,master+reduced+zero)):
+  raise SystemExit("Classification items do not partition targets")
+ classification={"target_count":target_count,"counts":counts,
+   "master_targets":master,"reduced_targets":reduced,"zero_targets":zero,
+   "initiate_stage_reduced_targets":data.get("initiate_stage_reduced_targets",[]),
+   "classification_basis":status.get("classification_basis"),
+   "all_candidates_retained":counts.get("master")==target_count}
  extra={}
  for key,val in data.items():
   if key not in selected:
    if isinstance(val,(dict,list)):extra[key]={"type":type(val).__name__,"length":len(val)}
    else:extra[key]=str(val)[:200]
  report={"status":"VP05_STAGE2_SECTOR202_CLASSIFICATION_DIAGNOSTIC",
-  "source":str(path),"selected_evidence":selected,"other_fields":extra,
+  "source":str(path),"selected_evidence":selected,"validated_classification":classification,"other_fields":extra,
   "conclusion_requires_review":True,
   "proves_all_three_sector202_candidates_retained":False,
   "authorizes_candidate_refinement":False,
