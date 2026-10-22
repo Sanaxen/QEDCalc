@@ -7,6 +7,7 @@ No Kira run and no writes to original saved system.
 """
 from __future__ import annotations
 import argparse,gzip,json
+from pathlib import Path
 from examples.three_loop_sector203_ffrank_audit import coefficient
 from examples.three_loop_sector203_weight_audit import ROOT,load_codec
 from examples.three_loop_vp05_sector202_quotient_sensitivity import P,TARGETS
@@ -50,6 +51,7 @@ def main():
  ap.add_argument("--z",type=int,default=17)
  ap.add_argument("--d",type=int,default=7)
  ap.add_argument("--max-fill",type=int,default=20000)
+ ap.add_argument("--selection-output",type=Path,help="Optional JSON file recording exact original-row IDs per target (modular candidate, not proof)")
  args=ap.parse_args()
  p,z,d=args.prime,args.z,args.d
  codec_mod=load_codec((ROOT/"output/tools/pyred_weight.py").resolve())
@@ -72,7 +74,7 @@ def main():
   dependency[index]=deps
   normalized_rows[index]=lead
   accepted+=1
- selected=set();tests=[];values=functions(z,d)
+ selected=set();tests=[];values=functions(z,d);target_sources=[]
  for i,target in enumerate(keys[:2]):
   a,b=values[i*2:i*2+2]
   if a.denominator%p==0 or b.denominator%p==0:raise ValueError("singular candidate")
@@ -86,6 +88,7 @@ def main():
    if node in needed:continue
    needed.add(node);queue.extend(dependency[node])
   selected.update(needed)
+  target_sources.append({"target_index":i,"target":list(TARGETS[i]),"global_zero_based_ids":sorted(needed),"count":len(needed)})
   tests.append({"target":list(TARGETS[i]),"modular_coeff_C":av,
     "modular_coeff_small4":bv,"remainder_terms":len(cur),
     "direct_pivot_dependencies":len(owners),
@@ -97,6 +100,16 @@ def main():
   "symbolic_exact_replay_proven":False,
   "description":"Modular elimination dependency DAG. Selected original rows are a candidate sufficient source for exact symbolic certificate. No exact symbolic replay performed.",
   "kira_executed":False,"files_modified":False}
+ if args.selection_output:
+  if not all(t["verified"] for t in tests):raise RuntimeError("Target modular replay failed; selection not written")
+  selection={"status":"MODULAR_DEPENDENCY_SOURCE_SELECTION_NOT_EXACT_PROOF",
+   "point":[p,z,d],"source_equation_count":len(original),
+   "targets":target_sources,"union_global_zero_based_ids":sorted(selected),
+   "provenance":"Modular elimination DAG from original Kira SYSTEM files; indices are original global_zero_based IDs",
+   "exact_target_reduction_proven":False}
+  args.selection_output.parent.mkdir(parents=True,exist_ok=True)
+  args.selection_output.write_text(json.dumps(selection,indent=2,ensure_ascii=True)+"\n",encoding="utf-8")
+  out["selection_output"]=str(args.selection_output)
  print("VP05_SECTOR202_SOURCE_PROOF_PREFLIGHT "+json.dumps(out,ensure_ascii=True),flush=True)
  if not all(t["verified"] for t in tests):raise SystemExit(2)
 if __name__=="__main__":main()
