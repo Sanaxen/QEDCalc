@@ -20,7 +20,7 @@ def parse_one_target(path):
 
 ACK="EXECUTE_ISOLATED_VP05_SINGLE_TARGET"
 AUDIT=Path("output/three_loop_integral_family_audit")
-DEST=Path("output/vp05_full_stage_kira_experiment_05")
+DEST=Path("output/vp05_full_stage_kira_experiment_06")
 
 def digest(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 def progress_from_log(log):
@@ -68,6 +68,25 @@ def group_memory_mib(pgid):
    rss+=fields.get("VmRSS",0);vms+=fields.get("VmSize",0);observed+=1
   except (OSError,ValueError,IndexError):continue
  return {"rss_mib":round(rss/1024,2),"vms_mib":round(vms/1024,2),"processes_observed":observed}
+
+def cpu_snapshot(pgid):
+ """Read Linux /proc per-process CPU ticks, state, and threads without signals."""
+ clk=os.sysconf("SC_CLK_TCK")
+ processes=[];total=0.0
+ for pid in group_members(pgid):
+  if pid<1:continue
+  try:
+   stat=(Path("/proc")/str(pid)/"stat").read_text()
+   sep=stat.rfind(")")
+   name=stat[stat.find("(")+1:sep]
+   fields=stat[sep+2:].split()
+   # fields[0] state, [11]/[12] utime/stime, [17] num_threads
+   seconds=(int(fields[11])+int(fields[12]))/clk
+   total+=seconds
+   processes.append({"pid":pid,"name":name,"state":fields[0],
+                     "cpu_seconds":round(seconds,3),"threads":int(fields[17])})
+  except (OSError,ValueError,IndexError):continue
+ return {"group_cpu_seconds":round(total,3),"processes":processes}
 
 def artifact_snapshot(root, log):
  """Lightweight bounded metadata-only snapshot; no original data read or rewrite."""
@@ -128,7 +147,7 @@ def main():
  p.add_argument("--min-mem-available-gib",type=float,default=4)
  p.add_argument("--max-swap-used-gib",type=float,default=12)
  p.add_argument("--fermat",default="/home/yamatoyamato/fermat/Ferl7/fer64")
- p.add_argument("--output",type=Path,default=AUDIT/"vp05_full_stage_guarded_run_05.json")
+ p.add_argument("--output",type=Path,default=AUDIT/"vp05_full_stage_guarded_run_06.json")
  a=p.parse_args()
  report_path=a.output if a.execute_vp05 else a.output.with_name(a.output.stem+"_dry_run.json")
  if not 10<=a.max_seconds<=600 or a.min_mem_available_gib<2 or a.max_swap_used_gib<=0 or not 0<=a.address_space_gib<=16 or not 2<=a.max_group_rss_gib<=8:p.error("unsafe limits")
@@ -145,6 +164,7 @@ def main():
  check["second_experiment_preserved"]=Path("output/vp05_full_stage_kira_experiment_02").is_dir()
  check["third_experiment_preserved"]=Path("output/vp05_full_stage_kira_experiment_03").is_dir()
  check["fourth_experiment_preserved"]=Path("output/vp05_full_stage_kira_experiment_04").is_dir()
+ check["fifth_experiment_preserved"]=Path("output/vp05_full_stage_kira_experiment_05").is_dir()
  check["report_path_unused"]=not report_path.exists()
  manifest=CAPSULE/"CAPSULE_REVIEW_ONLY.json"
  data=json.loads(manifest.read_text(encoding="utf-8-sig")) if manifest.is_file() else {}
@@ -188,6 +208,8 @@ def main():
    previous_snapshot=None
    last_artifact_change_elapsed=None
    artifact_changes=0
+   last_cpu_snapshot=None
+   cpu_active_samples=0
    monitor_log=DEST/"resource_samples.jsonl"
    with monitor_log.open("x",encoding="utf-8") as mon:
     while proc.poll() is None:
@@ -196,6 +218,11 @@ def main():
      if len(measurements)%25==0:
       snapshot=artifact_snapshot(DEST,log)
       sample["artifacts"]=snapshot
+      cpu=cpu_snapshot(proc.pid)
+      sample["cpu"]=cpu
+      if last_cpu_snapshot is not None and cpu["group_cpu_seconds"]>last_cpu_snapshot["group_cpu_seconds"]+0.01:
+       cpu_active_samples+=1
+      last_cpu_snapshot=cpu
       if previous_snapshot is not None and snapshot!=previous_snapshot:
        artifact_changes+=1
        last_artifact_change_elapsed=sample["elapsed_seconds"]
@@ -212,6 +239,8 @@ def main():
    report["peak_observed_group_rss_mib"]=peak_rss
    report["resource_samples"]=len(measurements)
    report["artifact_change_samples"]=artifact_changes
+   report["cpu_active_samples"]=cpu_active_samples
+   report["last_cpu_snapshot"]=last_cpu_snapshot
    report["last_artifact_change_elapsed_seconds"]=last_artifact_change_elapsed
    report["last_artifact_snapshot"]=artifact_snapshot(DEST,log)
    report["resource_log"]=str(monitor_log)
