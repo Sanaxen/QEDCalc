@@ -5713,3 +5713,8 @@ Added `three_loop/vp05_verified_reduction.py`: `load_verified_vp05_rule()` consu
 | カテゴリ別 subtotal / 文献照合 | 未着手 | **未着手** |
 | 72図の総和 | 未着手 | **未着手** |
 | 3-loop 電子 $g-2$ 解析解 | 最終目標 | **最終目標のまま** |
+
+
+### 2026-10-22 VP05 saved-project API smoke added
+
+User reported pytest `12 passed in 0.50s` (seven rule unit tests plus five mocked integration tests). Added `run_vp05_saved_project_api_smoke.bat` and `examples/three_loop_sector203_saved_project_api_smoke.py`. The smoke uses real L2 `results/VP05_full/masters` (5 entries) plus genuine verified artifact, running `synthesize_master_coefficients` with one **synthetic unit target amplitude**, temporary **empty FORM file** (initiate-only project has no Kira FORM reduction export), and SymPy exact backend (no Fermat). Expected two nonzero coefficients +2/z and -2/z, other 3 saved masters zero. This tests actual saved inputs in master-coefficient API without touching Kira or project; it does NOT certify full VP05 projected amplitude, diagram routing, or complete master basis. Next `git pull` then `run_vp05_saved_project_api_smoke.bat` and review output.
