@@ -51,6 +51,7 @@ def main():
  ap=argparse.ArgumentParser()
  ap.add_argument("--max-fill",type=int,default=20000)
  ap.add_argument("--points",type=int,choices=(1,2,3,4,5,6),default=6)
+ ap.add_argument("--grid",action="store_true",help="Sample independent z and d axes at the same prime for rational-function reconstruction")
  args=ap.parse_args()
  m=load_codec((ROOT/"output/tools/pyred_weight.py").resolve())
  bits,ordering=m.from_kiradb(str(P/"results/kira.db"))
@@ -63,6 +64,9 @@ def main():
  files=sorted((P/"tmp/VP05_full").glob("SYSTEM_VP05_full_*.gz"))
  points=[(1000003,17,7),(1000033,19,11),(1000037,23,13),
          (1000039,29,17),(1000081,31,19),(1000099,37,23)][:args.points]
+ if args.grid:
+  points=[(1000003,z,7) for z in (11,13,17,19,23,29,31,37,41)]
+  points += [(1000003,17,d) for d in (5,9,11,13,17,19,23,29)]
  outputs=[]
  for prime,z,d in points:
   pivots={};cols=set();n=0;error=None
