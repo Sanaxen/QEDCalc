@@ -5938,3 +5938,8 @@ User `run_vp05_sector202_exact_source_export.bat`: `EXPORTED_NOT_PROVEN`, 2241 s
 ### 2026-10-23 VP05 sector202 first six original-row exact symbolic replays PASS
 
 User `run_vp05_sector202_exact_prefix_smoke.bat`: `EXACT_SYMBOLIC_PREFIX_REPLAY_VERIFIED`; loaded 2241 selected exact source rows from 14 Kira SYSTEM files. First six original equations give rank 6, and all 6 symbolic normalized elimination rows replay to exact original Kira source combinations with zero rational-function remainder. Row source supports [1,1,2,2,1,5], final row 4 elimination steps, with max normalized column count 7 in tested prefix. This is a **6-row exact-source smoke verification only**, NOT a proof of either target relation from the full 2241-row source system. Next bounded experiment: use existing runner `run_vp05_sector202_exact_prefix_smoke.bat --rows 12` (hard cap 20; expression and column caps unchanged) before considering any larger exact elimination. No Kira execution, no changes to the 63 candidate master basis.
+
+
+### 2026-10-23 sector202 exact symbolic prefix 6 and 12 PASS
+
+User ran `run_vp05_sector202_exact_prefix_smoke.bat` with 6 and then 12 rows. Both `EXACT_SYMBOLIC_PREFIX_REPLAY_VERIFIED`: exact symbolic rank respectively 6/6 and 12/12; original Kira equation provenance replay verified for every processed row. 12-row peak columns 8, peak original source support 7; first 12 source indices 0..11, 14 source files represented in export metadata; no original Kira files modified. No full 2241-row source replay or A/B exact rational coefficient proof. Next test at most 20 rows under existing caps (`--rows 20`); continue only after examining growth, not automatically 2241 rows.
