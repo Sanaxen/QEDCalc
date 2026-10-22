@@ -62,10 +62,11 @@ def main():
    if type(item) is not int or item<0:ap.error("Each selected global_zero_based index must be a nonnegative integer")
    ids.append(item)
   if len(ids)!=len(set(ids)):ap.error("Duplicate selected indices")
+  if len(ids)>args.rows:ap.error("Indices file has %d entries but --rows=%d; raise --rows explicitly (max 100)" % (len(ids),args.rows))
   available={r["global_zero_based"]:i for i,r in enumerate(rows)}
   missing=[i for i in ids if i not in available]
   if missing:ap.error("Requested original IDs missing from exact source export: %s" % missing[:10])
-  chosen=[(available[i],rows[available[i]]) for i in ids[:args.rows]]
+  chosen=[(available[i],rows[available[i]]) for i in ids]
   selection_mode="explicit_original_ids"
  else:
   if args.start_row+args.rows>len(rows):ap.error("Requested row window exceeds source export")
