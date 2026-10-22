@@ -28,6 +28,8 @@ def main():
  ap=argparse.ArgumentParser()
  ap.add_argument("--input",type=Path,default=DEFAULT)
  ap.add_argument("--rows",type=int,default=6)
+ ap.add_argument("--start-row",type=int,default=0,help="Zero-based offset within 2241 selected source rows")
+ ap.add_argument("--indices-file",type=Path,help="JSON array of original global_zero_based IDs or object with selected_rows; indices must refer to exported source rows")
  ap.add_argument("--max-columns",type=int,default=100)
  ap.add_argument("--max-expression-chars",type=int,default=1200)
  ap.add_argument("--max-source-support",type=int,default=100)
@@ -35,7 +37,9 @@ def main():
  ap.add_argument("--mod-z",type=int,default=17)
  ap.add_argument("--mod-d",type=int,default=7)
  args=ap.parse_args()
- if args.rows<1 or args.rows>50:ap.error("--rows must be between 1 and 50")
+ if args.rows<1 or args.rows>100:ap.error("--rows must be between 1 and 100")
+ if args.start_row<0:ap.error("--start-row must be nonnegative")
+ if args.indices_file and args.start_row:ap.error("--indices-file and --start-row cannot be combined")
  if min(args.max_columns,args.max_expression_chars,args.max_source_support)<1:ap.error("All symbolic caps must be positive")
  with gzip.open(args.input,"rt",encoding="utf-8") as f:data=json.load(f)
  if data.get("status")!="ORIGINAL_EXACT_SOURCE_ROWS_EXPORTED":raise RuntimeError("Unexpected export format")
@@ -47,6 +51,26 @@ def main():
   if r["global_zero_based"]<=prev:raise RuntimeError("Nonmonotonic provenance indices")
   prev=r["global_zero_based"]
   if not r["terms"]:raise RuntimeError("Empty source row")
+ if args.indices_file:
+  with args.indices_file.open("r",encoding="utf-8-sig") as stream: selector=json.load(stream)
+  if isinstance(selector,dict):
+   selector=selector.get("selected_rows")
+  if not isinstance(selector,list) or not selector:ap.error("--indices-file must hold a nonempty JSON array or selected_rows array")
+  ids=[]
+  for item in selector:
+   if isinstance(item,dict):item=item.get("global_zero_based")
+   if type(item) is not int or item<0:ap.error("Each selected global_zero_based index must be a nonnegative integer")
+   ids.append(item)
+  if len(ids)!=len(set(ids)):ap.error("Duplicate selected indices")
+  available={r["global_zero_based"]:i for i,r in enumerate(rows)}
+  missing=[i for i in ids if i not in available]
+  if missing:ap.error("Requested original IDs missing from exact source export: %s" % missing[:10])
+  chosen=[(available[i],rows[available[i]]) for i in ids[:args.rows]]
+  selection_mode="explicit_original_ids"
+ else:
+  if args.start_row+args.rows>len(rows):ap.error("Requested row window exceeds source export")
+  chosen=list(enumerate(rows[args.start_row:args.start_row+args.rows],start=args.start_row))
+  selection_mode="prefix" if args.start_row==0 else "window"
  z,d=sp.symbols("z d")
  basis={};stats=[];independent=0
  def measure(row,trace,stage,idx):
@@ -57,7 +81,7 @@ def main():
    raise RuntimeError("Symbolic cap reached at row %d (%s): columns=%d support=%d max_row_chars=%d max_trace_chars=%d" %
       (idx,stage,len(row),len(trace),max_row,max_trace))
   return max_row,max_trace
- for ri,record in enumerate(rows[:args.rows]):
+ for ri,record in chosen:
   current={}
   for t in record["terms"]:
    key=tuple(t["key"]);v=expr(t["coefficient"],z,d)
@@ -101,7 +125,9 @@ def main():
     "max_row_expression_chars":row_chars,"max_provenance_expression_chars":trace_chars,
     "exact_provenance_replay":True})
  result={"status":"EXACT_SYMBOLIC_PREFIX_REPLAY_VERIFIED","input":str(args.input),
-  "selected_source_rows":len(rows),"rows_checked":args.rows,"exact_prefix_rank":independent,
+  "selected_source_rows":len(rows),"rows_checked":len(chosen),"exact_prefix_rank":independent,
+  "selection_mode":selection_mode,"start_row":args.start_row if not args.indices_file else None,
+  "selected_original_ids":[record["global_zero_based"] for _,record in chosen],
   "original_files":len(data["source_file_sha256"]),"row_statistics":stats,
   "symbolic_caps":{"max_columns":args.max_columns,"max_expression_chars":args.max_expression_chars,"max_source_support":args.max_source_support},
   "observed_maxima":{"columns":max(x["columns"] for x in stats),
@@ -110,6 +136,6 @@ def main():
     "row_expression_chars":max(x["max_row_expression_chars"] for x in stats),
     "provenance_expression_chars":max(x["max_provenance_expression_chars"] for x in stats)},
   "exact_target_reduction_proven":False,"original_kira_sources_modified":False,
-  "interpretation":"Symbolic replay of bounded original-row prefix only; full 2241-row target relation not attempted."}
+  "interpretation":"Symbolic replay of a bounded source-row selection only; full 2241-row target relation not attempted."}
  print("VP05_SECTOR202_EXACT_PREFIX_SMOKE "+json.dumps(result,ensure_ascii=True),flush=True)
 if __name__=="__main__":main()
