@@ -50,7 +50,7 @@ def mod_coeff(target,c,m,pivots,p):
 def main():
  ap=argparse.ArgumentParser()
  ap.add_argument("--max-fill",type=int,default=20000)
- ap.add_argument("--points",type=int,choices=(1,2,3),default=3)
+ ap.add_argument("--points",type=int,choices=(1,2,3,4,5,6),default=6)
  args=ap.parse_args()
  m=load_codec((ROOT/"output/tools/pyred_weight.py").resolve())
  bits,ordering=m.from_kiradb(str(P/"results/kira.db"))
@@ -61,7 +61,7 @@ def main():
   raise RuntimeError("target physical ID roundtrip failed")
  small4=(4,73)
  files=sorted((P/"tmp/VP05_full").glob("SYSTEM_VP05_full_*.gz"))
- points=[(1000003,17,7),(1000033,19,11),(1000037,23,13)][:args.points]
+ points=[(1000003,17,7),(1000033,19,11),(1000037,23,13),\n         (1000039,29,17),(1000081,31,19),(1000099,37,23)][:args.points]
  outputs=[]
  for prime,z,d in points:
   pivots={};cols=set();n=0;error=None
