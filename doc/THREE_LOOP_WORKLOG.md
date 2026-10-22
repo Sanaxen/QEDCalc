@@ -5756,3 +5756,8 @@ User `run_vp05_stage2_reconciliation.bat` output: all four canonical masters see
 **Read-only local checks:** `run_vp05_stage2_reconciliation.bat`, `run_vp05_stage2_history.bat`. These inspect status/history but DO NOT close missing tests or create promotion-ready. Do NOT run `run_three_loop_master_basis_all.bat run/resume` involving VP05 without an explicit resource-safe verified plan. Preserve Git branch `feature/master-basis-initiate-only` and `doc/THREE_LOOP_WORKLOG.md` as handoff canonical record.
 
 **Future-session first step:** Read this heading and the latest VP05 history JSON. Investigate `r8s6d2`/`r8s5d3` saved project/manifest and RAM/swap failure traces, plan minimal independent closure of the 63 basis. This is Stage-2 work, not VP05 projected-amplitude work.
+
+
+### 2026-10-22 VP05 63-master closure missing projects, forensic log
+
+User `run_vp05_stage2_missing_closure_forensics.bat`: saved standard closure manifest candidate r8s5d2 has 63 candidate masters, 530 original union targets, refined-candidate-only closure 63 mandatory targets, topology VP05/VP06. Boundary r9s5d2 yielded **63/63 retained, no new masters, stable=true**. Boundaries r8s6d2 and r8s5d3 have **no saved masters or masters.final**; the aggregate closure reports false because data are *unavailable*, NOT because they are proven mathematically unstable. Related sector-closure and direct reducibility probes are not equivalent to whole-family one-axis closure. Standard promotion-ready remains absent. Added read-only `run_vp05_closure_project_inventory.bat` to inspect file presence and limited log tails in the two original closure projects. Do not rerun Kira yet and do not mark promotion-ready.
