@@ -105,6 +105,7 @@ def main():
   selection={"status":"MODULAR_DEPENDENCY_SOURCE_SELECTION_NOT_EXACT_PROOF",
    "point":[p,z,d],"source_equation_count":len(original),
    "targets":target_sources,"union_global_zero_based_ids":sorted(selected),
+   "dependency_edges":{str(j):sorted(set(dependency[j])) for j in sorted(selected)},
    "provenance":"Modular elimination DAG from original Kira SYSTEM files; indices are original global_zero_based IDs",
    "exact_target_reduction_proven":False}
   args.selection_output.parent.mkdir(parents=True,exist_ok=True)
