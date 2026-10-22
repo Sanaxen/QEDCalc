@@ -5943,3 +5943,8 @@ User `run_vp05_sector202_exact_prefix_smoke.bat`: `EXACT_SYMBOLIC_PREFIX_REPLAY_
 ### 2026-10-23 sector202 exact symbolic prefix 6 and 12 PASS
 
 User ran `run_vp05_sector202_exact_prefix_smoke.bat` with 6 and then 12 rows. Both `EXACT_SYMBOLIC_PREFIX_REPLAY_VERIFIED`: exact symbolic rank respectively 6/6 and 12/12; original Kira equation provenance replay verified for every processed row. 12-row peak columns 8, peak original source support 7; first 12 source indices 0..11, 14 source files represented in export metadata; no original Kira files modified. No full 2241-row source replay or A/B exact rational coefficient proof. Next test at most 20 rows under existing caps (`--rows 20`); continue only after examining growth, not automatically 2241 rows.
+
+
+### 2026-10-23 VP05 sector202 exact prefix 20 PASS; guarded 50-row extension prepared
+
+User log `log(20261022-230828).txt`: `EXACT_SYMBOLIC_PREFIX_REPLAY_VERIFIED`, rank 20/20, exact original-row replay 20/20; observed final-row max columns 8, source support 7, elimination steps 5. This is prefix verification only, NOT A/B target proof or full 2241-row proof. Code commit `d764af442710f44b70f688fffe1de7e479c6063c` raises the opt-in `--rows` cap from 20 to 50 and adds row/provenance expression-length telemetry, overall maxima and explicit max-source-support=100 safety cap. Existing column 100 and expression 1200 caps remain. Original Kira source files are read-only; no Kira execution. Next local test `git pull` then `.\run_vp05_sector202_exact_prefix_smoke.bat --rows 50`. Inspect caps/row growth and exact replay before further expansion. Changes have not yet been validated against the local 2241-row export; result pending user execution.
