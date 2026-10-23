@@ -152,6 +152,7 @@ def main():
    lead=min(cur)
    if lead not in basis:break
    brow,_=basis[lead];coefficient=cur[lead]
+   before_exact=dict(cur)
    step={"step":number,"exact_pivot":list(lead),"exact_columns_before":len(cur),"exact_coefficient_chars":len(str(coefficient))}
    for m in modular:
     if m["status"]!="PASS":continue
@@ -191,7 +192,7 @@ def main():
         "pivot_match":match})
       continue
      before_modular=dict(m["row"])
-     before_exact=cur
+     m["before_row"]=dict(m["row"])
      for k,v in pivot_values.items():
       updated=(m["row"].get(k,0)-mc*v)%p
       if updated:m["row"][k]=updated
@@ -215,7 +216,8 @@ def main():
       m["status"]="POST_ELIMINATION_MISMATCH"
       m["steps"].append({"step":number,"exact_pivot":list(lead),
         "first_differing_column":list(k),"expected_after":expected_after.get(k,0),
-        "tracked_after":m["row"].get(k,0),"pivot_row_coefficient":specialization(brow.get(k,sp.S.Zero),p,zv,dv),
+        "tracked_after":m["row"].get(k,0),
+        "tracked_before_mod_p":m["before_row"].get(k,0),"pivot_row_coefficient":specialization(brow.get(k,sp.S.Zero),p,zv,dv),
         "elimination_multiplier":specialization(coefficient,p,zv,dv),
         "exact_before_expression":str(before_exact.get(k,sp.S.Zero)),
         "exact_before_mod_p":specialization(before_exact.get(k,sp.S.Zero),p,zv,dv),
