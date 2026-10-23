@@ -57,6 +57,8 @@ def main():
  ap.add_argument("--factor-normalization",action="store_true",help="Try shorter exact factored forms after new pivot normalization; does not alter existing checkpoint")
  ap.add_argument("--diagnose-next",action="store_true",help="Inspect only the next source row and never write the checkpoint")
  ap.add_argument("--diagnostic-output",type=Path,default=BASE/"vp05_sector202_exact_support_cap_diagnostic.json")
+ ap.add_argument("--fixed-path-audit",action="store_true",help="Compare exact pivot path with modular per-point forward elimination")
+ ap.add_argument("--fixed-path-output",type=Path,default=BASE/"vp05_sector202_fixed_path_audit.json")
  ap.add_argument("--exact-divergence",action="store_true",help="Read-only exact rational audit of the ID730 pivot at modular divergence step")
  ap.add_argument("--exact-divergence-output",type=Path,default=BASE/"vp05_sector202_exact_divergence.json")
  ap.add_argument("--modular-fill",action="store_true",help="Read-only finite-field forward elimination of the next source row")
@@ -117,6 +119,82 @@ def main():
   if len(basis)+dependent!=processed:raise RuntimeError("Checkpoint rank accounting mismatch")
  elif args.checkpoint.exists():
   raise RuntimeError("Checkpoint exists: supply --resume, or use a new --checkpoint path")
+ if args.fixed_path_audit:
+  if not args.resume or not args.diagnose_next:raise RuntimeError("--fixed-path-audit requires --resume --diagnose-next")
+  if processed>=len(ids):raise RuntimeError("No remaining source row")
+  rid=ids[processed]
+  points=[(1000003,17,7),(1000033,19,11),(1000037,21,15)]
+  def specialization(v,p,zv,dv):
+   n,den=sp.fraction(sp.cancel(v))
+   mapping={z:zv,d:dv}
+   numerator=int(n.subs(mapping))%p;denominator=int(den.subs(mapping))%p
+   if not denominator:raise ZeroDivisionError("Pole at modular point")
+   return numerator*pow(denominator,-1,p)%p
+  cur={}
+  for term in rows[rid]["terms"]:
+   key=tuple(term["key"])
+   value=sp.cancel(cur.get(key,sp.S.Zero)+expr(term["coefficient"],z,d))
+   if value:cur[key]=value
+   else:cur.pop(key,None)
+  modular=[]
+  for p,zv,dv in points:
+   try:
+    m={}
+    for key,value in cur.items():
+     v=specialization(value,p,zv,dv)
+     if v:m[key]=v
+    modular.append({"point":[p,zv,dv],"row":m,"status":"PASS","steps":[]})
+   except ZeroDivisionError:
+    modular.append({"point":[p,zv,dv],"row":{},"status":"SINGULAR_SPECIALIZATION","steps":[]})
+  exact_steps=[];stopped="EXACT_TERMINAL"
+  for number in range(1,39):
+   if not cur:break
+   lead=min(cur)
+   if lead not in basis:break
+   brow,_=basis[lead];coefficient=cur[lead]
+   step={"step":number,"exact_pivot":list(lead),"exact_columns_before":len(cur),"exact_coefficient_chars":len(str(coefficient))}
+   for m in modular:
+    if m["status"]!="PASS":continue
+    p,zv,dv=m["point"]
+    try:
+     mc=specialization(coefficient,p,zv,dv)
+     pivot_coeff=m["row"].get(lead,0)
+     first=list(min(m["row"])) if m["row"] else None
+     equal=mc==pivot_coeff
+     match=(first==list(lead))
+     pivot_values={k:v for k,ev in brow.items() if (v:=specialization(ev,p,zv,dv))!=0}
+     if not equal:raise RuntimeError("Exact-to-modular coefficient mismatch")
+     for k,v in pivot_values.items():
+      updated=(m["row"].get(k,0)-mc*v)%p
+      if updated:m["row"][k]=updated
+      else:m["row"].pop(k,None)
+     m["steps"].append({"step":number,"first_modular_pivot":first,
+       "exact_pivot":list(lead),"pivot_match":match,"coefficient":mc,
+       "modular_columns_after":len(m["row"])})
+    except ZeroDivisionError:
+     m["status"]="SINGULAR_SPECIALIZATION";m["steps"].append({"step":number,"error":"pole"})
+   subtract(cur,brow,coefficient)
+   exact_steps.append(step)
+   if len(cur)>args.max_intermediate_columns:
+    stopped="EXACT_INTERMEDIATE_COLUMN_CAP";break
+   if max((len(str(v)) for v in cur.values()),default=0)>args.max_expression_chars:
+    stopped="EXACT_EXPRESSION_CAP";break
+  report={"status":"FIXED_PATH_AUDIT_NOT_TARGET_PROOF","saved_processed":processed,
+   "original_id":rid,"checkpoint_sha256":digest(args.checkpoint.read_bytes()),
+   "exact_steps":exact_steps,"exact_status":stopped,
+   "points":[{"point":m["point"],"status":m["status"],"steps":m["steps"],
+     "first_path_mismatch":next((x for x in m["steps"] if not x.get("pivot_match",True)),None),
+     "final_columns":len(m["row"])} for m in modular],
+   "checkpoint_modified":False,"exact_target_reduction_proven":False}
+  args.fixed_path_output.parent.mkdir(parents=True,exist_ok=True)
+  args.fixed_path_output.write_text(json.dumps(report,indent=2)+"\n",encoding="utf-8")
+  print("VP05_SECTOR202_FIXED_PATH "+json.dumps({"status":report["status"],
+   "exact_steps":len(exact_steps),"exact_status":stopped,
+   "points":[{"point":m["point"],"status":m["status"],
+     "first_path_mismatch":next((x for x in m["steps"] if not x.get("pivot_match",True)),None)}
+     for m in modular],"checkpoint_modified":False,
+   "output":str(args.fixed_path_output)}),flush=True)
+  return
  if args.exact_divergence:
   if processed>=len(ids):raise RuntimeError("No next source row")
   rid=ids[processed]
