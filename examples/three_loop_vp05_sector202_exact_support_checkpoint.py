@@ -125,7 +125,7 @@ def main():
    dd=int(denom.subs(substitutions))%p
    if dd==0:raise ZeroDivisionError("Specialization denominator is zero")
    return nn*pow(dd,-1,p)%p
-  reports=[]
+  reports=[];row_states=[]
   for prime,zv,dv in points:
    try:
     modular_basis={}
@@ -143,12 +143,13 @@ def main():
      if v:current[k]=v
      else:current.pop(k,None)
     provenance={rid:1}
-    initial=len(current);initial_support=len(provenance);steps=[]
+    initial=len(current);initial_support=len(provenance);steps=[];states=[]
     while current:
      lead=min(current)
      if lead not in modular_basis:break
      prow=modular_basis[lead];ptrace=modular_trace[lead]
      factor=current[lead];before=len(current);support_before=len(provenance)
+     states.append(dict(current))
      for k,value in prow.items():
       candidate=(current.get(k,0)-factor*value)%prime
       if candidate:current[k]=candidate
@@ -159,6 +160,7 @@ def main():
       else:provenance.pop(original_id,None)
      steps.append({"step":len(steps)+1,"pivot":list(lead),"before_columns":before,"pivot_columns":len(prow),"after_columns":len(current),
        "support_before":support_before,"support_after":len(provenance),"pivot_support":len(ptrace)})
+    row_states.append(states)
     reports.append({"point":[prime,zv,dv],"status":"PASS","initial_columns":initial,
       "steps":steps,"peak_columns":max([initial]+[x["after_columns"] for x in steps]),
       "final_columns":len(current),"initial_support":initial_support,
@@ -166,15 +168,39 @@ def main():
       "final_support":len(provenance),"terminal_lead":list(min(current)) if current else None,
       "terminal_lead_is_new_pivot":bool(current) and min(current) not in modular_basis})
    except (ZeroDivisionError,ValueError) as ex:
+    row_states.append([])
     reports.append({"point":[prime,zv,dv],"status":"SPECIALIZATION_SKIPPED","reason":str(ex)})
+  differences=[]
+  for a in range(len(reports)):
+   for b in range(a+1,len(reports)):
+    if reports[a]["status"]!="PASS" or reports[b]["status"]!="PASS":continue
+    path_a=reports[a]["steps"];path_b=reports[b]["steps"]
+    common=min(len(path_a),len(path_b))
+    i=next((j for j in range(common) if path_a[j]["pivot"]!=path_b[j]["pivot"]),common)
+    if i==common and len(path_a)==len(path_b):
+     differences.append({"points":[reports[a]["point"],reports[b]["point"]],"status":"IDENTICAL_PIVOT_PATH","steps":common})
+     continue
+    lead_a=tuple(path_a[i]["pivot"]) if i<len(path_a) else None
+    lead_b=tuple(path_b[i]["pivot"]) if i<len(path_b) else None
+    state_a=row_states[a][i] if i<len(row_states[a]) else {}
+    state_b=row_states[b][i] if i<len(row_states[b]) else {}
+    differences.append({"points":[reports[a]["point"],reports[b]["point"]],
+      "status":"FIRST_PIVOT_DIVERGENCE","step_one_based":i+1,
+      "pivot_at_a":list(lead_a) if lead_a else None,
+      "pivot_at_b":list(lead_b) if lead_b else None,
+      "a_pivot_coefficient_at_a":state_a.get(lead_a) if lead_a else None,
+      "a_pivot_coefficient_at_b":state_b.get(lead_a,0) if lead_a else None,
+      "b_pivot_coefficient_at_a":state_a.get(lead_b,0) if lead_b else None,
+      "b_pivot_coefficient_at_b":state_b.get(lead_b) if lead_b else None,
+      "columns_before_a":len(state_a),"columns_before_b":len(state_b)})
   result={"status":"MODULAR_FILL_DIAGNOSTIC_NOT_EXACT_PROOF","saved_processed":processed,
    "original_id":rid,"checkpoint_sha256":digest(args.checkpoint.read_bytes()),
-   "points":reports,"checkpoint_modified":False,"exact_target_reduction_proven":False}
+   "points":reports,"path_comparisons":differences,"checkpoint_modified":False,"exact_target_reduction_proven":False}
   args.modular_fill_output.parent.mkdir(parents=True,exist_ok=True)
   args.modular_fill_output.write_text(json.dumps(result,indent=2)+"\n",encoding="utf-8")
   print("VP05_SECTOR202_MODULAR_FILL "+json.dumps({"status":result["status"],"original_id":rid,
     "summary":[{"point":r["point"],"status":r["status"],"peak_columns":r.get("peak_columns"),"final_columns":r.get("final_columns"),"peak_support":r.get("peak_support"),"final_support":r.get("final_support"),"steps":len(r.get("steps",[]))} for r in reports],
-    "output":str(args.modular_fill_output),"checkpoint_modified":False}),flush=True)
+    "path_comparisons":differences,"output":str(args.modular_fill_output),"checkpoint_modified":False}),flush=True)
   return
  def check(row,trace,stage,rid,pivot=None):
   column_cap=args.max_intermediate_columns if stage=="elimination" else args.max_columns
