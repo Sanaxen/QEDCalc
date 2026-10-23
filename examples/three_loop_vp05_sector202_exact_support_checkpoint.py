@@ -17,6 +17,12 @@ CERT=BASE/"vp05_sector202_modular_provenance_certificate.json"
 CHECKPOINT=BASE/"vp05_sector202_exact_support_checkpoint.json"
 
 def digest(raw):return hashlib.sha256(raw).hexdigest()
+def compact_exact(value):
+ """Keep a shorter factored rational expression without changing its value."""
+ candidate=sp.factor(value)
+ if sp.cancel(candidate-value)!=0:
+  raise AssertionError("Factored candidate is not symbolically equal")
+ return candidate if len(str(candidate))<len(str(value)) else value
 def decode_terms(entries,z,d):
  return {tuple(key):expr(value,z,d) for key,value in entries}
 def encode_terms(row):
@@ -45,6 +51,7 @@ def main():
  ap.add_argument("--max-expression-chars",type=int,default=1200)
  ap.add_argument("--target",choices=["union","A","B"],default="union")
  ap.add_argument("--resume",action="store_true")
+ ap.add_argument("--factor-normalization",action="store_true",help="Try shorter exact factored forms after new pivot normalization; does not alter existing checkpoint")
  ap.add_argument("--diagnose-next",action="store_true",help="Inspect only the next source row and never write the checkpoint")
  ap.add_argument("--diagnostic-output",type=Path,default=BASE/"vp05_sector202_exact_support_cap_diagnostic.json")
  args=ap.parse_args()
@@ -136,6 +143,12 @@ def main():
    lead=min(cur);factor=cur[lead]
    cur={k:sp.cancel(v/factor) for k,v in cur.items()}
    trace={k:sp.cancel(v/factor) for k,v in trace.items()}
+   if args.factor_normalization:
+    before_row=max((len(str(v)) for v in cur.values()),default=0)
+    before_trace=max((len(str(v)) for v in trace.values()),default=0)
+    cur={k:compact_exact(v) for k,v in cur.items()}
+    trace={k:compact_exact(v) for k,v in trace.items()}
+    print("VP05_SECTOR202_EXACT_FACTOR_NORMALIZATION "+json.dumps({"original_id":rid,"row_chars_before":before_row,"trace_chars_before":before_trace,"row_chars_after":max((len(str(v)) for v in cur.values()),default=0),"trace_chars_after":max((len(str(v)) for v in trace.values()),default=0)}),flush=True)
    check(cur,trace,"normalization",rid,lead)
    verify(cur,trace,rows,z,d)
    basis[lead]=(cur,trace)
