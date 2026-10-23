@@ -189,7 +189,7 @@ def main():
    "original_id":rid,"checkpoint_sha256":digest(args.checkpoint.read_bytes()),
    "exact_steps":exact_steps,"exact_status":stopped,
    "points":[{"point":m["point"],"status":m["status"],"steps":m["steps"],
-     "first_path_mismatch":next((x for x in m["steps"] if not x.get("pivot_match",True)),None),
+     "first_path_mismatch":next((x for x in m["steps"] if not x.get("pivot_match",True) or "tracked_modular_coefficient" in x),None),
      "final_columns":len(m["row"])} for m in modular],
    "checkpoint_modified":False,"exact_target_reduction_proven":False}
   args.fixed_path_output.parent.mkdir(parents=True,exist_ok=True)
@@ -197,7 +197,7 @@ def main():
   print("VP05_SECTOR202_FIXED_PATH "+json.dumps({"status":report["status"],
    "exact_steps":len(exact_steps),"exact_status":stopped,
    "points":[{"point":m["point"],"status":m["status"],
-     "first_path_mismatch":next((x for x in m["steps"] if not x.get("pivot_match",True)),None)}
+     "first_path_mismatch":next((x for x in m["steps"] if not x.get("pivot_match",True) or "tracked_modular_coefficient" in x),None)}
      for m in modular],"checkpoint_modified":False,
    "output":str(args.fixed_path_output)}),flush=True)
   return
