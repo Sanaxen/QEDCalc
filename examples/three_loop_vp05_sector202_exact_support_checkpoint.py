@@ -171,7 +171,7 @@ def main():
    "original_id":rid,"checkpoint_sha256":digest(args.checkpoint.read_bytes()),
    "points":reports,"checkpoint_modified":False,"exact_target_reduction_proven":False}
   args.modular_fill_output.parent.mkdir(parents=True,exist_ok=True)
-  args.modular_fill_output.write_text(json.dumps(result,indent=2)+"\\n",encoding="utf-8")
+  args.modular_fill_output.write_text(json.dumps(result,indent=2)+"\n",encoding="utf-8")
   print("VP05_SECTOR202_MODULAR_FILL "+json.dumps({"status":result["status"],"original_id":rid,
     "summary":[{"point":r["point"],"status":r["status"],"peak_columns":r.get("peak_columns"),"final_columns":r.get("final_columns"),"peak_support":r.get("peak_support"),"final_support":r.get("final_support"),"steps":len(r.get("steps",[]))} for r in reports],
     "output":str(args.modular_fill_output),"checkpoint_modified":False}),flush=True)
