@@ -57,6 +57,8 @@ def main():
  ap.add_argument("--factor-normalization",action="store_true",help="Try shorter exact factored forms after new pivot normalization; does not alter existing checkpoint")
  ap.add_argument("--diagnose-next",action="store_true",help="Inspect only the next source row and never write the checkpoint")
  ap.add_argument("--diagnostic-output",type=Path,default=BASE/"vp05_sector202_exact_support_cap_diagnostic.json")
+ ap.add_argument("--exact-divergence",action="store_true",help="Read-only exact rational audit of the ID730 pivot at modular divergence step")
+ ap.add_argument("--exact-divergence-output",type=Path,default=BASE/"vp05_sector202_exact_divergence.json")
  ap.add_argument("--modular-fill",action="store_true",help="Read-only finite-field forward elimination of the next source row")
  ap.add_argument("--modular-fill-output",type=Path,default=BASE/"vp05_sector202_modular_fill_forward.json")
  ap.add_argument("--trace-fill",action="store_true",help="Record exact elimination fill-in for next row in read-only diagnostic mode")
@@ -65,6 +67,7 @@ def main():
  if not 1<=args.rows_per_run<=100:ap.error("--rows-per-run must be 1..100")
  if args.trace_fill and (not args.diagnose_next or not args.resume):ap.error("--trace-fill requires --resume --diagnose-next")
  if args.modular_fill and (not args.resume or not args.diagnose_next):ap.error("--modular-fill requires --resume --diagnose-next")
+ if args.exact_divergence and (not args.resume or not args.diagnose_next or args.modular_fill):ap.error("--exact-divergence requires --resume --diagnose-next and excludes --modular-fill")
  if min(args.max_columns,args.max_source_support,args.max_expression_chars)<1:ap.error("Caps must be positive")
  if args.max_intermediate_columns is None:args.max_intermediate_columns=args.max_columns
  if args.max_intermediate_columns<args.max_columns:ap.error("--max-intermediate-columns must be >= --max-columns")
@@ -114,6 +117,58 @@ def main():
   if len(basis)+dependent!=processed:raise RuntimeError("Checkpoint rank accounting mismatch")
  elif args.checkpoint.exists():
   raise RuntimeError("Checkpoint exists: supply --resume, or use a new --checkpoint path")
+ if args.exact_divergence:
+  if processed>=len(ids):raise RuntimeError("No next source row")
+  rid=ids[processed]
+  if rid!=730:raise RuntimeError("Exact divergence audit expects original ID730")
+  candidate=(166578162499584,139)
+  points=[(1000003,17,7),(1000033,19,11),(1000037,21,15)]
+  current={}
+  for term in rows[rid]["terms"]:
+   key=tuple(term["key"])
+   v=sp.cancel(current.get(key,sp.S.Zero)+expr(term["coefficient"],z,d))
+   if v:current[key]=v
+   else:current.pop(key,None)
+  pivot_path=[];status="TARGET_PIVOT_NOT_REACHED"
+  for step in range(1,39):
+   lead=min(current) if current else None
+   if lead is None or lead not in basis:
+    status="ELIMINATION_TERMINATED_BEFORE_TARGET";break
+   if step==38:
+    value=sp.cancel(current.get(candidate,sp.S.Zero))
+    num,den=sp.fraction(value)
+    evaluations=[]
+    for p,zv,dv in points:
+     n=int(num.subs({z:zv,d:dv}))%p
+     denominator=int(den.subs({z:zv,d:dv}))%p
+     modular_value=(n*pow(denominator,-1,p)%p) if denominator else None
+     evaluations.append({"point":[p,zv,dv],"numerator_mod_p":n,"denominator_mod_p":denominator,
+       "coefficient_mod_p":modular_value,"defined":denominator!=0})
+    report={"status":"EXACT_DIVERGENCE_COEFFICIENT_AUDIT_NOT_TARGET_PROOF",
+      "checkpoint_sha256":digest(args.checkpoint.read_bytes()),"saved_processed":processed,
+      "original_id":rid,"exact_step":step,"exact_lead":list(lead),"candidate_pivot":list(candidate),
+      "candidate_coefficient":str(value),"numerator":str(num),"denominator":str(den),
+      "symbolically_zero":value==0,"evaluations":evaluations,
+      "pivot_path":pivot_path,"checkpoint_modified":False,"exact_target_reduction_proven":False}
+    args.exact_divergence_output.parent.mkdir(parents=True,exist_ok=True)
+    args.exact_divergence_output.write_text(json.dumps(report,indent=2)+"\\n",encoding="utf-8")
+    print("VP05_SECTOR202_EXACT_DIVERGENCE "+json.dumps({
+      "status":report["status"],"exact_step":step,"exact_lead":list(lead),
+      "candidate_pivot":list(candidate),"symbolically_zero":value==0,
+      "coefficient_chars":len(str(value)),"evaluations":evaluations,
+      "output":str(args.exact_divergence_output),"checkpoint_modified":False}),flush=True)
+    return
+   brow,_=basis[lead]
+   subtract(current,brow,current[lead])
+   pivot_path.append(list(lead))
+   if len(current)>args.max_intermediate_columns:
+    status="INTERMEDIATE_COLUMN_CAP_BEFORE_TARGET";break
+   if max((len(str(v)) for v in current.values()),default=0)>args.max_expression_chars:
+    status="EXPRESSION_CAP_BEFORE_TARGET";break
+  print("VP05_SECTOR202_EXACT_DIVERGENCE "+json.dumps({
+   "status":status,"steps":len(pivot_path),"last_lead":pivot_path[-1] if pivot_path else None,
+   "checkpoint_modified":False}),flush=True)
+  return
  if args.modular_fill:
   if processed>=len(ids):raise RuntimeError("No next source row")
   rid=ids[processed]
