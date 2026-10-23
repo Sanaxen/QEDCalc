@@ -191,6 +191,7 @@ def main():
         "pivot_match":match})
       continue
      before_modular=dict(m["row"])
+     before_exact=cur
      for k,v in pivot_values.items():
       updated=(m["row"].get(k,0)-mc*v)%p
       if updated:m["row"][k]=updated
@@ -216,6 +217,9 @@ def main():
         "first_differing_column":list(k),"expected_after":expected_after.get(k,0),
         "tracked_after":m["row"].get(k,0),"pivot_row_coefficient":specialization(brow.get(k,sp.S.Zero),p,zv,dv),
         "elimination_multiplier":specialization(coefficient,p,zv,dv),
+        "exact_before_expression":str(before_exact.get(k,sp.S.Zero)),
+        "exact_before_mod_p":specialization(before_exact.get(k,sp.S.Zero),p,zv,dv),
+        "predicted_modular_after":(specialization(before_exact.get(k,sp.S.Zero),p,zv,dv)-specialization(coefficient,p,zv,dv)*specialization(brow.get(k,sp.S.Zero),p,zv,dv))%p,
         "difference_columns":len(mismatch),"pivot_match":True})
     except ZeroDivisionError:
      m["status"]="SINGULAR_SPECIALIZATION"
