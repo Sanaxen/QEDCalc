@@ -220,6 +220,11 @@ def main():
         "tracked_before_mod_p":m["before_row"].get(k,0),"pivot_row_coefficient":specialization(brow.get(k,sp.S.Zero),p,zv,dv),
         "elimination_multiplier":specialization(coefficient,p,zv,dv),
         "exact_before_expression":str(before_exact.get(k,sp.S.Zero)),
+        "exact_multiplier_expression":str(coefficient),
+        "exact_pivot_row_expression":str(brow.get(k,sp.S.Zero)),
+        "exact_after_expression":str(cur.get(k,sp.S.Zero)),
+        "symbolic_expected_after":str(sp.cancel(before_exact.get(k,sp.S.Zero)-coefficient*brow.get(k,sp.S.Zero))),
+        "symbolic_subtraction_matches_stored":sp.cancel(cur.get(k,sp.S.Zero)-(before_exact.get(k,sp.S.Zero)-coefficient*brow.get(k,sp.S.Zero)))==0,
         "exact_before_mod_p":specialization(before_exact.get(k,sp.S.Zero),p,zv,dv),
         "predicted_modular_after":(specialization(before_exact.get(k,sp.S.Zero),p,zv,dv)-specialization(coefficient,p,zv,dv)*specialization(brow.get(k,sp.S.Zero),p,zv,dv))%p,
         "difference_columns":len(mismatch),"pivot_match":True})
