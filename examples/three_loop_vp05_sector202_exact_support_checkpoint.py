@@ -190,6 +190,7 @@ def main():
         "tracked_modular_coefficient":pivot_coeff,"modular_columns_before":len(m["row"]),
         "pivot_match":match})
       continue
+     before_modular=dict(m["row"])
      for k,v in pivot_values.items():
       updated=(m["row"].get(k,0)-mc*v)%p
       if updated:m["row"][k]=updated
@@ -200,6 +201,24 @@ def main():
     except ZeroDivisionError:
      m["status"]="SINGULAR_SPECIALIZATION";m["steps"].append({"step":number,"error":"pole"})
    subtract(cur,brow,coefficient)
+   for m in modular:
+    if m["status"]!="PASS":continue
+    p,zv,dv=m["point"]
+    try:
+     expected_after={k:v for k,ev in cur.items()
+         if (v:=specialization(ev,p,zv,dv))!=0}
+     mismatch=sorted(k for k in set(expected_after)|set(m["row"])
+                      if expected_after.get(k,0)!=m["row"].get(k,0))
+     if mismatch:
+      k=mismatch[0]
+      m["status"]="POST_ELIMINATION_MISMATCH"
+      m["steps"].append({"step":number,"exact_pivot":list(lead),
+        "first_differing_column":list(k),"expected_after":expected_after.get(k,0),
+        "tracked_after":m["row"].get(k,0),"pivot_row_coefficient":specialization(brow.get(k,sp.S.Zero),p,zv,dv),
+        "elimination_multiplier":specialization(coefficient,p,zv,dv),
+        "difference_columns":len(mismatch),"pivot_match":True})
+    except ZeroDivisionError:
+     m["status"]="SINGULAR_SPECIALIZATION"
    exact_steps.append(step)
    if len(cur)>args.max_intermediate_columns:
     stopped="EXACT_INTERMEDIATE_COLUMN_CAP";break
