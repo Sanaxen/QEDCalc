@@ -56,11 +56,14 @@ def main():
  ap.add_argument("--factor-normalization",action="store_true",help="Try shorter exact factored forms after new pivot normalization; does not alter existing checkpoint")
  ap.add_argument("--diagnose-next",action="store_true",help="Inspect only the next source row and never write the checkpoint")
  ap.add_argument("--diagnostic-output",type=Path,default=BASE/"vp05_sector202_exact_support_cap_diagnostic.json")
+ ap.add_argument("--modular-fill",action="store_true",help="Read-only finite-field forward elimination of the next source row")
+ ap.add_argument("--modular-fill-output",type=Path,default=BASE/"vp05_sector202_modular_fill_forward.json")
  ap.add_argument("--trace-fill",action="store_true",help="Record exact elimination fill-in for next row in read-only diagnostic mode")
  ap.add_argument("--fill-output",type=Path,default=BASE/"vp05_sector202_exact_support_fill_trace.json")
  args=ap.parse_args()
  if not 1<=args.rows_per_run<=100:ap.error("--rows-per-run must be 1..100")
  if args.trace_fill and (not args.diagnose_next or not args.resume):ap.error("--trace-fill requires --resume --diagnose-next")
+ if args.modular_fill and (not args.resume or not args.diagnose_next):ap.error("--modular-fill requires --resume --diagnose-next")
  if min(args.max_columns,args.max_source_support,args.max_expression_chars)<1:ap.error("Caps must be positive")
  if args.factor_trigger_chars<1 or args.factor_trigger_chars>args.max_expression_chars:ap.error("Factor trigger must lie within expression cap")
  source_raw=args.input.read_bytes();cert_raw=args.certificate.read_bytes()
@@ -108,6 +111,58 @@ def main():
   if len(basis)+dependent!=processed:raise RuntimeError("Checkpoint rank accounting mismatch")
  elif args.checkpoint.exists():
   raise RuntimeError("Checkpoint exists: supply --resume, or use a new --checkpoint path")
+ if args.modular_fill:
+  if processed>=len(ids):raise RuntimeError("No next source row")
+  rid=ids[processed]
+  points=[(1000003,17,7),(1000033,19,11),(1000037,21,15)]
+  def mod_value(v,p,zv,dv):
+   numer,denom=sp.fraction(sp.cancel(v))
+   substitutions={z:zv,d:dv}
+   nn=int(numer.subs(substitutions))%p
+   dd=int(denom.subs(substitutions))%p
+   if dd==0:raise ZeroDivisionError("Specialization denominator is zero")
+   return nn*pow(dd,-1,p)%p
+  reports=[]
+  for prime,zv,dv in points:
+   try:
+    modular_basis={}
+    for pivot,(brow,_trace) in sorted(basis.items()):
+     vals={k:vv for k,v in brow.items() if (vv:=mod_value(v,prime,zv,dv))!=0}
+     if vals.get(pivot)!=1:raise RuntimeError("Modular pivot failed specialization")
+     modular_basis[pivot]=vals
+    current={}
+    for term in rows[rid]["terms"]:
+     k=tuple(term["key"])
+     v=mod_value(expr(term["coefficient"],z,d),prime,zv,dv)
+     v=(current.get(k,0)+v)%prime
+     if v:current[k]=v
+     else:current.pop(k,None)
+    initial=len(current);steps=[]
+    while current:
+     lead=min(current)
+     if lead not in modular_basis:break
+     prow=modular_basis[lead]
+     factor=current[lead];before=len(current)
+     for k,value in prow.items():
+      candidate=(current.get(k,0)-factor*value)%prime
+      if candidate:current[k]=candidate
+      else:current.pop(k,None)
+     steps.append({"step":len(steps)+1,"pivot":list(lead),"before_columns":before,"pivot_columns":len(prow),"after_columns":len(current)})
+    reports.append({"point":[prime,zv,dv],"status":"PASS","initial_columns":initial,
+      "steps":steps,"peak_columns":max([initial]+[x["after_columns"] for x in steps]),
+      "final_columns":len(current),"terminal_lead":list(min(current)) if current else None,
+      "terminal_lead_is_new_pivot":bool(current) and min(current) not in modular_basis})
+   except (ZeroDivisionError,ValueError) as ex:
+    reports.append({"point":[prime,zv,dv],"status":"SPECIALIZATION_SKIPPED","reason":str(ex)})
+  result={"status":"MODULAR_FILL_DIAGNOSTIC_NOT_EXACT_PROOF","saved_processed":processed,
+   "original_id":rid,"checkpoint_sha256":digest(args.checkpoint.read_bytes()),
+   "points":reports,"checkpoint_modified":False,"exact_target_reduction_proven":False}
+  args.modular_fill_output.parent.mkdir(parents=True,exist_ok=True)
+  args.modular_fill_output.write_text(json.dumps(result,indent=2)+"\\n",encoding="utf-8")
+  print("VP05_SECTOR202_MODULAR_FILL "+json.dumps({"status":result["status"],"original_id":rid,
+    "summary":[{"point":r["point"],"status":r["status"],"peak_columns":r.get("peak_columns"),"final_columns":r.get("final_columns"),"steps":len(r.get("steps",[]))} for r in reports],
+    "output":str(args.modular_fill_output),"checkpoint_modified":False}),flush=True)
+  return
  def check(row,trace,stage,rid,pivot=None):
   row_chars=max([len(str(v)) for v in row.values()] or [0])
   trace_chars=max([len(str(v)) for v in trace.values()] or [0])
