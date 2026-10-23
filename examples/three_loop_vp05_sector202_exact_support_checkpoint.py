@@ -158,6 +158,26 @@ def main():
     p,zv,dv=m["point"]
     try:
      mc=specialization(coefficient,p,zv,dv)
+     # Compare complete finite-field row against exact specialization before
+     # applying the next fixed pivot. This identifies the earliest divergence,
+     # even if its first affected column is not yet the leading column.
+     expected={}
+     for ek,ev in cur.items():
+      evalue=specialization(ev,p,zv,dv)
+      if evalue:expected[ek]=evalue
+     discrepant=sorted(k for k in set(expected)|set(m["row"])
+                       if expected.get(k,0)!=m["row"].get(k,0))
+     if discrepant:
+      first=discrepant[0]
+      m["status"]="ROW_STATE_MISMATCH"
+      m["steps"].append({"step":number,"exact_pivot":list(lead),
+        "first_differing_column":list(first),
+        "expected_coefficient":expected.get(first,0),
+        "tracked_coefficient":m["row"].get(first,0),
+        "differing_columns":len(discrepant),
+        "exact_columns":len(expected),"tracked_columns":len(m["row"]),
+        "pivot_match":bool(m["row"]) and min(m["row"])==lead})
+      continue
      pivot_coeff=m["row"].get(lead,0)
      first=list(min(m["row"])) if m["row"] else None
      equal=mc==pivot_coeff
@@ -189,7 +209,7 @@ def main():
    "original_id":rid,"checkpoint_sha256":digest(args.checkpoint.read_bytes()),
    "exact_steps":exact_steps,"exact_status":stopped,
    "points":[{"point":m["point"],"status":m["status"],"steps":m["steps"],
-     "first_path_mismatch":next((x for x in m["steps"] if not x.get("pivot_match",True) or "tracked_modular_coefficient" in x),None),
+     "first_path_mismatch":next((x for x in m["steps"] if not x.get("pivot_match",True) or "tracked_modular_coefficient" in x or "first_differing_column" in x),None),
      "final_columns":len(m["row"])} for m in modular],
    "checkpoint_modified":False,"exact_target_reduction_proven":False}
   args.fixed_path_output.parent.mkdir(parents=True,exist_ok=True)
@@ -197,7 +217,7 @@ def main():
   print("VP05_SECTOR202_FIXED_PATH "+json.dumps({"status":report["status"],
    "exact_steps":len(exact_steps),"exact_status":stopped,
    "points":[{"point":m["point"],"status":m["status"],
-     "first_path_mismatch":next((x for x in m["steps"] if not x.get("pivot_match",True) or "tracked_modular_coefficient" in x),None)}
+     "first_path_mismatch":next((x for x in m["steps"] if not x.get("pivot_match",True) or "tracked_modular_coefficient" in x or "first_differing_column" in x),None)}
      for m in modular],"checkpoint_modified":False,
    "output":str(args.fixed_path_output)}),flush=True)
   return
