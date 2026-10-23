@@ -56,8 +56,11 @@ def main():
  ap.add_argument("--factor-normalization",action="store_true",help="Try shorter exact factored forms after new pivot normalization; does not alter existing checkpoint")
  ap.add_argument("--diagnose-next",action="store_true",help="Inspect only the next source row and never write the checkpoint")
  ap.add_argument("--diagnostic-output",type=Path,default=BASE/"vp05_sector202_exact_support_cap_diagnostic.json")
+ ap.add_argument("--trace-fill",action="store_true",help="Record exact elimination fill-in for next row in read-only diagnostic mode")
+ ap.add_argument("--fill-output",type=Path,default=BASE/"vp05_sector202_exact_support_fill_trace.json")
  args=ap.parse_args()
  if not 1<=args.rows_per_run<=100:ap.error("--rows-per-run must be 1..100")
+ if args.trace_fill and (not args.diagnose_next or not args.resume):ap.error("--trace-fill requires --resume --diagnose-next")
  if min(args.max_columns,args.max_source_support,args.max_expression_chars)<1:ap.error("Caps must be positive")
  if args.factor_trigger_chars<1 or args.factor_trigger_chars>args.max_expression_chars:ap.error("Factor trigger must lie within expression cap")
  source_raw=args.input.read_bytes();cert_raw=args.certificate.read_bytes()
@@ -124,6 +127,16 @@ def main():
     args.diagnostic_output.write_text(json.dumps(report,indent=2)+"\\n",encoding="utf-8")
     print("VP05_SECTOR202_EXACT_SUPPORT_CAP_DIAGNOSTIC "+json.dumps(report,ensure_ascii=True),flush=True)
    raise RuntimeError("Safety cap exceeded at %s original ID %d: columns=%d support=%d row_chars=%d trace_chars=%d"%(stage,rid,len(row),len(trace),row_chars,trace_chars))
+ fill_steps=[]
+ def save_fill(rid,status):
+  if not args.trace_fill:return
+  report={"status":status,"source_checkpoint_sha256":digest(args.checkpoint.read_bytes()),
+   "saved_processed":saved["processed"],"next_original_id":rid,
+   "steps":fill_steps,"max_columns_observed":max((x["after_columns"] for x in fill_steps),default=0),
+   "checkpoint_modified":False,"exact_target_reduction_proven":False}
+  args.fill_output.parent.mkdir(parents=True,exist_ok=True)
+  args.fill_output.write_text(json.dumps(report,indent=2)+"\\n",encoding="utf-8")
+  print("VP05_SECTOR202_FILL_TRACE "+json.dumps({"status":status,"next_original_id":rid,"step_count":len(fill_steps),"max_columns_observed":report["max_columns_observed"],"output":str(args.fill_output),"checkpoint_modified":False}),flush=True)
  limit=min(len(ids),processed+(1 if args.diagnose_next else args.rows_per_run))
  for position in range(processed,limit):
   rid=ids[position];cur={}
@@ -139,6 +152,11 @@ def main():
    if lead not in basis:break
    brow,btrace=basis[lead]
    factor=cur[lead]
+   if args.trace_fill:
+    previous_keys=set(cur);basis_keys=set(brow)
+    before_columns=len(cur)
+    pivot_support=len(brow)
+    novel_columns=len(basis_keys-previous_keys)
    subtract(cur,brow,factor)
    subtract(trace,btrace,factor)
    if args.factor_elimination:
@@ -148,6 +166,15 @@ def main():
      cur={k:compact_exact(v) for k,v in cur.items()}
      trace={k:compact_exact(v) for k,v in trace.items()}
      print("VP05_SECTOR202_EXACT_FACTOR_ELIMINATION "+json.dumps({"original_id":rid,"pivot":list(lead),"row_chars_before":before_row,"trace_chars_before":before_trace,"row_chars_after":max((len(str(v)) for v in cur.values()),default=0),"trace_chars_after":max((len(str(v)) for v in trace.values()),default=0)}),flush=True)
+   if args.trace_fill:
+    fill_steps.append({"step":len(fill_steps)+1,"pivot":list(lead),
+      "before_columns":before_columns,"pivot_row_columns":pivot_support,
+      "new_columns_from_pivot":novel_columns,"after_columns":len(cur),
+      "actual_fill_delta":len(cur)-before_columns,"source_support_after":len(trace),
+      "row_chars_after":max((len(str(v)) for v in cur.values()),default=0),
+      "trace_chars_after":max((len(str(v)) for v in trace.values()),default=0)})
+   if args.trace_fill and (len(cur)>args.max_columns or len(trace)>args.max_source_support or max([len(str(v)) for v in list(cur.values())+list(trace.values())] or [0])>args.max_expression_chars):
+    save_fill(rid,"FILL_TRACE_SAFETY_CAP_REACHED_NOT_PROOF")
    check(cur,trace,"elimination",rid,lead)
   if cur:
    lead=min(cur);factor=cur[lead]
@@ -168,6 +195,7 @@ def main():
   processed=position+1
   print("VP05_SECTOR202_EXACT_SUPPORT_PROGRESS "+json.dumps({"processed":processed,"total":len(ids),"rank":len(basis),"dependent":dependent,"last_original_id":rid}),flush=True)
  if args.diagnose_next:
+  if args.trace_fill:save_fill(ids[limit-1],"FILL_TRACE_NEXT_ROW_WITHIN_CAPS")
   print("VP05_SECTOR202_EXACT_SUPPORT_DIAGNOSTIC "+json.dumps({"status":"NEXT_SOURCE_ROW_WITHIN_CAPS","saved_processed":limit-1,"tested_original_id":ids[limit-1] if limit else None,"checkpoint_modified":False,"exact_target_reduction_proven":False}),flush=True)
   return
  payload={"version":1,"status":"EXACT_SOURCE_CHECKPOINT_NOT_TARGET_PROOF",
