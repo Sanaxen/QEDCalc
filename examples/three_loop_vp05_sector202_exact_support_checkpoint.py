@@ -163,7 +163,13 @@ def main():
      equal=mc==pivot_coeff
      match=(first==list(lead))
      pivot_values={k:v for k,ev in brow.items() if (v:=specialization(ev,p,zv,dv))!=0}
-     if not equal:raise RuntimeError("Exact-to-modular coefficient mismatch")
+     if not equal:
+      m["status"]="COEFFICIENT_MISMATCH"
+      m["steps"].append({"step":number,"exact_pivot":list(lead),
+        "first_modular_pivot":first,"exact_coefficient_mod_p":mc,
+        "tracked_modular_coefficient":pivot_coeff,"modular_columns_before":len(m["row"]),
+        "pivot_match":match})
+      continue
      for k,v in pivot_values.items():
       updated=(m["row"].get(k,0)-mc*v)%p
       if updated:m["row"][k]=updated
