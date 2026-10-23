@@ -45,6 +45,8 @@ def main():
  ap.add_argument("--max-expression-chars",type=int,default=1200)
  ap.add_argument("--target",choices=["union","A","B"],default="union")
  ap.add_argument("--resume",action="store_true")
+ ap.add_argument("--diagnose-next",action="store_true",help="Inspect only the next source row and never write the checkpoint")
+ ap.add_argument("--diagnostic-output",type=Path,default=BASE/"vp05_sector202_exact_support_cap_diagnostic.json")
  args=ap.parse_args()
  if not 1<=args.rows_per_run<=100:ap.error("--rows-per-run must be 1..100")
  if min(args.max_columns,args.max_source_support,args.max_expression_chars)<1:ap.error("Caps must be positive")
@@ -93,11 +95,26 @@ def main():
   if len(basis)+dependent!=processed:raise RuntimeError("Checkpoint rank accounting mismatch")
  elif args.checkpoint.exists():
   raise RuntimeError("Checkpoint exists: supply --resume, or use a new --checkpoint path")
- def check(row,trace):
-  chars=max([len(str(v)) for v in list(row.values())+list(trace.values())] or [0])
+ def check(row,trace,stage,rid,pivot=None):
+  row_chars=max([len(str(v)) for v in row.values()] or [0])
+  trace_chars=max([len(str(v)) for v in trace.values()] or [0])
+  chars=max(row_chars,trace_chars)
   if len(row)>args.max_columns or len(trace)>args.max_source_support or chars>args.max_expression_chars:
-   raise RuntimeError("Safety cap exceeded: columns=%d support=%d chars=%d"%(len(row),len(trace),chars))
- limit=min(len(ids),processed+args.rows_per_run)
+   if args.diagnose_next:
+    candidates=[("row",str(k),str(v)) for k,v in row.items()]+[("trace",str(k),str(v)) for k,v in trace.items()]
+    largest=sorted(candidates,key=lambda item:len(item[2]),reverse=True)[:5]
+    report={"status":"EXACT_SUPPORT_DIAGNOSTIC_CAP_REACHED_NOT_PROOF",
+     "checkpoint_sha256":digest(args.checkpoint.read_bytes()),"processed_saved":processed,
+     "next_original_id":rid,"stage":stage,"pivot":list(pivot) if pivot is not None else None,
+     "columns":len(row),"source_support":len(trace),"row_expression_chars":row_chars,
+     "provenance_expression_chars":trace_chars,"max_expression_chars":args.max_expression_chars,
+     "largest_entries":[{"kind":a,"key":b,"chars":len(c),"preview":c[:240]} for a,b,c in largest],
+     "checkpoint_modified":False,"exact_target_reduction_proven":False}
+    args.diagnostic_output.parent.mkdir(parents=True,exist_ok=True)
+    args.diagnostic_output.write_text(json.dumps(report,indent=2)+"\\n",encoding="utf-8")
+    print("VP05_SECTOR202_EXACT_SUPPORT_CAP_DIAGNOSTIC "+json.dumps(report,ensure_ascii=True),flush=True)
+   raise RuntimeError("Safety cap exceeded at %s original ID %d: columns=%d support=%d row_chars=%d trace_chars=%d"%(stage,rid,len(row),len(trace),row_chars,trace_chars))
+ limit=min(len(ids),processed+(1 if args.diagnose_next else args.rows_per_run))
  for position in range(processed,limit):
   rid=ids[position];cur={}
   for term in rows[rid]["terms"]:
@@ -106,7 +123,7 @@ def main():
    if val:cur[key]=val
    else:cur.pop(key,None)
   trace={rid:sp.S.One}
-  check(cur,trace)
+  check(cur,trace,"initial",rid)
   while cur:
    lead=min(cur)
    if lead not in basis:break
@@ -114,12 +131,12 @@ def main():
    factor=cur[lead]
    subtract(cur,brow,factor)
    subtract(trace,btrace,factor)
-   check(cur,trace)
+   check(cur,trace,"elimination",rid,lead)
   if cur:
    lead=min(cur);factor=cur[lead]
    cur={k:sp.cancel(v/factor) for k,v in cur.items()}
    trace={k:sp.cancel(v/factor) for k,v in trace.items()}
-   check(cur,trace)
+   check(cur,trace,"normalization",rid,lead)
    verify(cur,trace,rows,z,d)
    basis[lead]=(cur,trace)
   else:
@@ -127,6 +144,9 @@ def main():
    dependent+=1
   processed=position+1
   print("VP05_SECTOR202_EXACT_SUPPORT_PROGRESS "+json.dumps({"processed":processed,"total":len(ids),"rank":len(basis),"dependent":dependent,"last_original_id":rid}),flush=True)
+ if args.diagnose_next:
+  print("VP05_SECTOR202_EXACT_SUPPORT_DIAGNOSTIC "+json.dumps({"status":"NEXT_SOURCE_ROW_WITHIN_CAPS","saved_processed":limit-1,"tested_original_id":ids[limit-1] if limit else None,"checkpoint_modified":False,"exact_target_reduction_proven":False}),flush=True)
+  return
  payload={"version":1,"status":"EXACT_SOURCE_CHECKPOINT_NOT_TARGET_PROOF",
   "config":config,"processed":processed,"total":len(ids),"dependent":dependent,
   "pivots":[{"lead":list(k),"row":encode_terms(row),"trace":[[i,str(v)] for i,v in sorted(trace.items())]}
