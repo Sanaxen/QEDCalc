@@ -129,10 +129,12 @@ def main():
   for prime,zv,dv in points:
    try:
     modular_basis={}
-    for pivot,(brow,_trace) in sorted(basis.items()):
+    modular_trace={}
+    for pivot,(brow,btrace) in sorted(basis.items()):
      vals={k:vv for k,v in brow.items() if (vv:=mod_value(v,prime,zv,dv))!=0}
      if vals.get(pivot)!=1:raise RuntimeError("Modular pivot failed specialization")
      modular_basis[pivot]=vals
+     modular_trace[pivot]={i:vv for i,v in btrace.items() if (vv:=mod_value(v,prime,zv,dv))!=0}
     current={}
     for term in rows[rid]["terms"]:
      k=tuple(term["key"])
@@ -140,20 +142,28 @@ def main():
      v=(current.get(k,0)+v)%prime
      if v:current[k]=v
      else:current.pop(k,None)
-    initial=len(current);steps=[]
+    provenance={rid:1}
+    initial=len(current);initial_support=len(provenance);steps=[]
     while current:
      lead=min(current)
      if lead not in modular_basis:break
-     prow=modular_basis[lead]
-     factor=current[lead];before=len(current)
+     prow=modular_basis[lead];ptrace=modular_trace[lead]
+     factor=current[lead];before=len(current);support_before=len(provenance)
      for k,value in prow.items():
       candidate=(current.get(k,0)-factor*value)%prime
       if candidate:current[k]=candidate
       else:current.pop(k,None)
-     steps.append({"step":len(steps)+1,"pivot":list(lead),"before_columns":before,"pivot_columns":len(prow),"after_columns":len(current)})
+     for original_id,value in ptrace.items():
+      candidate=(provenance.get(original_id,0)-factor*value)%prime
+      if candidate:provenance[original_id]=candidate
+      else:provenance.pop(original_id,None)
+     steps.append({"step":len(steps)+1,"pivot":list(lead),"before_columns":before,"pivot_columns":len(prow),"after_columns":len(current),
+       "support_before":support_before,"support_after":len(provenance),"pivot_support":len(ptrace)})
     reports.append({"point":[prime,zv,dv],"status":"PASS","initial_columns":initial,
       "steps":steps,"peak_columns":max([initial]+[x["after_columns"] for x in steps]),
-      "final_columns":len(current),"terminal_lead":list(min(current)) if current else None,
+      "final_columns":len(current),"initial_support":initial_support,
+      "peak_support":max([initial_support]+[x["support_after"] for x in steps]),
+      "final_support":len(provenance),"terminal_lead":list(min(current)) if current else None,
       "terminal_lead_is_new_pivot":bool(current) and min(current) not in modular_basis})
    except (ZeroDivisionError,ValueError) as ex:
     reports.append({"point":[prime,zv,dv],"status":"SPECIALIZATION_SKIPPED","reason":str(ex)})
@@ -163,7 +173,7 @@ def main():
   args.modular_fill_output.parent.mkdir(parents=True,exist_ok=True)
   args.modular_fill_output.write_text(json.dumps(result,indent=2)+"\\n",encoding="utf-8")
   print("VP05_SECTOR202_MODULAR_FILL "+json.dumps({"status":result["status"],"original_id":rid,
-    "summary":[{"point":r["point"],"status":r["status"],"peak_columns":r.get("peak_columns"),"final_columns":r.get("final_columns"),"steps":len(r.get("steps",[]))} for r in reports],
+    "summary":[{"point":r["point"],"status":r["status"],"peak_columns":r.get("peak_columns"),"final_columns":r.get("final_columns"),"peak_support":r.get("peak_support"),"final_support":r.get("final_support"),"steps":len(r.get("steps",[]))} for r in reports],
     "output":str(args.modular_fill_output),"checkpoint_modified":False}),flush=True)
   return
  def check(row,trace,stage,rid,pivot=None):
