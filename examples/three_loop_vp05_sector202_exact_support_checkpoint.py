@@ -51,12 +51,15 @@ def main():
  ap.add_argument("--max-expression-chars",type=int,default=1200)
  ap.add_argument("--target",choices=["union","A","B"],default="union")
  ap.add_argument("--resume",action="store_true")
+ ap.add_argument("--factor-elimination",action="store_true",help="Conditionally factor row and provenance expressions during elimination")
+ ap.add_argument("--factor-trigger-chars",type=int,default=900)
  ap.add_argument("--factor-normalization",action="store_true",help="Try shorter exact factored forms after new pivot normalization; does not alter existing checkpoint")
  ap.add_argument("--diagnose-next",action="store_true",help="Inspect only the next source row and never write the checkpoint")
  ap.add_argument("--diagnostic-output",type=Path,default=BASE/"vp05_sector202_exact_support_cap_diagnostic.json")
  args=ap.parse_args()
  if not 1<=args.rows_per_run<=100:ap.error("--rows-per-run must be 1..100")
  if min(args.max_columns,args.max_source_support,args.max_expression_chars)<1:ap.error("Caps must be positive")
+ if args.factor_trigger_chars<1 or args.factor_trigger_chars>args.max_expression_chars:ap.error("Factor trigger must lie within expression cap")
  source_raw=args.input.read_bytes();cert_raw=args.certificate.read_bytes()
  with gzip.open(args.input,"rt",encoding="utf-8") as stream:source=json.load(stream)
  if source.get("status")!="ORIGINAL_EXACT_SOURCE_ROWS_EXPORTED" or len(source["rows"])!=2241:
@@ -138,6 +141,13 @@ def main():
    factor=cur[lead]
    subtract(cur,brow,factor)
    subtract(trace,btrace,factor)
+   if args.factor_elimination:
+    before_row=max((len(str(v)) for v in cur.values()),default=0)
+    before_trace=max((len(str(v)) for v in trace.values()),default=0)
+    if max(before_row,before_trace)>=args.factor_trigger_chars:
+     cur={k:compact_exact(v) for k,v in cur.items()}
+     trace={k:compact_exact(v) for k,v in trace.items()}
+     print("VP05_SECTOR202_EXACT_FACTOR_ELIMINATION "+json.dumps({"original_id":rid,"pivot":list(lead),"row_chars_before":before_row,"trace_chars_before":before_trace,"row_chars_after":max((len(str(v)) for v in cur.values()),default=0),"trace_chars_after":max((len(str(v)) for v in trace.values()),default=0)}),flush=True)
    check(cur,trace,"elimination",rid,lead)
   if cur:
    lead=min(cur);factor=cur[lead]
