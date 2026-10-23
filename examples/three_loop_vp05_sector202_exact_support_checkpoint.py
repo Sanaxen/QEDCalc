@@ -47,6 +47,7 @@ def main():
  ap.add_argument("--checkpoint",type=Path,default=CHECKPOINT)
  ap.add_argument("--rows-per-run",type=int,default=20)
  ap.add_argument("--max-columns",type=int,default=100)
+ ap.add_argument("--max-intermediate-columns",type=int,default=None,help="Optional larger cap only during intermediate exact elimination; persisted pivots remain bounded by --max-columns")
  ap.add_argument("--max-source-support",type=int,default=100)
  ap.add_argument("--max-expression-chars",type=int,default=1200)
  ap.add_argument("--target",choices=["union","A","B"],default="union")
@@ -65,6 +66,8 @@ def main():
  if args.trace_fill and (not args.diagnose_next or not args.resume):ap.error("--trace-fill requires --resume --diagnose-next")
  if args.modular_fill and (not args.resume or not args.diagnose_next):ap.error("--modular-fill requires --resume --diagnose-next")
  if min(args.max_columns,args.max_source_support,args.max_expression_chars)<1:ap.error("Caps must be positive")
+ if args.max_intermediate_columns is None:args.max_intermediate_columns=args.max_columns
+ if args.max_intermediate_columns<args.max_columns:ap.error("--max-intermediate-columns must be >= --max-columns")
  if args.factor_trigger_chars<1 or args.factor_trigger_chars>args.max_expression_chars:ap.error("Factor trigger must lie within expression cap")
  source_raw=args.input.read_bytes();cert_raw=args.certificate.read_bytes()
  with gzip.open(args.input,"rt",encoding="utf-8") as stream:source=json.load(stream)
@@ -164,17 +167,18 @@ def main():
     "output":str(args.modular_fill_output),"checkpoint_modified":False}),flush=True)
   return
  def check(row,trace,stage,rid,pivot=None):
+  column_cap=args.max_intermediate_columns if stage=="elimination" else args.max_columns
   row_chars=max([len(str(v)) for v in row.values()] or [0])
   trace_chars=max([len(str(v)) for v in trace.values()] or [0])
   chars=max(row_chars,trace_chars)
-  if len(row)>args.max_columns or len(trace)>args.max_source_support or chars>args.max_expression_chars:
+  if len(row)>column_cap or len(trace)>args.max_source_support or chars>args.max_expression_chars:
    if args.diagnose_next:
     candidates=[("row",str(k),str(v)) for k,v in row.items()]+[("trace",str(k),str(v)) for k,v in trace.items()]
     largest=sorted(candidates,key=lambda item:len(item[2]),reverse=True)[:5]
     report={"status":"EXACT_SUPPORT_DIAGNOSTIC_CAP_REACHED_NOT_PROOF",
      "checkpoint_sha256":digest(args.checkpoint.read_bytes()),"processed_saved":processed,
      "next_original_id":rid,"stage":stage,"pivot":list(pivot) if pivot is not None else None,
-     "columns":len(row),"source_support":len(trace),"row_expression_chars":row_chars,
+     "columns":len(row),"column_cap":column_cap,"source_support":len(trace),"row_expression_chars":row_chars,
      "provenance_expression_chars":trace_chars,"max_expression_chars":args.max_expression_chars,
      "largest_entries":[{"kind":a,"key":b,"chars":len(c),"preview":c[:240]} for a,b,c in largest],
      "checkpoint_modified":False,"exact_target_reduction_proven":False}
@@ -228,7 +232,7 @@ def main():
       "actual_fill_delta":len(cur)-before_columns,"source_support_after":len(trace),
       "row_chars_after":max((len(str(v)) for v in cur.values()),default=0),
       "trace_chars_after":max((len(str(v)) for v in trace.values()),default=0)})
-   if args.trace_fill and (len(cur)>args.max_columns or len(trace)>args.max_source_support or max([len(str(v)) for v in list(cur.values())+list(trace.values())] or [0])>args.max_expression_chars):
+   if args.trace_fill and (len(cur)>args.max_intermediate_columns or len(trace)>args.max_source_support or max([len(str(v)) for v in list(cur.values())+list(trace.values())] or [0])>args.max_expression_chars):
     save_fill(rid,"FILL_TRACE_SAFETY_CAP_REACHED_NOT_PROOF")
    check(cur,trace,"elimination",rid,lead)
   if cur:
