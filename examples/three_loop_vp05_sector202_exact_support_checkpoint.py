@@ -151,7 +151,7 @@ def main():
       "symbolically_zero":value==0,"evaluations":evaluations,
       "pivot_path":pivot_path,"checkpoint_modified":False,"exact_target_reduction_proven":False}
     args.exact_divergence_output.parent.mkdir(parents=True,exist_ok=True)
-    args.exact_divergence_output.write_text(json.dumps(report,indent=2)+"\\n",encoding="utf-8")
+    args.exact_divergence_output.write_text(json.dumps(report,indent=2)+"\n",encoding="utf-8")
     print("VP05_SECTOR202_EXACT_DIVERGENCE "+json.dumps({
       "status":report["status"],"exact_step":step,"exact_lead":list(lead),
       "candidate_pivot":list(candidate),"symbolically_zero":value==0,
