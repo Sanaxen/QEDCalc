@@ -113,11 +113,14 @@ def main():
   caps=("max_columns","max_source_support","max_expression_chars")
   if any(not isinstance(previous.get(key),int) or previous[key]>config[key] for key in caps):
    raise RuntimeError("Fork may only preserve/increase original persisted-pivot caps")
-  if original.get("processed")!=298 or original.get("total")!=len(ids):
-   raise RuntimeError("Expected original saved checkpoint at 298/389; refusing unexpected fork")
+  if not isinstance(original.get("processed"),int) or not 0<=original["processed"]<len(ids) or original.get("total")!=len(ids):
+   raise RuntimeError("Fork requires an incomplete, position-consistent source checkpoint")
+  if not isinstance(original.get("dependent"),int) or not 0<=original["dependent"]<=original["processed"] or len(original.get("pivots",[]))+original["dependent"]!=original["processed"]:
+   raise RuntimeError("Fork source rank accounting mismatch")
+  fork_processed=original["processed"]
   original["config"]=config
   original["fork_provenance"]={"source_checkpoint":str(args.fork_from),
-   "source_sha256":digest(original_bytes),"source_processed":298,
+   "source_sha256":digest(original_bytes),"source_processed":fork_processed,
    "previous_caps":{key:previous[key] for key in caps}}
   args.checkpoint.parent.mkdir(parents=True,exist_ok=True)
   # Exclusive creation is deliberate: never overwrite an existing checkpoint.
@@ -126,7 +129,7 @@ def main():
    handle.flush();os.fsync(handle.fileno())
   print("VP05_SECTOR202_EXACT_CHECKPOINT_FORK "+json.dumps({
    "status":"FORK_CREATED_NOT_TARGET_PROOF","source_sha256":digest(original_bytes),
-   "destination":str(args.checkpoint),"processed":298,
+   "destination":str(args.checkpoint),"processed":fork_processed,
    "new_caps":{key:config[key] for key in caps},"original_unchanged":True}),flush=True)
  z,d=sp.symbols("z d")
  basis={};processed=0;dependent=0
