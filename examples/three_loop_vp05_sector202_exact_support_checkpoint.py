@@ -125,7 +125,7 @@ def main():
   rid=ids[processed]
   points=[(1000003,17,7),(1000033,19,11),(1000037,21,15)]
   def specialization(v,p,zv,dv):
-   n,den=sp.fraction(sp.cancel(v))
+   n,den=sp.fraction(sp.together(sp.cancel(v)))
    mapping={z:zv,d:dv}
    numerator=int(n.subs(mapping))%p;denominator=int(den.subs(mapping))%p
    if not denominator:raise ZeroDivisionError("Pole at modular point")
@@ -308,7 +308,7 @@ def main():
   rid=ids[processed]
   points=[(1000003,17,7),(1000033,19,11),(1000037,21,15)]
   def mod_value(v,p,zv,dv):
-   numer,denom=sp.fraction(sp.cancel(v))
+   numer,denom=sp.fraction(sp.together(sp.cancel(v)))
    substitutions={z:zv,d:dv}
    nn=int(numer.subs(substitutions))%p
    dd=int(denom.subs(substitutions))%p
