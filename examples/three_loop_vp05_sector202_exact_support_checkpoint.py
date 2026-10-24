@@ -45,6 +45,7 @@ def main():
  ap.add_argument("--input",type=Path,default=SOURCE)
  ap.add_argument("--certificate",type=Path,default=CERT)
  ap.add_argument("--checkpoint",type=Path,default=CHECKPOINT)
+ ap.add_argument("--fork-from",type=Path,help="One-time immutable source checkpoint for a fresh enlarged-cap checkpoint path")
  ap.add_argument("--rows-per-run",type=int,default=20)
  ap.add_argument("--max-columns",type=int,default=100)
  ap.add_argument("--max-intermediate-columns",type=int,default=None,help="Optional larger cap only during intermediate exact elimination; persisted pivots remain bounded by --max-columns")
@@ -67,6 +68,7 @@ def main():
  ap.add_argument("--fill-output",type=Path,default=BASE/"vp05_sector202_exact_support_fill_trace.json")
  args=ap.parse_args()
  if not 1<=args.rows_per_run<=100:ap.error("--rows-per-run must be 1..100")
+ if args.fork_from and (not args.resume or args.checkpoint.resolve()==args.fork_from.resolve()):ap.error("--fork-from requires --resume and a distinct --checkpoint destination")
  if args.trace_fill and (not args.diagnose_next or not args.resume):ap.error("--trace-fill requires --resume --diagnose-next")
  if args.modular_fill and (not args.resume or not args.diagnose_next):ap.error("--modular-fill requires --resume --diagnose-next")
  if args.exact_divergence and (not args.resume or not args.diagnose_next or args.modular_fill):ap.error("--exact-divergence requires --resume --diagnose-next and excludes --modular-fill")
@@ -95,6 +97,34 @@ def main():
   "target":args.target,"ids_sha256":digest(json.dumps(ids).encode()),
   "max_columns":args.max_columns,"max_source_support":args.max_source_support,
   "max_expression_chars":args.max_expression_chars}
+ if args.fork_from:
+  if args.checkpoint.exists():raise RuntimeError("Fork destination already exists; use --resume without --fork-from")
+  original_bytes=args.fork_from.read_bytes()
+  original=json.loads(original_bytes.decode("utf-8-sig"))
+  if original.get("version")!=1 or original.get("status")!="EXACT_SOURCE_CHECKPOINT_NOT_TARGET_PROOF":
+   raise RuntimeError("Unrecognized original checkpoint format")
+  previous=original.get("config",{})
+  core=("source_sha256","certificate_sha256","target","ids_sha256")
+  if any(previous.get(key)!=config[key] for key in core):
+   raise RuntimeError("Fork input data or selection mismatch")
+  caps=("max_columns","max_source_support","max_expression_chars")
+  if any(not isinstance(previous.get(key),int) or previous[key]>config[key] for key in caps):
+   raise RuntimeError("Fork may only preserve/increase original persisted-pivot caps")
+  if original.get("processed")!=298 or original.get("total")!=len(ids):
+   raise RuntimeError("Expected original saved checkpoint at 298/389; refusing unexpected fork")
+  original["config"]=config
+  original["fork_provenance"]={"source_checkpoint":str(args.fork_from),
+   "source_sha256":digest(original_bytes),"source_processed":298,
+   "previous_caps":{key:previous[key] for key in caps}}
+  args.checkpoint.parent.mkdir(parents=True,exist_ok=True)
+  # Exclusive creation is deliberate: never overwrite an existing checkpoint.
+  with args.checkpoint.open("x",encoding="utf-8") as handle:
+   json.dump(original,handle,ensure_ascii=True,separators=(",",":"))
+   handle.flush();os.fsync(handle.fileno())
+  print("VP05_SECTOR202_EXACT_CHECKPOINT_FORK "+json.dumps({
+   "status":"FORK_CREATED_NOT_TARGET_PROOF","source_sha256":digest(original_bytes),
+   "destination":str(args.checkpoint),"processed":298,
+   "new_caps":{key:config[key] for key in caps},"original_unchanged":True}),flush=True)
  z,d=sp.symbols("z d")
  basis={};processed=0;dependent=0
  if args.resume:
