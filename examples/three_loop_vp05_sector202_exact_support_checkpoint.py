@@ -23,6 +23,22 @@ def compact_exact(value):
  if sp.cancel(candidate-value)!=0:
   raise AssertionError("Factored candidate is not symbolically equal")
  return candidate if len(str(candidate))<len(str(value)) else value
+def compact_exact_alternatives(value):
+ """Compare equivalent rational representations; never accept an unverified rewrite."""
+ original=sp.cancel(value)
+ candidates=[value,original]
+ numerator,denominator=sp.fraction(original)
+ candidates.extend([
+  sp.together(value),sp.factor(value),
+  sp.factor(numerator)/sp.factor(denominator),
+  sp.factor_terms(numerator)/sp.factor_terms(denominator),
+  sp.cancel(sp.together(value)),
+ ])
+ # Prefer a shorter canonical printable expression while keeping actual SymPy values.
+ best=min(candidates,key=lambda candidate:len(str(candidate)))
+ if sp.cancel(sp.together(best-value))!=0:
+  raise AssertionError("Compact rational candidate is not symbolically equal")
+ return best
 def decode_terms(entries,z,d):
  return {tuple(key):expr(value,z,d) for key,value in entries}
 def encode_terms(row):
@@ -57,6 +73,7 @@ def main():
  ap.add_argument("--factor-elimination",action="store_true",help="Conditionally factor row and provenance expressions during elimination")
  ap.add_argument("--factor-trigger-chars",type=int,default=900)
  ap.add_argument("--factor-normalization",action="store_true",help="Try shorter exact factored forms after new pivot normalization; does not alter existing checkpoint")
+ ap.add_argument("--compact-normalization",action="store_true",help="Compare multiple exact-equivalent rational forms after normalization; affects only newly processed pivots")
  ap.add_argument("--diagnose-next",action="store_true",help="Inspect only the next source row and never write the checkpoint")
  ap.add_argument("--diagnostic-output",type=Path,default=BASE/"vp05_sector202_exact_support_cap_diagnostic.json")
  ap.add_argument("--fixed-path-audit",action="store_true",help="Compare exact pivot path with modular per-point forward elimination")
@@ -507,6 +524,13 @@ def main():
     cur={k:compact_exact(v) for k,v in cur.items()}
     trace={k:compact_exact(v) for k,v in trace.items()}
     print("VP05_SECTOR202_EXACT_FACTOR_NORMALIZATION "+json.dumps({"original_id":rid,"row_chars_before":before_row,"trace_chars_before":before_trace,"row_chars_after":max((len(str(v)) for v in cur.values()),default=0),"trace_chars_after":max((len(str(v)) for v in trace.values()),default=0)}),flush=True)
+   if args.compact_normalization:
+    before_row=max((len(str(v)) for v in cur.values()),default=0)
+    before_trace=max((len(str(v)) for v in trace.values()),default=0)
+    # Only spend extra symbolic work on entries close to the persisted cap.
+    cur={k:(compact_exact_alternatives(v) if len(str(v))>=args.max_expression_chars-200 else v) for k,v in cur.items()}
+    trace={k:(compact_exact_alternatives(v) if len(str(v))>=args.max_expression_chars-200 else v) for k,v in trace.items()}
+    print("VP05_SECTOR202_EXACT_COMPACT_NORMALIZATION "+json.dumps({"original_id":rid,"row_chars_before":before_row,"trace_chars_before":before_trace,"row_chars_after":max((len(str(v)) for v in cur.values()),default=0),"trace_chars_after":max((len(str(v)) for v in trace.values()),default=0)}),flush=True)
    check(cur,trace,"normalization",rid,lead)
    verify(cur,trace,rows,z,d)
    basis[lead]=(cur,trace)
