@@ -270,7 +270,7 @@ def main():
     status="ELIMINATION_TERMINATED_BEFORE_TARGET";break
    if step==38:
     value=sp.cancel(current.get(candidate,sp.S.Zero))
-    num,den=sp.fraction(value)
+    num,den=sp.fraction(sp.together(value))
     evaluations=[]
     for p,zv,dv in points:
      n=int(num.subs({z:zv,d:dv}))%p
