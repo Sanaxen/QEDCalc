@@ -6097,3 +6097,25 @@ User logs confirm exact source elimination **389/389**, rank **389**, dependent 
 Added `examples/three_loop_vp05_sector202_target_exact_reduction.py` and `run_vp05_sector202_target_exact_reduction.bat`, with operating notes `doc/VP05_SECTOR202_TARGET_REDUCTION_PILOT.md`. The read-only pilot constructs `A-aC-b small4` and `B-cC-e small4` from the previously finite-field verified rational candidate functions and uses the exact checkpoint pivots and source provenance. Distinguishes finite-field diagnostic from exact-symbolic mode; bounded steps/columns/source support/expression size; zero remainder is accepted as an individual target proof only after exact replay of its original exported IBP source combination. A failure to reduce under caps is **not** a mathematical disproof. Physical interpretation of opaque key `(4,73)` is intentionally not asserted. The real local source/DB/checkpoint were unavailable to the assistant, so no end-to-end A/B claim yet.
 
 First local run (from QEDCalc root): `run_vp05_sector202_target_exact_reduction.bat --target A --mode modular --max-steps 16 --output output/three_loop_integral_family_audit/vp05_sector202_A_modular_pilot.json`. Inspect status, then bounded `--mode exact` A probe (see pilot documentation). Always use distinct output paths; don't overwrite original checkpoint.
+
+
+### 2026-11-09 VP05 sector202 A modular pilot result and handoff rule (next session)
+
+**Canonical source of truth:** this `doc/THREE_LOOP_WORKLOG.md` on branch `feature/master-basis-initiate-only`. For every QEDCalc development change, the expected completion unit is **implementation -> validation -> Git commit -> update this worklog**. Do not leave developed code only as a downloadable ZIP. Keep experimental/unproved statuses explicit and do not overwrite the original saved checkpoint.
+
+**Completed and verified:**
+- `VP05_full` sector202: exactly 389 / 389 selected original IBP equations processed, rank=389, dependent=0, `complete_source_pass=true`.
+- Original exact source checkpoint: `output/three_loop_integral_family_audit/vp05_sector202_exact_support_checkpoint_support400_col256.json`. Keep immutable; user reported SHA-256 `DF4BB33CEEC4E9BDC60B88090EB358F7A5C5CFFBB24AE345C92FFDEC821F7107`.
+- User independently reran `--resume` on `vp05_sector202_exact_support_checkpoint_replay_check.json`, exited successfully, confirming exact source/pivot provenance replay. **This is not A/B target proof.**
+- Added and committed `examples/three_loop_vp05_sector202_target_exact_reduction.py`, `run_vp05_sector202_target_exact_reduction.bat`, and `doc/VP05_SECTOR202_TARGET_REDUCTION_PILOT.md`; commit sequence `c1c3085`, `4a519a5`, `55b0cc0`, worklog `e38cf09`.
+- A-target finite-field pilot was executed on three points `[1000003,17,7]`, `[1000033,19,11]`, `[1000037,21,15]` with `--max-steps 16`. All three yielded `status=STEP_CAP`, `steps=16`, `remainder_terms=15`, `support=19`; output `output/three_loop_integral_family_audit/vp05_sector202_A_modular_pilot.json`, overall `TARGET_DIAGNOSTIC_OR_INCOMPLETE_NOT_PROOF`, `checkpoint_modified=false`. This is neither success nor disproof and does not establish identical pivot paths.
+
+**Immediate next step** (from PowerShell in QEDCalc root; read-only checkpoint, new output name):
+
+```powershell
+.\run_vp05_sector202_target_exact_reduction.bat --target A --mode modular --max-steps 64 --max-columns 256 --max-support 400 --output output/three_loop_integral_family_audit/vp05_sector202_A_modular_64.json
+```
+
+Interpret the new result: `ZERO_REMAINDER` is **finite-field only** and warrants a bounded exact-symbolic pilot; `STEP_CAP` may warrant a larger cap; `UNRESOLVED_LEAD` requires inspection of missing pivots/source support, not an automatic disproof; `FILL_OR_SUPPORT_CAP` requires a targeted budget/diagnostic review. Preserve the original checkpoint and each diagnostic JSON. Then consider target B, and exact symbolic proof of A/B including independent original-IBP replay (zero exact remainder + source certificate). Fermat acceleration is a potential optimization if exact SymPy processing becomes too expensive, not a substitute for exact proof.
+
+**Session handoff:** Resume from the A-target 64-step finite-field diagnostic; do not repeat the 389-row elimination or provenance replay. Always treat `doc/THREE_LOOP_WORKLOG.md` as canonical and keep the implementation/validation/commit/log-update workflow.
