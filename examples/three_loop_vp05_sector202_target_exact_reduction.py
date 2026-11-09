@@ -158,7 +158,12 @@ def main():
                     rem,provenance,steps,status=reduce(ini,pb,args.max_steps,args.max_columns,
                         args.max_support,args.max_expression_chars,prime)
                     trials.append({"point":point,"status":status,"steps":steps,
-                                   "remainder_terms":len(rem),"support":len(provenance)})
+                                   "remainder_terms":len(rem),"support":len(provenance),
+                                   "unresolved_lead":list(min(rem)) if status=="UNRESOLVED_LEAD" else None,
+                                   "remainder_keys_sha256":hashlib.sha256(json.dumps(
+                                       [list(k) for k in sorted(rem)]).encode()).hexdigest(),
+                                   "support_ids_sha256":hashlib.sha256(json.dumps(
+                                       sorted(provenance)).encode()).hexdigest()})
                 except (ZeroDivisionError,ValueError) as e:
                     trials.append({"point":point,"status":"SINGULAR_POINT","error":str(e)})
             item={"target":label,"modular_diagnostics":trials,"exact_proven":False}
