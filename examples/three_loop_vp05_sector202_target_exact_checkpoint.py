@@ -83,6 +83,8 @@ def assert_modular_invariant(initial, remaining, trace, originals, z, d, point):
                              str(different[:3]))
 
 def atomic_create(path,payload):
+    if path.exists():
+        raise FileExistsError("Refusing to overwrite: "+str(path))
     path.parent.mkdir(parents=True,exist_ok=True)
     tmp=path.with_name(path.name+".tmp")
     if tmp.exists():
