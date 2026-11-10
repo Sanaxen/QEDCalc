@@ -131,7 +131,7 @@ def main():
         try:
             for _ in range(args.max_coefficients):
                 remaining=deadline-time.monotonic()
-                if remaining<180:
+                if remaining<args.timeout_seconds+60:
                     stop_reason="TIME_BUDGET_LOW"
                     break
                 try:
@@ -152,7 +152,7 @@ def main():
                      "--timeout-seconds",str(args.timeout_seconds)]
                 try:
                     result=subprocess.run(cmd,capture_output=True,text=True,
-                                          timeout=min(remaining,180),check=False)
+                                          timeout=min(remaining,args.timeout_seconds+120),check=False)
                 except subprocess.TimeoutExpired:
                     stop_reason="SCRATCH_RUN_TIMEOUT"
                     break
