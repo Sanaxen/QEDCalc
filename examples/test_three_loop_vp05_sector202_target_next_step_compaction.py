@@ -19,7 +19,11 @@ class NextStepCompactionTests(unittest.TestCase):
             p=Path(tmp)/"pivots.json"
             p.write_text(json.dumps(pivot),encoding="utf-8")
             before=json.dumps(state,sort_keys=True)
-            result=one_step(state,p,3)
+            stages=[]
+            result=one_step(state,p,3,progress=stages.append)
+            self.assertEqual(stages[0]["stage"],"DECODE_BEGIN")
+            self.assertIn("ELIMINATION_REMAINDER_COMPLETE",[x["stage"] for x in stages])
+            self.assertIn("CANDIDATE_METRICS_COMPLETE",[x["stage"] for x in stages])
             self.assertEqual(result["attempted_step"],51)
             self.assertEqual(result["candidate_before"]["remainder_terms"],1)
             self.assertTrue(all(x["exact_equal"] for x in result["results"]))
