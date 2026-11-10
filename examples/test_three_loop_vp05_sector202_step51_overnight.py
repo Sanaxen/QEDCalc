@@ -1,9 +1,12 @@
 """Offline unit tests of the overnight loop resource and progress guards."""
 from __future__ import annotations
 import argparse
+import json
+import tempfile
 import unittest
+from pathlib import Path
 from examples.three_loop_vp05_sector202_step51_overnight import (
-    parse_free,unsafe,progress_from_output,GIB,
+    parse_free,unsafe,progress_from_output,outer_timeout,scratch_saved_count,GIB,
 )
 
 class OvernightGuardsTests(unittest.TestCase):
@@ -36,6 +39,21 @@ class OvernightGuardsTests(unittest.TestCase):
                  "disk_free_bytes":GIB}
         self.assertEqual(unsafe(failing,self.args),
             ["wsl_low_ram","swap_used_high","swap_free_low","disk_free_low"])
+
+    def test_outer_timeout_accounts_for_slow_resume_validation(self):
+        self.args.scratch_run_timeout_seconds=900
+        self.assertEqual(outer_timeout(1000,self.args),900)
+        self.assertEqual(outer_timeout(420,self.args),420)
+
+    def test_informational_scratch_count(self):
+        with tempfile.TemporaryDirectory() as root:
+            p=Path(root)/"scratch.json"
+            self.assertIsNone(scratch_saved_count(p))
+            p.write_text(json.dumps({"status":"INTRA_STEP51_SCRATCH_NOT_PROOF",
+                                     "done":[{}, {}, {}, {}]}),encoding="utf-8")
+            self.assertEqual(scratch_saved_count(p),4)
+            p.write_text("{invalid",encoding="utf-8")
+            self.assertIsNone(scratch_saved_count(p))
 
     def test_scratch_result_parsing(self):
         line='VP05_SECTOR202_STEP51_SCRATCH_RESULT {"status":"INTRA_STEP51_SCRATCH_NOT_PROOF","coefficients_this_run":1,"saved_coefficient_count":4,"total_coefficients":288}'
