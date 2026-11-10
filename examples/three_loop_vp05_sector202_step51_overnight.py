@@ -77,6 +77,18 @@ def unsafe(snapshot,args):
     )
     return [key for key,triggered in constraints if triggered]
 
+def scratch_saved_count(path):
+    """Informational count only: the scratch runner verifies actual integrity."""
+    try:
+        saved=json.loads(path.read_text(encoding="utf-8-sig"))
+        count=len(saved["done"])
+        return count if saved.get("status")=="INTRA_STEP51_SCRATCH_NOT_PROOF" else None
+    except (OSError,ValueError,KeyError,TypeError):
+        return None
+
+def outer_timeout(remaining, args):
+    return min(remaining,args.scratch_run_timeout_seconds)
+
 def progress_from_output(output):
     matches=[]
     for line in output.splitlines():
@@ -101,6 +113,8 @@ def main():
     ap.add_argument("--hours",type=float,default=12.0)
     ap.add_argument("--timeout-seconds",type=int,default=90,
                     help="Per coefficient computation time cap (1..120s)")
+    ap.add_argument("--scratch-run-timeout-seconds",type=int,default=900,
+                    help="Outer scratch process limit including resume verification (300..1800s)")
     ap.add_argument("--min-windows-ram-gib",type=float,default=2.0)
     ap.add_argument("--min-wsl-ram-gib",type=float,default=1.5)
     ap.add_argument("--max-swap-used-gib",type=float,default=190.0)
@@ -111,6 +125,8 @@ def main():
     args=ap.parse_args()
     if not 0<args.hours<=12 or not 1<=args.timeout_seconds<=120:
         ap.error("Hours must be 0..12 and coefficient timeout 1..120")
+    if not 300<=args.scratch_run_timeout_seconds<=1800 or args.scratch_run_timeout_seconds<=args.timeout_seconds:
+        ap.error("Outer scratch-run timeout must be 300..1800s and exceed the coefficient timeout")
     if not 1<=args.max_coefficients<=288 or min(
         args.min_windows_ram_gib,args.min_wsl_ram_gib,
         args.max_swap_used_gib,args.min_swap_free_gib,args.min_disk_free_gib)<=0:
@@ -126,12 +142,14 @@ def main():
     with args.log.open("x",encoding="utf-8") as handle:
         write_event(handle,"START",{"hours_ceiling":args.hours,
                     "coefficient_timeout_seconds":args.timeout_seconds,
+                    "scratch_run_timeout_seconds":args.scratch_run_timeout_seconds,
+                    "initial_scratch_saved_count":scratch_saved_count(args.scratch),
                     "max_coefficients":args.max_coefficients,
                     "formal_target_state_modified":False})
         try:
             for _ in range(args.max_coefficients):
                 remaining=deadline-time.monotonic()
-                if remaining<args.timeout_seconds+60:
+                if remaining<args.scratch_run_timeout_seconds+30:
                     stop_reason="TIME_BUDGET_LOW"
                     break
                 try:
@@ -150,14 +168,22 @@ def main():
                      "--resume","--scratch",str(args.scratch),
                      "--state",str(args.state),"--coefficients","1",
                      "--timeout-seconds",str(args.timeout_seconds)]
+                started_run=time.monotonic()
                 try:
                     result=subprocess.run(cmd,capture_output=True,text=True,
-                                          timeout=min(remaining,args.timeout_seconds+120),check=False)
+                                          timeout=outer_timeout(remaining,args),check=False)
                 except subprocess.TimeoutExpired:
                     stop_reason="SCRATCH_RUN_TIMEOUT"
+                    write_event(handle,"SCRATCH_OUTER_TIMEOUT",
+                                {"elapsed_seconds":round(time.monotonic()-started_run,2),
+                                 "outer_timeout_seconds":args.scratch_run_timeout_seconds,
+                                 "scratch_saved_count_now":scratch_saved_count(args.scratch),
+                                 "note":"Informational count; scratch resume verifies integrity"})
                     break
                 write_event(handle,"COEFFICIENT_RUN",
                             {"returncode":result.returncode,
+                             "elapsed_seconds":round(time.monotonic()-started_run,2),
+                             "scratch_saved_count_now":scratch_saved_count(args.scratch),
                              "stdout_tail":result.stdout[-1800:],
                              "stderr_tail":result.stderr[-350:]})
                 if result.returncode:
