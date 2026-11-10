@@ -114,6 +114,24 @@ def main():
                                     "ast":va,"sympy":vs,"coefficient":raw[:150]})
             add(direct_replay_ast,key,factor*va,p)
             add(direct_replay_sympy,key,factor*vs,p)
+    # Separately inspect reduction through the 389 saved exact-source pivots.
+    # If original-row replay matches the target but this fails, the pivot
+    # construction/reduction equivalence requires investigation.
+    from examples.three_loop_vp05_sector202_rank_extension_probe import forward
+    pivot_basis={}
+    for item in saved["pivots"]:
+        lead=tuple(item["lead"])
+        row={}
+        for k,raw in item["row"]:
+            v=modular(expr(raw,z,d),z,d,POINTS[0])
+            if v:row[tuple(k)]=v
+        if lead in pivot_basis or not row or min(row)!=lead or row[lead]!=1:
+            raise RuntimeError("Saved pivot normalization mismatch")
+        pivot_basis[lead]=row
+    target_rem,target_steps,target_status=forward(constructed_mod,pivot_basis,p,1024,1024)
+    pivot_diagnostic={"status":target_status,"steps":target_steps,
+                      "remainder_terms":len(target_rem),
+                      "first_lead":list(min(target_rem)) if target_rem else None}
     checks={
         "formula_vs_fraction":formula_eval==fraction_eval,
         "formula_vs_certificate":formula_eval==cert_eval,
@@ -122,6 +140,7 @@ def main():
         "source_replay_sympy_vs_cert_target":compare(direct_replay_sympy,original_target),
         "source_replay_ast_vs_sympy":compare(direct_replay_ast,direct_replay_sympy),
         "first_input_coefficient_discrepancies":discrepancy,
+        "saved_389_pivot_reduction":pivot_diagnostic,
     }
     passed=(checks["formula_vs_fraction"] and checks["formula_vs_certificate"]
             and all(checks[k]["matches"] for k in
