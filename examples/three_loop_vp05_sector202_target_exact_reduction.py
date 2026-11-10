@@ -35,11 +35,19 @@ def add(dest, source, factor, prime=None):
 
 def modular(value, z, d, point):
     p, zv, dv = point
-    n, den = sp.fraction(sp.cancel(sp.together(value)))
-    a = int(n.subs({z:zv,d:dv})) % p
-    b = int(den.subs({z:zv,d:dv})) % p
-    if b == 0: raise ZeroDivisionError("Singular modular specialization")
-    return a*pow(b,-1,p)%p
+    # Evaluate the exact rational expression before converting to modular
+    # integers.  SymPy cancel() can produce numerators with rational
+    # coefficients (e.g. -(z + 2)/2 -> -z/2 - 1).  int(-19/2) truncates
+    # to -9, and silently corrupts finite-field elimination.
+    rational = sp.cancel(sp.together(value)).subs({z: zv, d: dv})
+    numerator, denominator = sp.fraction(sp.together(rational))
+    if numerator.is_Integer is not True or denominator.is_Integer is not True:
+        raise ValueError("Modular specialization did not yield an exact rational number")
+    a = int(numerator) % p
+    b = int(denominator) % p
+    if b == 0:
+        raise ZeroDivisionError("Singular modular specialization")
+    return a * pow(b, -1, p) % p
 
 def target_row(label, keys, values):
     idx = 0 if label == "A" else 1
