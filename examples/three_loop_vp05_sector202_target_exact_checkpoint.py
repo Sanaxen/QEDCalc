@@ -109,7 +109,7 @@ def main():
     ap.add_argument("--progress-every",type=int,default=1)
     args=ap.parse_args()
     if not 1<=args.new_steps<=16 or min(args.max_columns,args.max_support,
-                                        args.max_expression_chars,args.max_aggregate if hasattr(args,"max_aggregate") else 1,args.max_steps_total,args.progress_every)<1:
+                                        args.max_expression_chars,args.max_steps_total,args.progress_every)<1:
         ap.error("Invalid safety limit")
     if args.state.resolve() in {p.resolve() for p in (args.source_checkpoint,args.input,args.certificate)}:
         ap.error("Target state must be distinct from all input artifacts")
@@ -119,8 +119,14 @@ def main():
         raise FileNotFoundError("Missing state to resume")
     if not args.resume and args.state.exists():
         raise FileExistsError("State exists; use --resume or a new path")
-    # load_data performs source/checkpoint/certificate hash, status and selector checks
+    # load_data performs source/checkpoint/certificate hash, status and selector
+    # checks. It also expects a fresh diagnostic output path, but this runner
+    # only writes its separate --state. Supply a never-used validation path
+    # so resumed states aren't rejected by load_data's output-exists guard.
     args.checkpoint=args.source_checkpoint
+    args.output=args.state.with_name(args.state.name+".source_validation_unused")
+    if args.output.exists():
+        raise FileExistsError("Reserved validation path exists: "+str(args.output))
     saved, source_rows, selected=load_data(args)
     originals={r["global_zero_based"]:r for r in source_rows["rows"]}
     z,d=sp.symbols("z d")
