@@ -41,8 +41,22 @@ def one_step(state,source_checkpoint,max_candidates,progress=None):
     pivot_row=decoded(match[0]["row"],z,d)
     pivot_trace=trace_decoded(match[0]["trace"],z,d)
     factor=residual[lead]
-    stage("ELIMINATION_REMAINDER_BEGIN", next_lead=list(lead))
-    add(residual,pivot_row,-factor)
+    stage("ELIMINATION_REMAINDER_BEGIN", next_lead=list(lead),
+          pivot_columns=len(pivot_row))
+    # Preserve the original add() arithmetic exactly while exposing which
+    # individual rational cancellation is consuming the time budget.
+    for index,(key,value) in enumerate(pivot_row.items(),1):
+        original=residual.get(key,0)
+        stage("REMAINDER_COEFFICIENT_BEGIN", index=index,
+              key=list(key), original_chars=len(str(original)),
+              pivot_chars=len(str(value)), factor_chars=len(str(factor)))
+        candidate=sp.cancel(original-factor*value)
+        if candidate==0:
+            residual.pop(key,None)
+        else:
+            residual[key]=candidate
+        stage("REMAINDER_COEFFICIENT_COMPLETE", index=index,
+              key=list(key), result_chars=len(str(candidate)))
     stage("ELIMINATION_REMAINDER_COMPLETE", remainder_terms=len(residual))
     stage("ELIMINATION_TRACE_BEGIN")
     add(trace,pivot_trace,factor)
