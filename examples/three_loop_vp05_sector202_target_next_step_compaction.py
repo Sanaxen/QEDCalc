@@ -24,11 +24,16 @@ from examples.three_loop_vp05_sector202_target_expression_inventory import (
 
 BASE=Path(__file__).resolve().parents[1]/"output/three_loop_integral_family_audit"
 
-def one_step(state,source_checkpoint,max_candidates):
+def one_step(state,source_checkpoint,max_candidates,progress=None):
+    def stage(label, **details):
+        if progress is not None:
+            progress({"stage":label,**details})
+    stage("DECODE_BEGIN")
     z,d=sp.symbols("z d")
     residual=decoded(state["remaining"],z,d)
     trace=trace_decoded(state["source"],z,d)
     lead=min(residual)
+    stage("DECODE_COMPLETE", remainder_terms=len(residual), original_support=len(trace))
     saved=json.loads(source_checkpoint.read_text(encoding="utf-8-sig"))
     match=[v for v in saved["pivots"] if tuple(v["lead"])==lead]
     if len(match)!=1:
@@ -36,20 +41,27 @@ def one_step(state,source_checkpoint,max_candidates):
     pivot_row=decoded(match[0]["row"],z,d)
     pivot_trace=trace_decoded(match[0]["trace"],z,d)
     factor=residual[lead]
+    stage("ELIMINATION_REMAINDER_BEGIN", next_lead=list(lead))
     add(residual,pivot_row,-factor)
+    stage("ELIMINATION_REMAINDER_COMPLETE", remainder_terms=len(residual))
+    stage("ELIMINATION_TRACE_BEGIN")
     add(trace,pivot_trace,factor)
+    stage("ELIMINATION_TRACE_COMPLETE", original_support=len(trace))
     before=metrics(residual,trace)
     cap=state["config"]["max_expression_chars"]
     candidates=[(kind,key,value) for kind,values in
                 (("remainder",residual),("source_trace",trace))
                 for key,value in values.items() if len(str(value))>cap]
     candidates.sort(key=lambda x:len(str(x[2])),reverse=True)
+    stage("CANDIDATE_METRICS_COMPLETE", oversized_coefficient_count=len(candidates), **before)
     results=[]
-    for kind,key,value in candidates[:max_candidates]:
+    for index,(kind,key,value) in enumerate(candidates[:max_candidates],1):
+        stage("FACTOR_BEGIN", coefficient_index=index, kind=kind, original_chars=len(str(value)))
         proposed=compact_candidate(value,"factor_numden")
         equal=sp.cancel(sp.together(proposed-value))==0
         if not equal:
             raise AssertionError("Compacted candidate is not exactly equal")
+        stage("FACTOR_COMPLETE", coefficient_index=index, candidate_chars=len(str(proposed)), exact_equal=True)
         results.append({"kind":kind,"key":list(key) if kind=="remainder" else key,
                         "original_chars":len(str(value)),
                         "compacted_chars":len(str(proposed)),
@@ -81,8 +93,10 @@ def main():
         ap.error("Invalid limits")
     if args.worker:
         state=json.loads(args.state.read_text(encoding="utf-8-sig"))
-        print(json.dumps(one_step(state,args.source_checkpoint,args.max_coefficients),
-                         ensure_ascii=True),flush=True)
+        def emit_stage(data):
+            print(json.dumps({"event":"stage",**data},ensure_ascii=True),flush=True)
+        result=one_step(state,args.source_checkpoint,args.max_coefficients,progress=emit_stage)
+        print(json.dumps({"event":"result","result":result},ensure_ascii=True),flush=True)
         return
     protected={p.resolve() for p in
                (args.state,args.source_checkpoint,args.input,args.certificate)}
@@ -100,19 +114,40 @@ def main():
          "--source-checkpoint",str(args.source_checkpoint),
          "--max-coefficients",str(args.max_coefficients)]
     start=time.monotonic()
+    progress=[]
+    def parse_progress(raw):
+        if isinstance(raw,bytes): raw=raw.decode("utf-8",errors="replace")
+        events=[]
+        for line in (raw or "").splitlines():
+            try:
+                event=json.loads(line)
+            except (json.JSONDecodeError,TypeError):
+                continue
+            if event.get("event")=="stage":events.append(event)
+        return events
     try:
         done=subprocess.run(cmd,text=True,capture_output=True,
                             timeout=args.timeout_seconds,check=False)
         elapsed=round(time.monotonic()-start,2)
+        progress=parse_progress(done.stdout)
         if done.returncode:
             report={"status":"NEXT_STEP_COMPACTION_WORKER_ERROR_NOT_PROOF",
                     "returncode":done.returncode,"stderr_tail":done.stderr[-500:]}
         else:
-            report=json.loads(done.stdout)
-    except subprocess.TimeoutExpired:
+            lines=[json.loads(x) for x in done.stdout.splitlines() if x.strip().startswith("{")]
+            completed=[x["result"] for x in lines if x.get("event")=="result"]
+            if len(completed)!=1:
+                raise RuntimeError("Worker did not emit one final result")
+            report=completed[0]
+    except subprocess.TimeoutExpired as ex:
         elapsed=round(time.monotonic()-start,2)
+        progress=parse_progress(ex.stdout)
         report={"status":"NEXT_STEP_COMPACTION_TIMEOUT_NOT_PROOF"}
-    report.update({"elapsed_seconds":elapsed,"checkpoint_modified":False,
+    report.update({"elapsed_seconds":elapsed,
+                   "stage_count":len(progress),
+                   "last_completed_stage":progress[-1]["stage"] if progress else None,
+                   "stage_events":progress[-16:],
+                   "checkpoint_modified":False,
                    "next_step_saved":False,"exact_target_proven":False})
     args.output.parent.mkdir(parents=True,exist_ok=True)
     with args.output.open("x",encoding="utf-8") as handle:
