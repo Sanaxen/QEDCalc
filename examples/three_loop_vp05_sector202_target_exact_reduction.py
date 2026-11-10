@@ -39,8 +39,18 @@ def modular(value, z, d, point):
     # integers.  SymPy cancel() can produce numerators with rational
     # coefficients (e.g. -(z + 2)/2 -> -z/2 - 1).  int(-19/2) truncates
     # to -9, and silently corrupts finite-field elimination.
-    rational = sp.cancel(sp.together(value)).subs({z: zv, d: dv})
-    numerator, denominator = sp.fraction(sp.together(rational))
+    numerator_expr, denominator_expr = sp.fraction(sp.cancel(sp.together(value)))
+    substitutions = {z: zv, d: dv}
+    # Guard poles BEFORE forming the substituted quotient: 1/(z-17)
+    # would otherwise produce SymPy zoo rather than a finite rational.
+    numerator_value = numerator_expr.subs(substitutions)
+    denominator_value = denominator_expr.subs(substitutions)
+    if denominator_value == 0:
+        raise ZeroDivisionError("Singular modular specialization")
+    # Even after cancel(), a numerator may have rational coefficients
+    # (for example -z/2-1).  Clear those denominators exactly.
+    rational = sp.together(numerator_value / denominator_value)
+    numerator, denominator = sp.fraction(rational)
     if numerator.is_Integer is not True or denominator.is_Integer is not True:
         raise ValueError("Modular specialization did not yield an exact rational number")
     a = int(numerator) % p
