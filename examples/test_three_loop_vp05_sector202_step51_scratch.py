@@ -8,11 +8,12 @@ import hashlib
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 import sympy as sp
 from examples.three_loop_vp05_sector202_step51_scratch import (
     atomic_save, compute_one, key_id, modular_check, scratch_config,
-    source_context, verify_scratch, summarize,
+    source_context, verify_scratch, summarize, seal_data, seal_matches, verify_or_seal,
 )
 
 class Step51ScratchTests(unittest.TestCase):
@@ -80,6 +81,54 @@ class Step51ScratchTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             verify_scratch(scratch,{**cfg,"target_state_sha256":"bad"},
                            self.target,pivot,jobs)
+
+
+    def test_sealed_prefix_skips_redundant_modular_work_and_rejects_changed_file(self):
+        lead,pivot,jobs=source_context(self.target,self.path)
+        statepath=Path(self.tmp.name)/"target.json"
+        statepath.write_text(json.dumps(self.target),encoding="utf-8")
+        source=Path(self.tmp.name)/"rows"
+        cert=Path(self.tmp.name)/"cert"
+        source.write_bytes(b"source")
+        cert.write_bytes(b"certificate")
+        cfg=scratch_config(statepath,self.path,source,cert,self.target,lead,jobs,9000)
+        scratch={"version":1,"status":"INTRA_STEP51_SCRATCH_NOT_PROOF",
+                 "config":cfg,"done":[],"exact_target_proven":False}
+        kind,key,_=jobs[0]
+        value=compute_one(self.target,self.path,kind,key)
+        scratch["done"].append({"id":key_id(kind,key),"value":value,"chars":len(value)})
+        path=Path(self.tmp.name)/"scratch.json"
+        seal=Path(self.tmp.name)/"seal.json"
+        atomic_save(path,scratch,False)
+        self.assertFalse(seal_matches(seal,path,cfg,scratch))
+        self.assertEqual(verify_or_seal(scratch,cfg,self.target,pivot,jobs,path,seal),
+                         "FULL_MODULAR_PREFIX_VERIFIED_NOT_PROOF")
+        self.assertTrue(seal_matches(seal,path,cfg,scratch))
+        with patch("examples.three_loop_vp05_sector202_step51_scratch.modular_check",
+                   side_effect=AssertionError("unexpected expensive re-verification")):
+            self.assertEqual(verify_or_seal(scratch,cfg,self.target,pivot,jobs,path,seal),
+                             "HASH_VERIFIED_MODULAR_PREFIX_NOT_PROOF")
+        altered=copy.deepcopy(scratch)
+        altered["done"][0]["value"]="9"
+        altered["done"][0]["chars"]=1
+        atomic_save(path,altered,True)
+        self.assertFalse(seal_matches(seal,path,cfg,altered))
+        with self.assertRaises(AssertionError):
+            verify_or_seal(altered,cfg,self.target,pivot,jobs,path,seal)
+        self.assertEqual(json.loads(seal.read_text())["verified_count"],1)
+
+    def test_string_metrics_match_existing_synthetic_metrics(self):
+        lead,pivot,jobs=source_context(self.target,self.path)
+        cfg={"target_max_expression_chars":7500}
+        scratch={"config":cfg,"done":[]}
+        for kind,key,_ in jobs:
+            value=compute_one(self.target,self.path,kind,key)
+            scratch["done"].append({"id":key_id(kind,key),"value":value,"chars":len(value)})
+        stat=summarize(scratch,self.target,pivot,jobs)
+        self.assertTrue(stat["complete"])
+        self.assertEqual(stat["remainder_terms"],2)
+        self.assertEqual(stat["original_support"],2)
+        self.assertEqual(stat["lead"],[2,73])
 
     def test_strict_operation_identity(self):
         self.assertEqual(key_id("remainder",[1,73]),"remainder:1,73")
