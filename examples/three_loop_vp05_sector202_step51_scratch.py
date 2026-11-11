@@ -26,6 +26,7 @@ from examples.three_loop_vp05_sector202_exact_prefix_smoke import expr
 
 STATE = BASE / "vp05_sector202_A_exact_target_state.json"
 SCRATCH = BASE / "vp05_sector202_A_step51_scratch.json"
+SEAL = BASE / "vp05_sector202_A_step51_verified_seal.json"
 
 def key_id(kind, key):
     return "%s:%s" % (kind, ",".join(map(str,key)) if kind=="remainder" else str(key))
@@ -129,6 +130,51 @@ def verify_scratch(scratch, config, target, pivot, jobs):
             raise RuntimeError("Scratch coefficient length mismatch")
         modular_check(target,pivot,kind,key,value)
 
+
+def seal_data(scratch_path, config, scratch):
+    """Hash-bound record of a scratch prefix already modular-checked in full.
+
+    This guards accidental corruption/stale checkpoints, not hostile tampering.
+    It is never evidence of exact symbolic proof.
+    """
+    payload=json.dumps(config,sort_keys=True,separators=(",",":"),ensure_ascii=True)
+    return {"version":1,"status":"MODULAR_PREFIX_VERIFIED_NOT_PROOF",
+            "scratch_sha256":sha(scratch_path),
+            "config_sha256":hashlib.sha256(payload.encode("utf-8")).hexdigest(),
+            "verified_count":len(scratch["done"]),"exact_target_proven":False}
+
+def seal_matches(seal_path, scratch_path, config, scratch):
+    if not seal_path.exists():return False
+    try:
+        saved=json.loads(seal_path.read_text(encoding="utf-8-sig"))
+        return saved==seal_data(scratch_path,config,scratch)
+    except (OSError,ValueError,TypeError):
+        return False
+
+def verify_or_seal(scratch, config, target, pivot, jobs, scratch_path,
+                   seal_path, seal_only=False):
+    # Recheck structural invariants even on the hash-fast path.
+    if (scratch.get("version")!=1 or scratch.get("config")!=config or
+        scratch.get("status")!="INTRA_STEP51_SCRATCH_NOT_PROOF" or
+        scratch.get("exact_target_proven") is not False):
+        raise RuntimeError("Scratch metadata, hashes or status mismatch")
+    records=scratch.get("done")
+    if not isinstance(records,list) or len(records)>len(jobs):
+        raise RuntimeError("Invalid scratch completed count")
+    if [item.get("id") for item in records]!=config["operation_ids"][:len(records)]:
+        raise RuntimeError("Scratch coefficient order mismatch")
+    for item in records:
+        value=item.get("value")
+        if (not isinstance(value,str) or item.get("chars")!=len(value) or
+                len(value)>config["scratch_max_expression_chars"]):
+            raise RuntimeError("Scratch saved coefficient size mismatch")
+    if seal_matches(seal_path,scratch_path,config,scratch):
+        return "HASH_VERIFIED_MODULAR_PREFIX_NOT_PROOF"
+    verify_scratch(scratch,config,target,pivot,jobs)
+    atomic_save(seal_path,seal_data(scratch_path,config,scratch),
+                seal_path.exists())
+    return "FULL_MODULAR_PREFIX_VERIFIED_NOT_PROOF"
+
 def summarize(scratch,target,pivot,jobs):
     z,d=sp.symbols("z d")
     rem=decoded(target["remaining"],z,d)
@@ -157,6 +203,8 @@ def main():
     ap.add_argument("--certificate",type=Path,default=CERT)
     ap.add_argument("--scratch",type=Path,default=SCRATCH)
     ap.add_argument("--resume",action="store_true")
+    ap.add_argument("--verified-seal",type=Path,default=SEAL)
+    ap.add_argument("--seal-only",action="store_true",help="Full check current scratch once and write hash-bound verification seal")
     ap.add_argument("--coefficients",type=int,default=1)
     ap.add_argument("--timeout-seconds",type=int,default=60)
     ap.add_argument("--scratch-max-expression-chars",type=int,default=9000)
@@ -179,6 +227,10 @@ def main():
     inputs=(args.state,args.source_checkpoint,args.input,args.certificate)
     if args.scratch.resolve() in {x.resolve() for x in inputs}:
         ap.error("Scratch path may not be a protected input")
+    if args.verified_seal.resolve() in {x.resolve() for x in (*inputs,args.scratch)}:
+        ap.error("Verification seal must have a separate path")
+    if args.seal_only and not args.resume:
+        ap.error("--seal-only requires --resume")
     if args.resume != args.scratch.exists():
         raise RuntimeError("Use --resume for an existing scratch; otherwise choose a new scratch path")
     target=json.loads(args.state.read_text(encoding="utf-8-sig"))
@@ -188,7 +240,13 @@ def main():
                           target,lead,jobs,args.scratch_max_expression_chars)
     if args.resume:
         scratch=json.loads(args.scratch.read_text(encoding="utf-8-sig"))
-        verify_scratch(scratch,config,target,pivot,jobs)
+        verification=verify_or_seal(scratch,config,target,pivot,jobs,
+                                    args.scratch,args.verified_seal,
+                                    args.seal_only)
+        print("VP05_SECTOR202_STEP51_VERIFICATION "+json.dumps(
+            {"status":verification,"saved_count":len(scratch["done"]),
+             "exact_target_proven":False}),flush=True)
+        if args.seal_only:return
     else:
         scratch={"version":1,"status":"INTRA_STEP51_SCRATCH_NOT_PROOF",
                  "config":config,"done":[],"exact_target_proven":False,
@@ -230,6 +288,10 @@ def main():
         record={"id":key_id(kind,key),"value":value,"chars":len(value)}
         scratch["done"].append(record)
         atomic_save(args.scratch,scratch,True)
+        # This coefficient was checked at all 3 modular evaluation points.
+        # Seal the new complete prefix only AFTER durable scratch replacement.
+        atomic_save(args.verified_seal,seal_data(args.scratch,config,scratch),
+                    args.verified_seal.exists())
         finished+=1
         print("VP05_SECTOR202_STEP51_SCRATCH_PROGRESS "+
               json.dumps({"index":len(scratch["done"]),"total":len(jobs),
