@@ -176,20 +176,29 @@ def verify_or_seal(scratch, config, target, pivot, jobs, scratch_path,
     return "FULL_MODULAR_PREFIX_VERIFIED_NOT_PROOF"
 
 def summarize(scratch,target,pivot,jobs):
-    z,d=sp.symbols("z d")
-    rem=decoded(target["remaining"],z,d)
-    trace=trace_decoded(target["source"],z,d)
+    """Purely structural progress metrics; do not reparse 40+ SymPy expressions.
+
+    The formal mathematical validation is performed by modular_check before
+    each append, or the full verify_scratch on sealing a stale/unsealed file.
+    """
+    rem={tuple(k):v for k,v in target["remaining"]}
+    trace={int(k):v for k,v in target["source"]}
     for record,(kind,key,_) in zip(scratch["done"],jobs):
-        v=expr(record["value"],z,d)
+        value=record["value"]
         if kind=="remainder":
             k=tuple(key)
-            if v==0:rem.pop(k,None)
-            else:rem[k]=v
+            if value=="0":rem.pop(k,None)
+            else:rem[k]=value
         else:
             k=int(key)
-            if v==0:trace.pop(k,None)
-            else:trace[k]=v
-    stats=metrics(rem,trace)
+            if value=="0":trace.pop(k,None)
+            else:trace[k]=value
+    row_chars=max((len(v) for v in rem.values()),default=0)
+    source_chars=max((len(v) for v in trace.values()),default=0)
+    stats={"remainder_terms":len(rem),"original_support":len(trace),
+           "row_expression_chars":row_chars,"source_expression_chars":source_chars,
+           "max_expression_chars":max(row_chars,source_chars),
+           "lead":list(min(rem)) if rem else None}
     stats["complete"]=len(scratch["done"])==len(jobs)
     stats["exceeds_formal_expression_cap"]=(
         stats["max_expression_chars"]>scratch["config"]["target_max_expression_chars"])
