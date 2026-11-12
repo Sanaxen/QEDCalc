@@ -42,7 +42,10 @@ def interpret(outcome, before, after):
         if outcome != 0:
             raise RuntimeError("Child returned error but state advanced; manual review required")
         return "STEP52_COMMITTED_CHECKPOINT_NOT_TARGET_PROOF"
-    if after == before:
+    if after == before or (after.get("steps") == 51 and
+        {k: v for k, v in after.items() if k != "status"} ==
+        {k: v for k, v in before.items() if k != "status"} and
+        after.get("status") in ("EXACT_TARGET_PREFIX_NOT_PROOF", "EXACT_TARGET_CAP_REACHED_NOT_PROOF")):
         return "STEP52_NOT_COMMITTED_BOUNDED_OR_CAP_STOP_NOT_PROOF"
     raise RuntimeError("Checkpoint changed unexpectedly; do not repeat without review")
 
