@@ -3,7 +3,7 @@
 Read-only preflight pins the precisely verified Step54 state SHA256. The
 existing checkpoint engine attempts ONE Step55 elimination, retaining the
 original 7500-character, 256-column and 400-source caps. Any cap stop leaves
-the 53 elimination steps intact. No completed target proof is claimed.
+the 54 elimination steps intact. No completed target proof is claimed.
 """
 from __future__ import annotations
 import argparse
@@ -22,7 +22,7 @@ EXPECTED_STEP54_SHA = "84346e27db40434e3805c96785c0ba27134c5ff18dd872c244dce5369
 
 def validate_state(path, source_checkpoint=CHECKPOINT, source=SOURCE, certificate=CERT):
     if sha(path) != EXPECTED_STEP54_SHA:
-        raise RuntimeError("Expected exact verified Step54 SHA256 from promotion log")
+        raise RuntimeError("Expected exact verified Step54 SHA256 from exact progress log")
     state = json.loads(path.read_text(encoding="utf-8-sig"))
     config = state.get("config", {})
     if (state.get("steps") != 54 or config.get("target") != "A"
