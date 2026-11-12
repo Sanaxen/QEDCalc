@@ -3,7 +3,7 @@
 Read-only preflight pins the precisely verified Step55 state SHA256. The
 existing checkpoint engine attempts ONE Step56 elimination, retaining the
 original 7500-character, 256-column and 400-source caps. Any cap stop leaves
-the 54 elimination steps intact. No completed target proof is claimed.
+the 55 elimination steps intact. No completed target proof is claimed.
 """
 from __future__ import annotations
 import argparse
