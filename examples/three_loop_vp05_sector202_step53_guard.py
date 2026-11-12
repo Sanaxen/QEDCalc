@@ -20,9 +20,6 @@ def validate_state(path):
     if (state.get("steps") != 52 or state.get("config", {}).get("target") != "A"
         or state.get("status") != "EXACT_TARGET_PREFIX_NOT_PROOF"
         or state.get("exact_target_proven") is not False
-        or state.get("step51_original_ibp_replay_verified") is not True
-        or state.get("step51_exact_coefficient_count") != 288
-        or state.get("step51_exact_compacted_count") != 8
         or len(state.get("remaining", [])) != 103
         or len(state.get("source", [])) != 187
         or len(state.get("pivot_path", [])) != 52
@@ -63,6 +60,8 @@ def main():
     if not 0 < args.hours <= 12:
         ap.error("--hours must be in (0, 12]")
     before = validate_state(args.state)
+    # The checkpoint reducer serializes a fixed schema and does not propagate
+    # extra step51 audit fields. Verify the exact audited Step52 file instead.
     if sha(args.state) != "6da99627d2ce7e2da4c9a8a9858c91df91ecbe3c707fedd7871fb969df27d691":
         raise RuntimeError("Step52 checkpoint SHA differs from audited user log")
     head = {"status": "STEP53_BOUNDED_PREFLIGHT_PASS_NOT_PROOF",
