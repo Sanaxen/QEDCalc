@@ -23,7 +23,7 @@ from examples.three_loop_vp05_sector202_target_exact_reduction import (
 )
 from examples.three_loop_vp05_sector202_exact_prefix_smoke import expr
 
-OUT = BASE / "vp05_sector202_A_target_b_step51_exact_coefficients_candidate.json"
+OUT = BASE / "vp05_sector202_B_step51_exact_coefficients_candidate.json"
 KNOWN_B_STEP50_SHA = "f4c480ee9cd555549f690817c7f6cc4c8d80fcec329fa795e53ef5165955ba47"
 
 
@@ -35,7 +35,7 @@ def get_jobs(state, source):
             or len(state.get("remaining", [])) != 102
             or len(state.get("source", [])) != 185
             or state.get("config", {}).get("max_expression_chars") != 7500):
-        raise RuntimeError("Expected preserved Step52 Target B after cap stop")
+        raise RuntimeError("Expected preserved Step50 Target B after cap stop")
     lead = min(tuple(k) for k, _ in state["remaining"])
     matches = [p for p in source["pivots"] if tuple(p["lead"]) == lead]
     if len(matches) != 1:
