@@ -1,7 +1,7 @@
 """Read-only assembly and exact consistency audit for B Step52 coefficient pilot.
 
 No formal state, candidate file, Target A artifact, or source checkpoint is
-modified. Assembles 288 locally checked coefficients, verifies each exact
+modified. Assembles 35 locally checked coefficients, verifies each exact
 operation, and independently verifies original-IBP target/residual identity.
 A successful report is a prerequisite for a separately guarded promotion.
 """
@@ -25,11 +25,11 @@ from examples.three_loop_vp05_sector202_target_exact_reduction import (
 from examples.three_loop_vp05_sector202_exact_prefix_smoke import expr
 
 REPORT = BASE / "vp05_sector202_B_step52_exact_candidate_audit.json"
-EXPECTED_B_STEP50_SHA = "f4c480ee9cd555549f690817c7f6cc4c8d80fcec329fa795e53ef5165955ba47"
+EXPECTED_B_STEP51_SHA = "382e76dbbfc6f57c0dbf6468b53329d91a869ed9267a98093ac7165d8c6c7aac"
 
 
 def audit(candidate_path=OUT, state_path=STATE, report_path=REPORT):
-    if sha(state_path)!=EXPECTED_B_STEP50_SHA or sha(A_STATE)!=A_STATE_SHA or sha(A_PROOF)!=A_PROOF_SHA:
+    if sha(state_path)!=EXPECTED_B_STEP51_SHA or sha(A_STATE)!=A_STATE_SHA or sha(A_PROOF)!=A_PROOF_SHA:
         raise RuntimeError("Formal B Step51 or proven A inputs changed")
     candidate=json.loads(candidate_path.read_text(encoding="utf-8-sig"))
     args=argparse.Namespace(state=state_path,source_checkpoint=CHECKPOINT,input=SOURCE,certificate=CERT)
@@ -74,7 +74,7 @@ def audit(candidate_path=OUT, state_path=STATE, report_path=REPORT):
         raise AssertionError("Step52 candidate dimensions differ from cap-stop metrics")
     if max((len(str(v)) for v in list(after_rem.values())+list(after_src.values())),default=0)>7500:
         raise RuntimeError("Candidate canonical expression exceeds formal cap")
-    if sha(state_path)!=EXPECTED_B_STEP50_SHA:
+    if sha(state_path)!=EXPECTED_B_STEP51_SHA:
         raise RuntimeError("Protected B state modified during audit")
     with gzip.open(SOURCE,"rt",encoding="utf-8") as stream:
         src=json.load(stream)
@@ -102,7 +102,7 @@ def audit(candidate_path=OUT, state_path=STATE, report_path=REPORT):
     payload={
         "status":"B_STEP52_EXACT_ORIGINAL_IBP_REPLAY_PASS_NOT_TARGET_PROOF",
         "target":"B","steps_before":50,"candidate_step":51,
-        "candidate_sha256":sha(candidate_path),"state_step50_sha256":sha(state_path),
+        "candidate_sha256":sha(candidate_path),"state_step51_sha256":sha(state_path),
         "a_state_sha256":A_STATE_SHA,"a_proof_sha256":A_PROOF_SHA,
         "source_checkpoint_sha256":sha(CHECKPOINT),
         "original_source_sha256":sha(SOURCE),
