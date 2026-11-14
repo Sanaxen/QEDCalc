@@ -13,7 +13,7 @@ from examples.three_loop_vp05_sector202_target_b_step53_exact_candidate import (
     OUT, STATE, load_context,
 )
 from examples.three_loop_vp05_sector202_target_b_start import A_STATE,A_PROOF,A_STATE_SHA,A_PROOF_SHA
-from examples.three_loop_vp05_sector202_step52_scratch import atomic_save,key_id
+from examples.three_loop_vp05_sector202_step51_scratch import atomic_save,key_id
 from examples.three_loop_vp05_sector202_target_b_step52_formal_promotion import BACKUP as STEP51_BACKUP
 from examples.three_loop_vp05_sector202_target_b_step51_formal_promotion import BACKUP as STEP50_BACKUP, B_STEP50_SHA
 from examples.three_loop_vp05_sector202_target_b_step52_formal_promotion import B_STEP51_SHA
@@ -27,7 +27,7 @@ from examples.three_loop_vp05_sector202_target_exact_reduction import (
 from examples.three_loop_vp05_sector202_exact_prefix_smoke import expr
 
 REPORT = BASE / "vp05_sector202_B_step53_exact_candidate_audit.json"
-EXPECTED_B_STEP52_SHA = "382e76dbbfc6f57c0dbf6468b53329d91a869ed9267a98093ac7165d8c6c7aac"
+EXPECTED_B_STEP52_SHA = "b398b7f9630c2ea2c8a90c1939517a7e5095170d65c1c68d9dc47b294776aa95"
 
 
 def audit(candidate_path=OUT, state_path=STATE, report_path=REPORT):
