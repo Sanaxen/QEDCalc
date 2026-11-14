@@ -46,7 +46,7 @@ def get_jobs(state, source):
     jobs = [("remainder", tuple(k), v) for k, v in pivot["row"]]
     jobs += [("source_trace", int(k), v) for k, v in pivot["trace"]]
     if len({key_id(kind, key) for kind, key, _ in jobs}) != len(jobs):
-        raise RuntimeError("Duplicate Step52 coefficient operation")
+        raise RuntimeError("Duplicate Step53 coefficient operation")
     return lead, pivot, jobs
 
 
