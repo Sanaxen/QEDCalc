@@ -149,9 +149,11 @@ def promote(state_path=B_STATE,candidate_path=OUT,report_path=REPORT,backup_path
             raise RuntimeError("Post-promotion protected input mismatch")
     return {"status":"B_STEP52_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF",
             "old_sha256":B_STEP51_SHA,"new_sha256":sha(state_path),
-            "backup_sha256":sha(backup_path),"new_steps":51,
-            "remainder_terms":100,"original_support":186,
-            "max_expression_chars":7252,
+            "backup_sha256":sha(backup_path),"step50_backup_sha256":sha(STEP50_BACKUP),
+            "new_steps":actual["steps"],
+            "remainder_terms":len(actual["remaining"]),
+            "original_support":len(actual["source"]),
+            "max_expression_chars":max((len(v) for _,v in actual["remaining"]+actual["source"]),default=0),
             "exact_target_proven":False,"a_protected_unchanged":True}
 
 
