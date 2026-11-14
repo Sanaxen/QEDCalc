@@ -17,14 +17,15 @@ from pathlib import Path
 import sympy as sp
 from sympy.polys.polyerrors import PolynomialError
 from examples.three_loop_vp05_sector202_target_b_start import B_STATE as STATE, A_STATE, A_PROOF, A_STATE_SHA, A_PROOF_SHA
-from examples.three_loop_vp05_sector202_step52_scratch import atomic_save, key_id
+from examples.three_loop_vp05_sector202_step51_scratch import atomic_save, key_id
+from examples.three_loop_vp05_sector202_target_b_step51_formal_promotion import BACKUP, B_STEP50_SHA
 from examples.three_loop_vp05_sector202_target_exact_reduction import (
     BASE, CHECKPOINT, SOURCE, CERT, sha,
 )
 from examples.three_loop_vp05_sector202_exact_prefix_smoke import expr
 
 OUT = BASE / "vp05_sector202_B_step52_exact_coefficients_candidate.json"
-KNOWN_B_STEP50_SHA = "f4c480ee9cd555549f690817c7f6cc4c8d80fcec329fa795e53ef5165955ba47"
+KNOWN_B_STEP51_SHA = "382e76dbbfc6f57c0dbf6468b53329d91a869ed9267a98093ac7165d8c6c7aac"
 
 
 def get_jobs(state, source):
@@ -96,7 +97,7 @@ def worker(index, state, pivot, jobs):
 
 def load_context(args):
     h = sha(args.state)
-    if h != KNOWN_B_STEP50_SHA:
+    if h != KNOWN_B_STEP51_SHA:
         raise RuntimeError("Step52 state SHA does not match audited log")
     state = json.loads(args.state.read_text(encoding="utf-8-sig"))
     if sha(A_STATE) != A_STATE_SHA or sha(A_PROOF) != A_PROOF_SHA:
