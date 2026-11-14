@@ -29,7 +29,8 @@ EXPECTED_B_STEP51_SHA = "382e76dbbfc6f57c0dbf6468b53329d91a869ed9267a98093ac7165
 
 
 def audit(candidate_path=OUT, state_path=STATE, report_path=REPORT):
-    if sha(state_path)!=EXPECTED_B_STEP51_SHA or sha(A_STATE)!=A_STATE_SHA or sha(A_PROOF)!=A_PROOF_SHA:
+    if (sha(state_path)!=EXPECTED_B_STEP51_SHA or sha(A_STATE)!=A_STATE_SHA
+            or sha(A_PROOF)!=A_PROOF_SHA or sha(BACKUP)!=B_STEP50_SHA):
         raise RuntimeError("Formal B Step51 or proven A inputs changed")
     candidate=json.loads(candidate_path.read_text(encoding="utf-8-sig"))
     args=argparse.Namespace(state=state_path,source_checkpoint=CHECKPOINT,input=SOURCE,certificate=CERT)
@@ -38,7 +39,7 @@ def audit(candidate_path=OUT, state_path=STATE, report_path=REPORT):
     if (candidate.get("status")!="B_STEP52_EXACT_COEFFICIENT_PREFIX_NOT_PROOF"
         or candidate.get("config")!=binding
         or candidate.get("exact_target_proven") is not False
-        or len(done)!=len(jobs)
+        or len(done)!=35 or len(done)!=len(jobs)
         or [r.get("id") for r in done]!=binding["jobs"]
         or any(r.get("exact_local_identity") is not True or
                r.get("within_formal_cap") is not True or
@@ -74,8 +75,8 @@ def audit(candidate_path=OUT, state_path=STATE, report_path=REPORT):
         raise AssertionError("Step52 candidate dimensions differ from cap-stop metrics")
     if max((len(str(v)) for v in list(after_rem.values())+list(after_src.values())),default=0)>7500:
         raise RuntimeError("Candidate canonical expression exceeds formal cap")
-    if sha(state_path)!=EXPECTED_B_STEP51_SHA:
-        raise RuntimeError("Protected B state modified during audit")
+    if sha(state_path)!=EXPECTED_B_STEP51_SHA or sha(BACKUP)!=B_STEP50_SHA:
+        raise RuntimeError("Protected B Step51 or Step50 backup modified during audit")
     with gzip.open(SOURCE,"rt",encoding="utf-8") as stream:
         src=json.load(stream)
     originals={r["global_zero_based"]:r for r in src["rows"]}
@@ -101,7 +102,7 @@ def audit(candidate_path=OUT, state_path=STATE, report_path=REPORT):
         raise AssertionError("Original IBP exact replay failed; residual keys "+str(list(differences)[:5]))
     payload={
         "status":"B_STEP52_EXACT_ORIGINAL_IBP_REPLAY_PASS_NOT_TARGET_PROOF",
-        "target":"B","steps_before":50,"candidate_step":51,
+        "target":"B","steps_before":51,"candidate_step":52,
         "candidate_sha256":sha(candidate_path),"state_step51_sha256":sha(state_path),
         "a_state_sha256":A_STATE_SHA,"a_proof_sha256":A_PROOF_SHA,
         "source_checkpoint_sha256":sha(CHECKPOINT),
