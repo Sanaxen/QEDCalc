@@ -6920,3 +6920,18 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step59_reenc
 .\run_vp05_sector202_target_b_step59_reencoding_exact_audit.bat --timeout-seconds 1800
 ```
 If PASS, next implement SHA-pinned Step60 coefficient-by-coefficient exact candidate, then independent exact original-IBP replay and backup-first promotion; preserve the 7500 expression cap. Never rerun previous old-anchored Step60 multistep runner, and never infer successful Step60 from the cap-stop.
+
+
+### 2026-11-15 VP05 sector202 Target B: re-encoding exact equivalence 3/3 PASS, Step60 coefficient pilot prepared
+
+User `log(20261115-084443).txt` shows exact symbolic checks of all **three** re-encoded residual coefficients **PASS**. Keys `[166596414668803,139]`, `[166596414799872,139]`, `[166596414930944,139]`; first lengths6329→6329, second6293→6351, third6344→6344. Status `B_STEP59_REENCODING_ALL_3_EXACT_EQUIVALENCE_PASS_NOT_TARGET_PROOF`. Thus cap-stopped B Step59 current state SHA **`a5a341737487cc4a1f2e20323b1adc927ead02e043af44db4442857a7cfdc38a`** is mathematically equivalent, coefficient by coefficient, to the independently audited formal Step59 state SHA `88cab7046de7cab3f5733ffc788a375a795d8842d89a4b1c794f775dba2e8dda`. Residual86, source163, pivot history/config unchanged; Target A/backups protected. Step60 **not** saved: original direct candidate cap8186 >7500.
+
+Committed `examples/three_loop_vp05_sector202_target_b_step60_exact_candidate.py`, `examples/test_three_loop_vp05_sector202_target_b_step60_exact_candidate.py`, and `run_vp05_sector202_target_b_step60_exact_candidate.bat`. This candidate pilot anchors the **current re-encoded Step59 state SHA**, validates protected original source/checkpoint/certificate and A proof plus B Step50/51/52/58 backups, targets next pivot lead `[166596413227009,139]`, computes every affected remainder/provenance coefficient in a separate SymPy exact subprocess, attempts shorter equivalent representations when necessary, checks local exact identities, and saves resumable candidate progress in a separate file. It neither rewrites formal checkpoint nor claims B proof. Unittests/real pilot execution pending. Need independent exact original-IBP replay before formal Step60 promotion.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step60_exact_candidate -v
+.\run_vp05_sector202_target_b_step60_exact_candidate.bat --hours 12 --timeout-seconds 600 --max-new-coefficients 300
+```
+If candidate exists, use `--resume` instead (never delete candidate blindly). Require final `ALL_LOCAL_IDENTITIES_PASS_PENDING_FULL_IBP_REPLAY` and `still_oversized=0`. If oversize persists, inspect and improve symbolic representation without increasing the 7500-char cap. Do not rerun the original from59 wrapper or Step59 promotion.
