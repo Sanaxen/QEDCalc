@@ -6826,3 +6826,18 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step59_exact
 .\run_vp05_sector202_target_b_step59_exact_candidate.bat --hours 12 --timeout-seconds 600 --max-new-coefficients 300
 ```
 If incomplete, use the same batch with `--resume`. Require `ALL_LOCAL_IDENTITIES_PASS_PENDING_FULL_IBP_REPLAY` and `still_oversized=0`; if these do not occur, inspect failure rather than promoting. After a completed pilot, implement independent exact original-IBP replay before SHA-pinned backup-first Step59 formal promotion. Do NOT rerun Step53 promotion, nor ignore formal 7500-character cap.
+
+
+### 2026-11-15 VP05 sector202 Target B: Step59 exact coefficient pilot 24/24 PASS; independent original-IBP audit prepared
+
+User log `log(20261115-073721).txt` reports `ALL_LOCAL_IDENTITIES_PASS_PENDING_FULL_IBP_REPLAY`: **24/24** Step59 coefficient operations verified as exact local identities, **0 oversized**, `max_saved_chars=7439` (under formal 7500 cap), `elapsed_seconds=592.11` (~9m52s). Pilot did **not** modify formal state or prove Target B. Formally saved B Step58 remains SHA `565af78b3e8604782f614515fb2b93d8a25efa6022174a2ca4bcc9673fc56d4b` with residual84/support161/max7083. Original unshortened attempted Step59 measured residual86/support163/max8241, so shortened values must be preserved verbatim (not re-stringified from SymPy canonical forms).
+
+Committed `examples/three_loop_vp05_sector202_target_b_step59_exact_audit.py`, `examples/test_three_loop_vp05_sector202_target_b_step59_exact_audit.py`, and `run_vp05_sector202_target_b_step59_exact_audit.bat`. The independent, read-only-with-respect-to-formal-state auditor SHA-pins saved B Step58 and original checkpoint/source/certificate/A artifacts/B Step50,51,52 backups; verifies all 24 candidate identities afresh, assembles Step59 exact residual and provenance preserving shortened strings, checks expected 86 residual/163 source support and saved 7500-char cap; replays the difference against original IBP source rows in exact symbolic arithmetic. Only on success writes separate `vp05_sector202_B_step59_exact_candidate_audit.json` with `B_STEP59_EXACT_ORIGINAL_IBP_REPLAY_PASS_NOT_TARGET_PROOF`; it does **not** promote B Step59 or claim full Target B proof. Test and real replay in user environment pending.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step59_exact_audit -v
+.\run_vp05_sector202_target_b_step59_exact_audit.bat
+```
+Do NOT rerun 24-coefficient pilot. If audit PASS and `original_ibp_exact_replay_verified=true`, next implement guarded backup-first Step59 promotion with **observed candidate SHA** from audit output, not a guessed value. If audit fails, inspect without modifying protected state.
