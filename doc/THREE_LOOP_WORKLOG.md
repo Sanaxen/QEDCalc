@@ -6780,3 +6780,18 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step53_forma
 ```
 
 On preflight `B_STEP53_PROMOTION_PREFLIGHT_PASS_NOT_PROOF`, run **once** `.\run_vp05_sector202_target_b_step53_formal_promotion.bat`; expected `B_STEP53_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF` and exact formal Step53 metrics (steps53, residual101, support188, max chars7447), new state SHA. Do not run promotion twice; if preflight fails inspect without modifying inputs. Follow-up: independently audit saved Step53 hash before continuing toward Step54. Do not rerun 292 coefficient pilot or original IBP audit.
+
+
+### 2026-11-15 VP05 sector202 Target B: Step53 formal prefix promotion succeeded; independent saved-state audit prepared
+
+User `log(20261115-054843).txt` reports `B_STEP53_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`. The new **formally saved B Step53 state** has SHA256 **`684ee4ed3936a52d940e58f8292b9d7a8b38b7d6822492e9709bb8427ff64505`**, 53 pivots, residual **101**, original IBP support **188**, maximum expression **7447** under formal cap7500, `exact_target_proven=false`. Previous cap-stopped Step52 SHA **`b398b7f9630c2ea2c8a90c1939517a7e5095170d65c1c68d9dc47b294776aa95`** is preserved byte-for-byte as the new Step52 backup; existing Step50 SHA `f4c480ee9cd555549f690817c7f6cc4c8d80fcec329fa795e53ef5165955ba47` and Step51 SHA `382e76dbbfc6f57c0dbf6468b53329d91a869ed9267a98093ac7165d8c6c7aac` remain valid. Proven Target A unchanged. **This is a rigorously verified prefix, not a complete B proof.**
+
+Committed `examples/three_loop_vp05_sector202_target_b_step53_read_only_audit.py`, `examples/test_three_loop_vp05_sector202_target_b_step53_read_only_audit.py`, `run_vp05_sector202_target_b_step53_read_only_audit.bat`. This independent read-only auditor pins the user-observed new Step53 state hash and all protected prior backups, Target A state/proof and original checkpoint/source/certificate; checks 53 pivots, 101 residual keys, 188 provenance support IDs, formal caps and consistent metrics and next lead. **No write and no promotion invoked.** The code and worklog are committed; user-local unittest and read-only audit are pending.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step53_read_only_audit -v
+.\run_vp05_sector202_target_b_step53_read_only_audit.bat
+```
+Expected `B_STEP53_FORMAL_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`, 53/101/188/7447, and new `next_lead`. On PASS, anchor Step54 continuation to exact new hash; continue guarded and use coefficient-wise exact shortening with independent original-IBP replay if expression cap is hit again. **Do not rerun one-time Step53 promotion or previous 292-coefficient computation.**
