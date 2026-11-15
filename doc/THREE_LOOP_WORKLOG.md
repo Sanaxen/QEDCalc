@@ -6984,3 +6984,20 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step60_read_
 .\run_vp05_sector202_target_b_step60_read_only_audit.bat
 ```
 Require `B_STEP60_FORMAL_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` before continuing. Then prepare Step61 onward on immutable observed Step60 SHA; avoid blindly rerunning prior from59 runner or resetting current state. If direct next step hits expression cap, use the proven per-coefficient strict exact-and-original-IBP replay workflow without increasing caps.
+
+
+### 2026-11-15 VP05 sector202 Target B: audited Step60 PASS; guarded Step61–76 continuation and cap-stop reserialization classification fix
+
+User reported `B_STEP60_FORMAL_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` after independent inspection of formally promoted Step60, pinned SHA256 **`4eebc9694e460654e1224fa72e6d6385ae1689dedf3004bbf5934be27f3075c8`**, residual85, original source support164, maximum formula7356. Target B remains unproven; existing original-IBP Step60 replay and saved state are independently checked.
+
+Implemented and committed `examples/three_loop_vp05_sector202_target_b_multistep_from60.py`, `examples/test_three_loop_vp05_sector202_target_b_multistep_from60.py`, and `run_vp05_sector202_target_b_multistep_from60.bat`, anchored to this exact audited Step60 SHA. Validates proven Target A, original checkpoint/source/certificate, B Step50/51/52/58/59 immutable backups, fixed configuration, pivot history, saved shape and canonical 7500-char/256-column/400-support limits; invokes the existing exact per-step atomic engine for up to **16 new steps (Step61–76)** with **12-hour** ceiling.
+
+**Regression fix:** previous from59 runner threw `Unexpected mutation without saved progress` when the underlying exact checkpoint engine hit a cap with zero completed steps but atomically reserialized some coefficients and metrics. New from60 runner detects no-step resaves and distinguishes (a) status-only cap stop, (b) unchanged keys and source IDs with changed coefficient strings/metrics, emitting `MULTISTEP_NO_NEW_STEP_RESERIALIZED_REQUIRES_EXACT_AUDIT` with new SHA and number of changed coefficient strings (rather than falsely reporting success or throwing the old generic exception), and (c) invalid zero-step structural mutations, which remain hard failures. Any reserialized state requires separate exact symbolic verification; do not trust unchanged keys or modular tests as proof of symbolic equivalence. Wrapper does not increase safety caps or silently rewrite restored state.
+
+PowerShell (after `git pull --ff-only origin feature/master-basis-initiate-only`):
+```powershell
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_multistep_from60 -v
+.\run_vp05_sector202_target_b_multistep_from60.bat --check-only
+.\run_vp05_sector202_target_b_multistep_from60.bat --steps 16 --hours 12
+```
+Run the last command **once only** after preflight PASS. Save log, candidate cap numbers, new saved state SHA, steps and proof existence. If any step is stored, independently inspect its exact validity before further work; if zero-step cap stop and new SHA, perform read-only, strict exact coefficient equivalence check against the audited Step60 predecessor before beginning Step61 coefficient-by-coefficient shortening. Never rerun old SHA-pinned from59 runner or Step60 promotion. User-local tests and actual continuation remain pending.
