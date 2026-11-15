@@ -7001,3 +7001,18 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_multistep_fr
 .\run_vp05_sector202_target_b_multistep_from60.bat --steps 16 --hours 12
 ```
 Run the last command **once only** after preflight PASS. Save log, candidate cap numbers, new saved state SHA, steps and proof existence. If any step is stored, independently inspect its exact validity before further work; if zero-step cap stop and new SHA, perform read-only, strict exact coefficient equivalence check against the audited Step60 predecessor before beginning Step61 coefficient-by-coefficient shortening. Never rerun old SHA-pinned from59 runner or Step60 promotion. User-local tests and actual continuation remain pending.
+
+
+### 2026-11-15 VP05 sector202 Target B: Steps61–63 saved; Step64 cap stop; read-only checkpoint audit prepared
+
+User `log(20261115-104023).txt`: Step60 SHA `4eebc9694e460654e1224fa72e6d6385ae1689dedf3004bbf5934be27f3075c8` passed fixed-anchor preflight. Exact engine completed and atomically saved **three more eliminations**: Step61 residual87/support165/max7356; Step62 residual86/support166/max7335; Step63 residual87/support168/max7391. Step64 attempted residual86/support172/max8093 **exceeds 7500 expression cap by 593**, so it stopped safely with `EXACT_TARGET_CAP_REACHED_NOT_PROOF`. The new persisted, cap-stopped **Step63** formal B checkpoint SHA256 **`78bcc7570d5bc8a85b0c478c3b750559e3d73154781889607ac3bde43badf9d5`** (next lead `[166596413882370,139]`, pivot history additions `[166596413751297,139]`, `[166596413882368,139]`, `[166596413882369,139]`). Outer runner returned `MULTISTEP_PARTIAL_STEPS_SAVED_CAP_STOP_NOT_PROOF`, `returncode=0`, `proof_file_exists=false`, `a_protected_unchanged=true`. No Target B proof.
+
+Added and committed `examples/three_loop_vp05_sector202_target_b_step63_read_only_audit.py`, `examples/test_three_loop_vp05_sector202_target_b_step63_read_only_audit.py`, and `run_vp05_sector202_target_b_step63_read_only_audit.bat`. Read-only audit pins actual saved Step63 SHA, verifies three new pivot leads/path and next lead, 87/168/max7391, cap-stopped status, 7500/256/400 limits, source checkpoint/source/certificate hashes, protected A state/proof, B Step50/51/52/58/59 backups and absence of proof flag. **This is a saved-state/checkpoint structural+hash audit, not a new independent original-IBP symbolic replay of Steps61–63.** The exact engine performed elimination and modular resume invariants, but a separate exact-original-IBP audit is still needed if promoting this as independently proven. User-local unittest and audit pending.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step63_read_only_audit -v
+.\run_vp05_sector202_target_b_step63_read_only_audit.bat
+```
+Expected `B_STEP63_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`. Do not rerun original Step60 fixed-anchor wrapper, Step60 promotion, or Step61–63 elimination. Once audit passes, anchor Step64 exact coefficient pilot to the observed Step63 SHA with original 7500 cap; independently replay original IBP rows before any further promotion.
