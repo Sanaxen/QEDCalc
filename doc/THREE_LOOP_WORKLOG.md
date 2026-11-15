@@ -6887,3 +6887,19 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_multistep_fr
 .\run_vp05_sector202_target_b_multistep_from59.bat --steps 16 --hours 12
 ```
 Require `MULTISTEP_PREFLIGHT_PASS_NOT_PROOF` from the no-write preflight. The run can stop at the first excessive-expression pivot; record the new saved step, exact state SHA, candidate cap metrics and any proof artifact before planning next independent coefficient shortening and original-IBP replay. Do not start a second fixed-anchor run after state changes without a new script anchored to the actual saved SHA.
+
+
+### 2026-11-15 VP05 sector202 Target B: Step60 runner post-run exception; forensic inspection before retry
+
+User ran `.\\run_vp05_sector202_target_b_multistep_from59.bat --steps 16 --hours 12 > log.txt` and reported an exception in the **outer wrapper** `classify()`: `RuntimeError: Unexpected mutation without saved progress` (line78), after the underlying exact-checkpoint subprocess finished. This is **not proof of failed exact arithmetic**, and neither Step60 cap-stop status nor current checkpoint SHA is confirmed without `log.txt` or read-only inspection. The wrapper's zero-step branch assumes all state fields except status are byte-for-byte identical, but `examples/three_loop_vp05_sector202_target_exact_checkpoint.py` reconstructs and atomically reserializes the state on final cap-stop even when no new pivot was saved, using SymPy `str(v)` and recomputed metrics. These may legitimately differ from the prior manually shortened formal Step59 state even with 0 completed steps. Do **not** rerun from the old fixed Step59 SHA: the state may now have a new SHA, and do not delete or overwrite either state or backups.
+
+Implemented and committed `examples/three_loop_vp05_sector202_target_b_step60_forensics.py`, `examples/test_three_loop_vp05_sector202_target_b_step60_forensics.py`, `run_vp05_sector202_target_b_step60_forensics.bat`. Read-only forensics compares current state to audited Step59 report payload plus the preserved Step58 backup to identify step count, status, changed residual/source key sets, number of changed coefficient strings, exact current SHA, config and pivot history, while verifying immutable Target A, B Step50/51/52/58 backups and original source files. **String comparison alone does not prove mathematical equality**; if strings changed, an independent exact-symbolic audit and/or direct original-IBP reconstruction is needed before using the changed state. Implementation and tests committed; user-local tests/diagnosis pending.
+
+PowerShell (no writes to target state):
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step60_forensics -v
+.\\run_vp05_sector202_target_b_step60_forensics.bat
+Get-Content .\\log.txt -Tail 12
+```
+Request both outputs before fixing continuation. If no new step, reconcile the reserialized saved state against the exact audited Step59 coefficient payload, verify original-IBP invariant, and only then anchor Step60-specific coefficient shortening. The outer error is a guard classification error, not an excuse to bypass symbolic verification or increase resource caps.
