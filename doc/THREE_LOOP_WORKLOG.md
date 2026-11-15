@@ -6903,3 +6903,20 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step60_foren
 Get-Content .\\log.txt -Tail 12
 ```
 Request both outputs before fixing continuation. If no new step, reconcile the reserialized saved state against the exact audited Step59 coefficient payload, verify original-IBP invariant, and only then anchor Step60-specific coefficient shortening. The outer error is a guard classification error, not an excuse to bypass symbolic verification or increase resource caps.
+
+
+### 2026-11-15 VP05 sector202 Target B: Step60 cap-stop, saved Step59 re-encoding exact audit required
+
+User `log(20261115-083244).txt`: starting formally audited Step59 SHA `88cab7046de7cab3f5733ffc788a375a795d8842d89a4b1c794f775dba2e8dda`, direct **Step60** candidate exceeded cap **8186 > 7500** (residual85/source164); **no new pivot saved**, Step59 retained residual86/source163/max7439; engine returned `EXACT_TARGET_CAP_REACHED_NOT_PROOF`. The outer wrapper threw `Unexpected mutation without saved progress` because checkpoint was reserialized after cap stop.
+
+User `log(20261115-083337).txt` for read-only forensics: **steps59**, `status=EXACT_TARGET_CAP_REACHED_NOT_PROOF`, original pivot path unchanged, residual keys unchanged (86), source IDs unchanged (163), config unchanged, **three residual coefficient strings re-encoded**, **zero source coefficient strings changed**, max saved chars7439; **new state SHA `a5a341737487cc4a1f2e20323b1adc927ead02e043af44db4442857a7cfdc38a`**. Target A and immutable B Step58,52,51,50 backups verified. **String/metadata equality is not enough to conclude exact mathematical identity**; do not rerun old fixed-SHA wrapper.
+
+Committed `examples/three_loop_vp05_sector202_target_b_step59_reencoding_exact_audit.py`, `examples/test_three_loop_vp05_sector202_target_b_step59_reencoding_exact_audit.py`, `run_vp05_sector202_target_b_step59_reencoding_exact_audit.bat`. The read-only exact-symbolic audit SHA-pins the current reserialized state, reconstructs audited Step59 predecessor using Step58 backup + successful exact-original-IBP Step59 report, confirms unchanged config/path/key sets and **exactly three changed residual strings**, and uses independent SymPy `cancel(expr(before)-expr(after)) == 0` **once for each of the three differences**, with subprocess per coefficient (default timeout 1800sec), then re-verifies all protected artifact hashes. Requires `B_STEP59_REENCODING_ALL_3_EXACT_EQUIVALENCE_PASS_NOT_TARGET_PROOF` before trusting current reserialized state as mathematically equivalent to audited Step59. No target state changes, no Target B proof. Code/docs committed; user-local test/exact checks pending.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step59_reencoding_exact_audit -v
+.\run_vp05_sector202_target_b_step59_reencoding_exact_audit.bat --timeout-seconds 1800
+```
+If PASS, next implement SHA-pinned Step60 coefficient-by-coefficient exact candidate, then independent exact original-IBP replay and backup-first promotion; preserve the 7500 expression cap. Never rerun previous old-anchored Step60 multistep runner, and never infer successful Step60 from the cap-stop.
