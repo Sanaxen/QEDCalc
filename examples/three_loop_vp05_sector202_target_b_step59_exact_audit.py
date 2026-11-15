@@ -37,6 +37,7 @@ def audit(candidate_path=OUT, state_path=STATE, report_path=REPORT):
             or sha(STEP51_BACKUP)!=B_STEP51_SHA
             or sha(STEP52_BACKUP)!=B_STEP52_SHA):
         raise RuntimeError("Formal B Step58 or proven A inputs changed")
+    candidate_sha_start=sha(candidate_path)
     candidate=json.loads(candidate_path.read_text(encoding="utf-8-sig"))
     args=argparse.Namespace(state=state_path,source_checkpoint=CHECKPOINT,input=SOURCE,certificate=CERT)
     state,pivot,jobs,binding=load_context(args)
@@ -63,6 +64,10 @@ def audit(candidate_path=OUT, state_path=STATE, report_path=REPORT):
     fac=before_rem[lead]
     after_rem=dict(before_rem)
     after_src=dict(before_src)
+    # Preserve short, exact expressions as stored by the coefficient pilot.
+    # Re-stringifying a SymPy expression may expand it beyond 7500 characters.
+    saved_rem={tuple(k):v for k,v in state["remaining"]}
+    saved_src={int(k):v for k,v in state["source"]}
     max_chars=0
     for i,(kind,key,pivot_raw) in enumerate(jobs):
         item=done[i]
@@ -74,18 +79,23 @@ def audit(candidate_path=OUT, state_path=STATE, report_path=REPORT):
         # All local identities are rechecked independently, not trusted from the pilot flag.
         if sp.cancel(val-(old+sign*fac*expr(pivot_raw,z,d)))!=0:
             raise AssertionError("Exact coefficient update mismatch at "+str(i))
-        if val==0:target.pop(key,None)
-        else:target[key]=val
+        saved_target=saved_rem if kind=="remainder" else saved_src
+        if val==0:
+            target.pop(key,None)
+            saved_target.pop(key,None)
+        else:
+            target[key]=val
+            saved_target[key]=raw
         max_chars=max(max_chars,len(raw))
     if lead != (166596413095937,139):
         raise AssertionError("Unexpected Step59 lead")
-    if any(len(v)>7500 for _,v in encoded(after_rem)+trace_encoded(after_src)):
+    if any(len(v)>7500 for v in list(saved_rem.values())+list(saved_src.values())):
         raise RuntimeError("Formal saved expression cap violation")
     if lead in after_rem:
         raise AssertionError("Exact elimination did not cancel pivot lead")
     if len(after_rem)!=86 or len(after_src)!=163:
         raise AssertionError("Step59 candidate dimensions differ from cap-stop metrics")
-    if max((len(v) for _,v in encoded(after_rem)+trace_encoded(after_src)),default=0)>7500:
+    if max((len(v) for v in list(saved_rem.values())+list(saved_src.values())),default=0)>7500:
         raise RuntimeError("Candidate saved expression exceeds formal cap")
     if (sha(state_path)!=EXPECTED_B_STEP58_SHA or sha(STEP50_BACKUP)!=B_STEP50_SHA
             or sha(STEP51_BACKUP)!=B_STEP51_SHA or sha(STEP52_BACKUP)!=B_STEP52_SHA
@@ -116,6 +126,8 @@ def audit(candidate_path=OUT, state_path=STATE, report_path=REPORT):
             else:differences[k]=v
     if differences:
         raise AssertionError("Original IBP exact replay failed; residual keys "+str(list(differences)[:5]))
+    if sha(state_path)!=EXPECTED_B_STEP58_SHA or sha(candidate_path)!=candidate_sha_start:
+        raise RuntimeError("Candidate or formal state changed during audit")
     payload={
         "status":"B_STEP59_EXACT_ORIGINAL_IBP_REPLAY_PASS_NOT_TARGET_PROOF",
         "target":"B","steps_before":58,"candidate_step":59,
@@ -130,8 +142,9 @@ def audit(candidate_path=OUT, state_path=STATE, report_path=REPORT):
         "step51_backup_sha256":B_STEP51_SHA,
         "step52_backup_sha256":B_STEP52_SHA,
         "remainder_terms":len(after_rem),"source_support":len(after_src),
-        "max_expression_chars":max_chars,
-        "remaining":encoded(after_rem),"source":trace_encoded(after_src),
+        "max_expression_chars":max(list(map(len,saved_rem.values()))+list(map(len,saved_src.values())),default=0),
+        "remaining":[[list(k),v] for k,v in sorted(saved_rem.items())],
+        "source":[[k,v] for k,v in sorted(saved_src.items())],
         "formal_state_modified":False,"target_proven":False
     }
     protected_paths = (candidate_path,state_path,CHECKPOINT,SOURCE,CERT,A_STATE,A_PROOF,STEP50_BACKUP,STEP51_BACKUP,STEP52_BACKUP)
