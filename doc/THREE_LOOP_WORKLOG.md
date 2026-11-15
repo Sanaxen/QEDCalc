@@ -6856,3 +6856,18 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step59_forma
 .\run_vp05_sector202_target_b_step59_formal_promotion.bat --check-only
 ```
 Require `B_STEP59_PROMOTION_PREFLIGHT_PASS_NOT_PROOF` before performing the one-time `.\run_vp05_sector202_target_b_step59_formal_promotion.bat`. Expected `B_STEP59_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`, new steps59/residual86/support163/max7439 and backup checksum identical to old Step58 SHA. Do NOT rerun previous 24-coefficient pilot or IBP audit. After promotion inspect saved Step59 SHA independently before continuing Step60 onward. Preserve Target A and all earlier B backups.
+
+
+### 2026-11-15 VP05 sector202 Target B: Step59 formal promotion PASS, independent saved-state audit prepared
+
+User `log(20261115-075809).txt` reports **`B_STEP59_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`** with new formally saved Step59 B state SHA256 **`88cab7046de7cab3f5733ffc788a375a795d8842d89a4b1c794f775dba2e8dda`**, steps59/residual86/original support163/max expression7439 (under cap7500). Old formal cap-stopped Step58 SHA256 `565af78b3e8604782f614515fb2b93d8a25efa6022174a2ca4bcc9673fc56d4b` was preserved exactly as new Step58 backup. Step50/51/52 backup checks passed; proven Target A unchanged. Target B is NOT yet proven; no zero remainder.
+
+Committed `examples/three_loop_vp05_sector202_target_b_step59_read_only_audit.py`, `examples/test_three_loop_vp05_sector202_target_b_step59_read_only_audit.py`, `run_vp05_sector202_target_b_step59_read_only_audit.bat`. Read-only auditor pins the observed formal Step59 SHA and immutable Step58, Step50/51/52 backups, protected A state/proof and original source checkpoint/certificate; validates pivot history59, residual86/source support163, max chars7439, formal 7500/256/400 caps, next lead/metrics consistency and proof-not-complete flags. No source or formal state writes. GitHub files/record committed; user-local tests and actual audit pending.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step59_read_only_audit -v
+.\run_vp05_sector202_target_b_step59_read_only_audit.bat
+```
+Expected `B_STEP59_FORMAL_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`, steps59/86/163/7439 and next lead. Only on PASS prepare hash-pinned guarded Step60 onward. Do NOT rerun one-time Step59 promotion or earlier coefficient and original-IBP pilot.
