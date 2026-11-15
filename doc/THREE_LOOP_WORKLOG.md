@@ -7016,3 +7016,8 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step63_read_
 .\run_vp05_sector202_target_b_step63_read_only_audit.bat
 ```
 Expected `B_STEP63_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`. Do not rerun original Step60 fixed-anchor wrapper, Step60 promotion, or Step61–63 elimination. Once audit passes, anchor Step64 exact coefficient pilot to the observed Step63 SHA with original 7500 cap; independently replay original IBP rows before any further promotion.
+
+
+### 2026-11-15 Step63 read-only audit: NameError fix
+
+First user-local run of `run_vp05_sector202_target_b_step63_read_only_audit.bat` failed before inspecting the state with `NameError: name 'PROMOTED_STEP63_SHA' is not defined` in `inspect()` line34. Cause: one missed constant rename in the SHA-pinned audit; actual defined constant is `SAVED_STEP63_SHA = "78bcc7570d5bc8a85b0c478c3b750559e3d73154781889607ac3bde43badf9d5"`. Fixed that reference in `examples/three_loop_vp05_sector202_target_b_step63_read_only_audit.py` (commit `b6a54d2042db44db6241134625326d69da6da903`). This was a code-level NameError, **not** a failed mathematical or checkpoint verification; no state changes. User-local retry of read-only audit still pending. Commands: `git pull --ff-only origin feature/master-basis-initiate-only`, `python -m unittest examples.test_three_loop_vp05_sector202_target_b_step63_read_only_audit -v`, `./run_vp05_sector202_target_b_step63_read_only_audit.bat` (PowerShell use `.\run_vp05_sector202_target_b_step63_read_only_audit.bat`).
