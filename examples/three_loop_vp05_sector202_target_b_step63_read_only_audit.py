@@ -58,7 +58,7 @@ def inspect():
     pivot_path = state.get("pivot_path", [])
     if (
         state.get("steps") != 63
-        or state.get("status") != "EXACT_TARGET_PREFIX_NOT_PROOF"
+        or state.get("status") != "EXACT_TARGET_CAP_REACHED_NOT_PROOF"
         or state.get("exact_target_proven") is not False
         or state.get("original_source_replay_proven") is not False
         or cfg.get("target") != "B"
