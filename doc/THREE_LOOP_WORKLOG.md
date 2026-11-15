@@ -7036,3 +7036,18 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step64_exact
 .\run_vp05_sector202_target_b_step64_exact_candidate.bat --hours 12 --timeout-seconds 600 --max-new-coefficients 300
 ```
 Success requires `ALL_LOCAL_IDENTITIES_PASS_PENDING_FULL_IBP_REPLAY` with `still_oversized=0`. Then independently reverify candidate against the **original** IBP source rows and current Step63 predecessor before any backup-first Step64 promotion. Do not describe mere coefficient-local verification as full Target B proof.
+
+
+### 2026-11-16 VP05 sector202 Target B: Step64 exact coefficient pilot 259/259 PASS; independent resumable audit Stage 1
+
+User uploaded `log(20261115-222351).txt`; full log inspected (261 lines, final completion event confirmed). Target B **Step64 coefficient pilot completed all 259/259 local exact identities** in 18439.35 seconds (~5h07m19s), **still_oversized=0**, **max_saved_chars=7310**, `formal_target_state_modified=false`, and `exact_target_proven=false`. All 259 per-coefficient statuses `EXACT_COEFFICIENT_PASS`. This is a distinct workload from 24-coefficient Step60 and **does NOT prove full original-IBP replay**. SHA-pinned saved Step63 predecessor remains `78bcc7570d5bc8a85b0c478c3b750559e3d73154781889607ac3bde43badf9d5`. Original direct Step64 candidate would have max8093 > cap7500. No formal promotion yet.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step64_independent_audit.py`, `examples/test_three_loop_vp05_sector202_target_b_step64_independent_audit.py`, `run_vp05_sector202_target_b_step64_independent_audit.bat`. Stage 1 re-verifies **each of the 259 candidate coefficients independently** using exact SymPy rational-function identity in isolated subprocesses; checks original candidate keys, per-index source coefficients, state/candidate SHA binding, inherited protected files and previous B backups. Writes a separate atomic checkpoint after each PASS; preserves original formal B Step63 and candidate, with 12h execution cap, per-worker timeout600s (configurable). It emits `ALL_259_LOCAL_RECHECKS_PASS_PENDING_ORIGINAL_IBP_REPLAY` only on full completion. This is **not** the final original-IBP replay; next build/run the original-source IBP exact replay audit and only then a backup-first Step64 formal promotion. Do not assert `target_b_proven` or promote based on the 259 local checks alone. User-local independent audit not yet executed.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step64_independent_audit -v
+.\run_vp05_sector202_target_b_step64_independent_audit.bat --hours 12 --timeout-seconds 600 --max-new 259
+```
+If a partial/timeout audit checkpoint exists, retry only with `--resume` (keep candidate and all original inputs). Expected all259 local independent checks PASS before exact original-source IBP replay. Using a checkpoint avoids loss of ~5h work if interrupted. No new formal proof or state promotion is claimed.
