@@ -6811,3 +6811,18 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_multistep_fr
 .\run_vp05_sector202_target_b_multistep_from53.bat --steps 16 --hours 12
 ```
 On preflight `MULTISTEP_PREFLIGHT_PASS_NOT_PROOF`, proceed to computation. If initial Step54 cap stops, inspect the log and use an independent coefficient-wise exact reduction + original-IBP replay and backup-first formal promotion, keeping the existing cap. Never assume the 16-step run completes or Target B is proved without evidence.
+
+
+### 2026-11-15 VP05 sector202 Target B: Step54–58 saved, Step59 cap-stop; exact coefficient pilot prepared
+
+User `log(20261115-071851).txt` reports guard PASS anchored at formal B Step53 SHA `684ee4ed3936a52d940e58f8292b9d7a8b38b7d6822492e9709bb8427ff64505`. Existing exact checkpoint engine **saved five new steps 54–58** (Step54 residual90/support155/max7207; Step55 88/153/6443; Step56 86/159/7146; Step57 85/160/7083; Step58 **84/161/7083**). Step59 direct candidate exceeded expression cap: residual86/support163/max chars **8241**, formal cap **7500**, attempted next lead `[166596413227009,139]`. Thus **Step59 was NOT saved**; final status `MULTISTEP_PARTIAL_STEPS_SAVED_CAP_STOP_NOT_PROOF`, no timeout, returncode0, B formal 58 state SHA **`565af78b3e8604782f614515fb2b93d8a25efa6022174a2ca4bcc9673fc56d4b`**, residual84/source support161/max7083, next Step59 pivot lead `[166596413095937,139]`. Target B remains NOT proven, no proof file; Target A protected.
+
+Committed `examples/three_loop_vp05_sector202_target_b_step59_exact_candidate.py`, `examples/test_three_loop_vp05_sector202_target_b_step59_exact_candidate.py` and `run_vp05_sector202_target_b_step59_exact_candidate.bat`. Resumable coefficient-by-coefficient exact SymPy pilot adapted from Step53, anchored to the exact post-cap-stop Step58 SHA; protects Target A state/proof, immutable original support checkpoint/source/certificate and B Step50/51/52 backups. It computes exact coefficient updates and checks local symbolic identity, attempting exact factorization/together shortening if needed. **No formal state is modified; this is NOT proof of original-IBP replay.** Local tests and pilot execution pending.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step59_exact_candidate -v
+.\run_vp05_sector202_target_b_step59_exact_candidate.bat --hours 12 --timeout-seconds 600 --max-new-coefficients 300
+```
+If incomplete, use the same batch with `--resume`. Require `ALL_LOCAL_IDENTITIES_PASS_PENDING_FULL_IBP_REPLAY` and `still_oversized=0`; if these do not occur, inspect failure rather than promoting. After a completed pilot, implement independent exact original-IBP replay before SHA-pinned backup-first Step59 formal promotion. Do NOT rerun Step53 promotion, nor ignore formal 7500-character cap.
