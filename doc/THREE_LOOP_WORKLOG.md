@@ -6841,3 +6841,18 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step59_exact
 .\run_vp05_sector202_target_b_step59_exact_audit.bat
 ```
 Do NOT rerun 24-coefficient pilot. If audit PASS and `original_ibp_exact_replay_verified=true`, next implement guarded backup-first Step59 promotion with **observed candidate SHA** from audit output, not a guessed value. If audit fails, inspect without modifying protected state.
+
+
+### 2026-11-15 VP05 sector202 Target B: Step59 original-IBP exact replay PASS; hash-pinned formal promotion prepared
+
+User `log(20261115-075509).txt` reports `B_STEP59_EXACT_ORIGINAL_IBP_REPLAY_PASS_NOT_TARGET_PROOF`: independent exact replay against original IBP rows **verified=true**, all **24/24** local exact coefficient identities passed, candidate residual **86**, original source support **163**, maximum saved expression **7439**, formal limit **7500**. Candidate SHA256 **`5e6846ab084dac257db449063843ece82f9e021d379bc515cc9b48bf1a442c2c`**. The formally saved cap-stopped Step58 remains **`565af78b3e8604782f614515fb2b93d8a25efa6022174a2ca4bcc9673fc56d4b`**, residual84/support161/max7083. Both candidate audit and exact pilot are **read-only with respect to formal B state**. Target B proof is still incomplete.
+
+Implemented and committed `examples/three_loop_vp05_sector202_target_b_step59_formal_promotion.py`, `examples/test_three_loop_vp05_sector202_target_b_step59_formal_promotion.py`, `run_vp05_sector202_target_b_step59_formal_promotion.bat` on `feature/master-basis-initiate-only`. The promotion pins the observed candidate SHA and formal Step58 SHA, validates audit payload (24 exact identities, original IBP replay PASS, residual86/source163/max7439), prior immutable B Step50/51/52 backups, proven Target A state/proof and original checkpoint/source/certificate hashes, and formal 7500-char/256-column/400-support limits. It creates an exclusive fsync'd exact Step58 backup `vp05_sector202_B_exact_target_state_step58_before_step59_promotion.json` before atomically replacing the **B state only**. Promotion creates prefix Step59 NOT_TARGET_PROOF; it does not establish full Target B reduction. No formal promotion run was executed by ChatGPT; user-local tests/preflight/one-time promotion pending.
+
+Windows PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step59_formal_promotion -v
+.\run_vp05_sector202_target_b_step59_formal_promotion.bat --check-only
+```
+Require `B_STEP59_PROMOTION_PREFLIGHT_PASS_NOT_PROOF` before performing the one-time `.\run_vp05_sector202_target_b_step59_formal_promotion.bat`. Expected `B_STEP59_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`, new steps59/residual86/support163/max7439 and backup checksum identical to old Step58 SHA. Do NOT rerun previous 24-coefficient pilot or IBP audit. After promotion inspect saved Step59 SHA independently before continuing Step60 onward. Preserve Target A and all earlier B backups.
