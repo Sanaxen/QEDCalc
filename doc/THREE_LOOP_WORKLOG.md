@@ -7021,3 +7021,18 @@ Expected `B_STEP63_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`. Do not re
 ### 2026-11-15 Step63 read-only audit: NameError fix
 
 First user-local run of `run_vp05_sector202_target_b_step63_read_only_audit.bat` failed before inspecting the state with `NameError: name 'PROMOTED_STEP63_SHA' is not defined` in `inspect()` line34. Cause: one missed constant rename in the SHA-pinned audit; actual defined constant is `SAVED_STEP63_SHA = "78bcc7570d5bc8a85b0c478c3b750559e3d73154781889607ac3bde43badf9d5"`. Fixed that reference in `examples/three_loop_vp05_sector202_target_b_step63_read_only_audit.py` (commit `b6a54d2042db44db6241134625326d69da6da903`). This was a code-level NameError, **not** a failed mathematical or checkpoint verification; no state changes. User-local retry of read-only audit still pending. Commands: `git pull --ff-only origin feature/master-basis-initiate-only`, `python -m unittest examples.test_three_loop_vp05_sector202_target_b_step63_read_only_audit -v`, `./run_vp05_sector202_target_b_step63_read_only_audit.bat` (PowerShell use `.\run_vp05_sector202_target_b_step63_read_only_audit.bat`).
+
+
+### 2026-11-15 VP05 sector202 Target B: Step63 saved-state read-only audit PASS; exact Step64 coefficient pilot prepared
+
+User reports `B_STEP63_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` after fixing an undefined variable reference in the auditor. Saved, cap-stopped Step63 B checkpoint is structurally and hash verified: SHA256 **`78bcc7570d5bc8a85b0c478c3b750559e3d73154781889607ac3bde43badf9d5`**, residual87, source support168, max saved formula7391, next pivot lead `[166596413882370,139]`. Direct attempted Step64 had residual86/support172/max8093, above formal cap7500 by593. User's PASS does not claim independent full-original-IBP exact replay of Steps61-63, nor Target B proof.
+
+Added `examples/three_loop_vp05_sector202_target_b_step64_exact_candidate.py`, `examples/test_three_loop_vp05_sector202_target_b_step64_exact_candidate.py`, `run_vp05_sector202_target_b_step64_exact_candidate.bat` on branch `feature/master-basis-initiate-only`. The pilot is a fresh read-only-with-respect-to-formal-state, resumable coefficient-by-coefficient SymPy exact candidate based on independently hash-audited Step63; pins saved SHA, expected residual87/source168 and lead, protected Target A state/proof, original source/checkpoint/certificate hashes, B Step50/51/52/58/59 backups. It computes coefficients in isolated child processes (per worker timeout), verifies individual rational-function identities, tries shorter exact forms without changing 7500 cap, atomically saves separate candidate JSON and never updates the formal B state. On partial completion use `--resume`; do not delete candidate or rerun the prior from60 continuation. User-local tests/real Step64 coefficient calculation pending.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step64_exact_candidate -v
+.\run_vp05_sector202_target_b_step64_exact_candidate.bat --hours 12 --timeout-seconds 600 --max-new-coefficients 300
+```
+Success requires `ALL_LOCAL_IDENTITIES_PASS_PENDING_FULL_IBP_REPLAY` with `still_oversized=0`. Then independently reverify candidate against the **original** IBP source rows and current Step63 predecessor before any backup-first Step64 promotion. Do not describe mere coefficient-local verification as full Target B proof.
