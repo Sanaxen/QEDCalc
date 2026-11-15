@@ -6765,3 +6765,18 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step53_exact
 .\run_vp05_sector202_target_b_step53_exact_audit.bat
 ```
 Audit may perform substantial exact SymPy arithmetic; inspect result before attempting any write to the formal state. Formal Step53 promotion must be implemented separately after the audit PASS, with exact candidate/audit SHA pins and backup-first atomic replacement. No promotion or Target B proof has been performed.
+
+
+### 2026-11-15 VP05 sector202 Target B: Step53 independent original-IBP audit PASS; guarded formal promotion prepared
+
+User `log(20261115-054508).txt` reports **`B_STEP53_EXACT_ORIGINAL_IBP_REPLAY_PASS_NOT_TARGET_PROOF`**: independent original IBP symbolic replay `true`, all **292** coefficient identities verified, residual **101**, original source support **188**, maximum expression **7447** (<= formal 7500). Candidate SHA256 `d4a915893ffeca2b8788538f53c0e0850310ac823b64e0ffc6a161c7398a0a2c`; formal cap-stopped B Step52 SHA `b398b7f9630c2ea2c8a90c1939517a7e5095170d65c1c68d9dc47b294776aa95`. Protected A state SHA `c685cd2627ad4d6f9bea6c7afc0b5e0f6611184b2382b303616283068a54c13c`, proof SHA `dd4758f2c38648aef87e6c04c76af23c52e524492cb7b1aa8616e0fca31933e5`; source checkpoint SHA `df4bb33ceec4e9bdc60b88090eb358f7a5c5cffbb24ae345c92ffdec821f7107`, source SHA `f0dd7f338ead97e455306bc49c4ce475fe8a8bee3e5a866f6fa17de1e9ad0163`, certificate SHA `512114a669d3fb8761d89bfe11a51cc8ec146d46739a36b61e869edcddb583eb`. Step50 backup `f4c480ee9cd555549f690817c7f6cc4c8d80fcec329fa795e53ef5165955ba47`; Step51 backup `382e76dbbfc6f57c0dbf6468b53329d91a869ed9267a98093ac7165d8c6c7aac`. Audit did **not** modify formal B state. This validates a Step53 prefix, **NOT** Target B reduction to zero.
+
+Committed `examples/three_loop_vp05_sector202_target_b_step53_formal_promotion.py`, `examples/test_three_loop_vp05_sector202_target_b_step53_formal_promotion.py`, and `run_vp05_sector202_target_b_step53_formal_promotion.bat`. New promotion validates exact pre-Step53 state/candidate SHA, independent audit payload and all protected A/source/backup SHAs; rejects duplicate paths or prior backup, checks 52 previous pivots, residual103/source187, new residual101/source188, 292 local identities and original replay PASS, every coefficient length <=7500; creates exclusive fsync'd byte-exact **Step52 backup** `vp05_sector202_B_exact_target_state_step52_before_step53_promotion.json` before atomic replacement. New formal B Step53 remains `EXACT_TARGET_PREFIX_NOT_PROOF`; no final Target B proof. Local tests/preflight/promotion pending. Execute on Windows PowerShell:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step53_formal_promotion -v
+.\run_vp05_sector202_target_b_step53_formal_promotion.bat --check-only
+```
+
+On preflight `B_STEP53_PROMOTION_PREFLIGHT_PASS_NOT_PROOF`, run **once** `.\run_vp05_sector202_target_b_step53_formal_promotion.bat`; expected `B_STEP53_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF` and exact formal Step53 metrics (steps53, residual101, support188, max chars7447), new state SHA. Do not run promotion twice; if preflight fails inspect without modifying inputs. Follow-up: independently audit saved Step53 hash before continuing toward Step54. Do not rerun 292 coefficient pilot or original IBP audit.
