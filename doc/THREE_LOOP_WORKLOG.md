@@ -6969,3 +6969,18 @@ On `B_STEP60_PROMOTION_PREFLIGHT_PASS_NOT_PROOF`, execute **once**:
 .\run_vp05_sector202_target_b_step60_formal_promotion.bat
 ```
 Expected `B_STEP60_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`, Step60, residual85, support164, max7356, backup hash equal to previous Step59 SHA. Do not rerun candidate or independent original-IBP replay. Next build SHA-pinned read-only audit of actually saved Step60, then guarded continuation to Step61 onward.
+
+
+### 2026-11-15 VP05 sector202 Target B Step60 formal prefix promotion PASS; independent post-save audit prepared
+
+User `log(20261115-095316).txt` reports `B_STEP60_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`: formal **Step60 saved** successfully, observed new canonical B state SHA256 **`4eebc9694e460654e1224fa72e6d6385ae1689dedf3004bbf5934be27f3075c8`**, residual85, original source support164, max expression7356. Previous cap-stopped Step59 state SHA `a5a341737487cc4a1f2e20323b1adc927ead02e043af44db4442857a7cfdc38a` backed up byte-for-byte as `vp05_sector202_B_exact_target_state_step59_before_step60_promotion.json`; backup SHA matched. B Step50/51/52/58 backups verified; Target A proof/state unchanged; exact Target B proof still incomplete. This follows 24/24 exact coefficient checks and independent exact replay of original IBP source rows.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step60_read_only_audit.py`, `examples/test_three_loop_vp05_sector202_target_b_step60_read_only_audit.py`, `run_vp05_sector202_target_b_step60_read_only_audit.bat` on branch `feature/master-basis-initiate-only`. Auditor pins observed formal B Step60 SHA and previous Step59 backup SHA, validates B Step50/51/52/58 backups, A state/proof, source checkpoint/source/certificate, pivot path60, 85 unique residual keys, 164 unique source IDs, max saved formula7356, config limits 7500/256/400, metrics/next lead, and NOT_TARGET_PROOF flags. No state writes; user-local tests/inspection pending.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step60_read_only_audit -v
+.\run_vp05_sector202_target_b_step60_read_only_audit.bat
+```
+Require `B_STEP60_FORMAL_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` before continuing. Then prepare Step61 onward on immutable observed Step60 SHA; avoid blindly rerunning prior from59 runner or resetting current state. If direct next step hits expression cap, use the proven per-coefficient strict exact-and-original-IBP replay workflow without increasing caps.
