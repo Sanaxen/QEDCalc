@@ -6871,3 +6871,19 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step59_read_
 .\run_vp05_sector202_target_b_step59_read_only_audit.bat
 ```
 Expected `B_STEP59_FORMAL_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`, steps59/86/163/7439 and next lead. Only on PASS prepare hash-pinned guarded Step60 onward. Do NOT rerun one-time Step59 promotion or earlier coefficient and original-IBP pilot.
+
+
+### 2026-11-15 VP05 sector202 Target B: post-promotion Step59 read-only audit PASS; guarded Step60 onward prepared
+
+User reports `B_STEP59_FORMAL_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`. This confirms their formally saved **Step59** checkpoint and protected artifacts passed the independent post-promotion audit; observed Step59 SHA `88cab7046de7cab3f5733ffc788a375a795d8842d89a4b1c794f775dba2e8dda`, steps59, residual86, original support163, maximum formula length7439, cap7500. Exact Target B proof remains pending.
+
+Implemented and committed `examples/three_loop_vp05_sector202_target_b_multistep_from59.py`, `examples/test_three_loop_vp05_sector202_target_b_multistep_from59.py`, and `run_vp05_sector202_target_b_multistep_from59.bat`. The guarded runner is SHA-pinned to the **exact audited formal Step59 state**, validates prior B Step50/51/52/58 backup byte hashes and protected Target A proof/state and source/checkpoint/certificate, rejects alternate state paths, and resumes up to 16 original-IBP exact elimination steps (**Step60–75**) using the existing atomic-per-step engine under original 7500-char/256-column/400-support limits and maximum **12h** runtime. A cap stop, timeout, or partially saved result remains NOT_TARGET_PROOF. Existing Step59 promotion and coefficients must **not** be rerun. GitHub implementation/docs committed; user-local unittest, preflight, and actual continuation are pending.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_multistep_from59 -v
+.\run_vp05_sector202_target_b_multistep_from59.bat --check-only
+.\run_vp05_sector202_target_b_multistep_from59.bat --steps 16 --hours 12
+```
+Require `MULTISTEP_PREFLIGHT_PASS_NOT_PROOF` from the no-write preflight. The run can stop at the first excessive-expression pivot; record the new saved step, exact state SHA, candidate cap metrics and any proof artifact before planning next independent coefficient shortening and original-IBP replay. Do not start a second fixed-anchor run after state changes without a new script anchored to the actual saved SHA.
