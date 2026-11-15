@@ -6950,3 +6950,22 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step60_exact
 .\run_vp05_sector202_target_b_step60_exact_audit.bat
 ```
 Do not rerun the Step60 coefficient pilot (24/24 done). If audit PASS, record the observed `candidate_sha256`, original state SHA and `max_expression_chars` from its output before generating the promotion pin; do not invent a candidate SHA or assume full B proof.
+
+
+### 2026-11-15 VP05 sector202 Target B: Step60 independent exact-original-IBP replay PASS; formal promotion prepared
+
+User `log(20261115-094055).txt` reports `B_STEP60_EXACT_ORIGINAL_IBP_REPLAY_PASS_NOT_TARGET_PROOF`, `original_ibp_exact_replay_verified=true`, **24/24** exact coefficient identities passed, **residual85**, **source support164**, **max expression7356** within formal cap7500, and `formal_state_modified=false`. Candidate SHA256 **`3c75321db601464d35163838f712b675955ca5db9fec7290e116851ac8d4fd09`**; current formally stored cap-stop Step59 state SHA256 **`a5a341737487cc4a1f2e20323b1adc927ead02e043af44db4442857a7cfdc38a`**. This Step59 checkpoint was previously certified exactly mathematically equivalent (3/3 coefficient symbolic checks) to independently audited Step59 formal promotion SHA `88cab7046de7cab3f5733ffc788a375a795d8842d89a4b1c794f775dba2e8dda`. Target A and original immutable source/checkpoint/certificate plus B Step50/51/52/58 backups unchanged. **Step60 has NOT been formally saved; Target B proof remains incomplete.**
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step60_formal_promotion.py`, `examples/test_three_loop_vp05_sector202_target_b_step60_formal_promotion.py`, and `run_vp05_sector202_target_b_step60_formal_promotion.bat`. Promotion validates the observed prior Step59 SHA, independently replayed candidate SHA, audit metadata and protected hashes, expected 24 local identities, residual85/support164/max7356, previously proven Target A and B old backups. It makes an exclusive fsync'd **exact byte backup of the currently saved cap-stopped Step59** as `vp05_sector202_B_exact_target_state_step59_before_step60_promotion.json`, then atomically replaces only B formal state with Step60 prefix (85/164/7356), keeping all shortened exact coefficient strings. Refuses stale, changed or already promoted files; does **not** claim full Target B proof. Implementation/tests/docs committed on `feature/master-basis-initiate-only`. User-local unittests, preflight and actual promotion remain pending.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step60_formal_promotion -v
+.\run_vp05_sector202_target_b_step60_formal_promotion.bat --check-only
+```
+On `B_STEP60_PROMOTION_PREFLIGHT_PASS_NOT_PROOF`, execute **once**:
+```powershell
+.\run_vp05_sector202_target_b_step60_formal_promotion.bat
+```
+Expected `B_STEP60_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`, Step60, residual85, support164, max7356, backup hash equal to previous Step59 SHA. Do not rerun candidate or independent original-IBP replay. Next build SHA-pinned read-only audit of actually saved Step60, then guarded continuation to Step61 onward.
