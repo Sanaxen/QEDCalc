@@ -23,7 +23,6 @@ START_SHA = "684ee4ed3936a52d940e58f8292b9d7a8b38b7d6822492e9709bb8427ff64505"
 START_STEP = 53
 START_REMAINING = 101
 START_SUPPORT = 188
-START_LEAD = None
 START_MAX_CHARS = 7447
 
 
@@ -53,7 +52,7 @@ def validate_start(path=STATE, checkpoint=CHECKPOINT, source=SOURCE, certificate
         raise RuntimeError("Target A state/proof changed; refusing B continuation")
     if (sha(STEP50_BACKUP) != B_STEP50_SHA or sha(STEP51_BACKUP) != B_STEP51_SHA
             or sha(STEP52_BACKUP) != B_STEP52_SHA):
-        raise RuntimeError("Required immutable B Step50/51 backup changed or missing")
+        raise RuntimeError("Required immutable B Step50/51/52 backup changed or missing")
     return state
 
 
@@ -143,9 +142,6 @@ def main():
             or sha(STEP52_BACKUP) != B_STEP52_SHA):
         raise RuntimeError("ALERT: Target A or B Step50/51 backup changed during B continuation")
     after=json.loads(args.state.read_text(encoding="utf-8-sig"))
-    if after.get("steps") == START_STEP and sha(args.state) != before_sha:
-        # Engine is allowed to change only status when the first pivot hits a cap.
-        pass
     status=classify(before,after,args.steps,rc,timed_out,proof_path.exists())
     print("VP05_SECTOR202_MULTISTEP_GUARD "+json.dumps({
         "status":status,"timed_out":timed_out,"returncode":rc,
