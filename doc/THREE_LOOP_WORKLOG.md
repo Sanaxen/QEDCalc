@@ -7126,3 +7126,22 @@ Require status `B_STEP64_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF`. Then **once
 .\run_vp05_sector202_target_b_step64_formal_promotion.bat
 ```
 Expected `B_STEP64_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF` with new Step64 SHA; then create a distinct checksum-pinned read-only audit of the promoted state before Step65 continuation. If check-only raises, do not execute promotion, investigate exact mismatch. Original independent local/IBP checks need not be repeated.
+
+
+### 2026-11-17 VP05 sector202 Target B Step64 promotion preflight: legacy replay checkpoint method field compatibility fix
+
+User-local `run_vp05_sector202_target_b_step64_formal_promotion.bat --check-only` failed before any backup/promotion with `RuntimeError: 330/330 exact original-IBP key certificates incomplete or incompatible` from `validate()`. The original exact replay logged 330/330 PASS; the problem is **format evolution of the immutable exact replay checkpoint**, not evidence of a failed identity. First **242** integral-key PASS entries were atomically saved by the original direct replay runner before the later normalized worker update introduced `checked[].method`. Those old PASS entries have `index` and `key`, but legitimately **no method attribute**. The Step64 promotion preflight initially required `row.get("method")` to be either `direct_original_ibp_exact` or `unscaled_source_pivot_exact_with_259_certificates`, thus rejected old legitimate direct PASS rows. The exact preceding logs evidence direct 242 PASS, then normalized 88 PASS; candidate and assembled SHA unchanged.
+
+Corrected `examples/three_loop_vp05_sector202_target_b_step64_formal_promotion.py` by interpreting **missing** `method` in a replay entry as the legacy `direct_original_ibp_exact` format, while retaining all existing **330/330 ordered exact integral-key checks**, source/candidate/assembly hashes, job-key list SHA, protected A/backups and strict refusal for explicit unknown/non-exact method values. Added dedicated regression tests in `examples/test_three_loop_vp05_sector202_target_b_step64_formal_promotion.py` for absent method, both named valid methods, and unknown/non-exact methods. No files under `output/`, proof files or formal B state were changed by these GitHub fixes. User-local tests and promotion preflight must be rerun; do not claim preflight PASS until observed.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step64_formal_promotion -v
+.\run_vp05_sector202_target_b_step64_formal_promotion.bat --check-only
+```
+Only if `B_STEP64_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF` is returned, run exactly once:
+```powershell
+.\run_vp05_sector202_target_b_step64_formal_promotion.bat
+```
+Expected formal Step64 status `B_STEP64_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`. If preflight still rejects, investigate instead of modifying checkpoint or forcing promotion. Formal Target B proof remains incomplete.
