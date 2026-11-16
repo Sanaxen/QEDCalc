@@ -95,6 +95,7 @@ def validate():
         or cfg.get("source_checkpoint_sha256")!=SOURCE_CHECKPOINT_SHA
         or cfg.get("certificate_sha256")!=CERTIFICATE_SHA
         or cfg.get("jobs_count")!=330
+        or cfg.get("job_keys_sha256")!=hashlib.sha256(json.dumps([list(k) for k in jobs],separators=(",",":")).encode()).hexdigest()
         or len(jobs)!=330 or not isinstance(checked,list) or len(checked)!=330
         or any(row.get("index")!=i or row.get("key")!=list(jobs[i])
                or row.get("method") not in
