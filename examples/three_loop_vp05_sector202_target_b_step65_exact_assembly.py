@@ -84,7 +84,7 @@ def assemble(report_path=REPORT):
     max_chars=max(sizes,default=0)
     payload={
         "status":"B_STEP65_ASSEMBLED_FROM_40_EXACT_RECHECKS_PENDING_ORIGINAL_IBP",
-        "target":"B","steps_before":63,"candidate_step":64,
+        "target":"B","steps_before":64,"candidate_step":65,
         "state_step64_sha256":EXPECTED_STEP64_SHA,
         "candidate_sha256":candidate_sha,
         "independent_audit_sha256":audit_sha,
