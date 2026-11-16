@@ -7145,3 +7145,18 @@ Only if `B_STEP64_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF` is returned, run ex
 .\run_vp05_sector202_target_b_step64_formal_promotion.bat
 ```
 Expected formal Step64 status `B_STEP64_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`. If preflight still rejects, investigate instead of modifying checkpoint or forcing promotion. Formal Target B proof remains incomplete.
+
+
+### 2026-11-17 VP05 sector202 Target B: Step64 formally promoted with backup, post-promotion read-only audit prepared
+
+User uploaded `log(20261116-222456).txt` with **`B_STEP64_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`**. Actual formal Step64 state SHA-256 **`9e5ba49502e24f9367e15b42221086c470dd9670519798e8ab555e147a33992a`**, predecessor Step63 SHA **`78bcc7570d5bc8a85b0c478c3b750559e3d73154781889607ac3bde43badf9d5`**, backup SHA equal to Step63, steps64, residual86, original IBP support172, max formula chars7310, independent original IBP keys verified330, A protected unchanged=true, exact_target_proven=false. This log establishes successful promotion; **not** whole Target B proof. It follows exact-coefficient 259/259, independent coefficient recheck 259/259 and exact original-IBP 330/330 local Step63→64 replay. Prior Steps61–63 independently original-IBP replay remain an explicit separate certification gap.
+
+Committed `examples/three_loop_vp05_sector202_target_b_step64_read_only_audit.py`, `examples/test_three_loop_vp05_sector202_target_b_step64_read_only_audit.py`, and `run_vp05_sector202_target_b_step64_read_only_audit.bat`. These read-only tools independently pin the exact formal Step64 SHA, protected predecessor Step63 backup, earlier Step50/51/52/58/59 backups, A state/proof, original source/checkpoint/certificate hashes, full new pivot suffix for Steps61–64, 86/172/max7310, 7500/256/400 guard config and false proof flags. These files do not mutate output or assert final proof. User-local post-promotion audit is **pending**.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step64_read_only_audit -v
+.\run_vp05_sector202_target_b_step64_read_only_audit.bat
+```
+Expected `B_STEP64_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`. Do NOT rerun Step64 promotion or prior coefficient/original-IBP jobs. After post-promotion SHA audit PASS, proceed with SHA-pinned guarded Step65 continuation or exact coefficient pilot as needed. Ensure full chain of source replay before claiming Target B mathematical proof.
