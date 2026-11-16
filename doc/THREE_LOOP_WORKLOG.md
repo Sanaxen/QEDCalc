@@ -7210,3 +7210,21 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step65_indep
 .\run_vp05_sector202_target_b_step65_independent_audit.bat --hours 12 --timeout-seconds 600 --max-new 40 > log_step65_independent_audit.txt
 ```
 On interruption after checkpoint exists use `--resume` with same options; never delete existing audit/candidate or rerun original coefficient pilot. Required success `ALL_40_LOCAL_RECHECKS_PASS_PENDING_ORIGINAL_IBP_REPLAY` and 40/40 exact. Next assemble Step65 and independently replay original IBP using prior normalized pivot strategy, then backup-first guarded Step65 promotion and SHA-pinned read-only audit; do not claim complete proof before all checks.
+
+
+### 2026-11-17 VP05 sector202 B Step65: independent exact coefficient audit 40/40 PASS; assembly and original-IBP replay implemented
+
+User uploaded `log_step65_independent_audit.txt` (42 UTF-16 log lines): completed **40/40 separate-process exact symbolic local coefficient rechecks**, `ALL_40_LOCAL_RECHECKS_PASS_PENDING_ORIGINAL_IBP_REPLAY`, elapsed **698.16 s**, candidate SHA256 **`9d4a2a24f0d6f15c54fd6cc72b0a542bcfc6fe6756bcd5965594fc73d4608d12`**, `formal_state_modified=false`, `original_ibp_exact_replay_verified=false`, `target_b_proven=false`. Prior initial exact coefficient 40/40 PASS with no oversize, maximum coefficient length7426 vs cap7500. Formal B Step64 remains unchanged and SHA-pinned to **`9e5ba49502e24f9367e15b42221086c470dd9670519798e8ab555e147a33992a`**. Step65 scratch cap-stop SHA `e7ef7c12cb68cb8492723a864ba80febda9a8a5415581ec4bd1cd2ad15989fcc` is retained and is **not** used as the source of exact candidate coefficients.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step65_exact_assembly.py` and `run_vp05_sector202_target_b_step65_exact_assembly.bat`: assemble all 40 independently rechecked exact coefficient values from immutable formal Step64, with 259→40 adapted independent audit gate, pinned candidate SHA, source/checkpoint/certificate and A/backup SHA protections, expected Step65 lead `[166596413882371,139]`, residual86→85, source support172→173, expression max<=7500. Standalone assembled candidate `vp05_sector202_B_step65_assembled_candidate_pending_original_ibp.json`, created exclusively and never formal state. Metadata `steps_before=64,candidate_step=65`.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step65_original_ibp_replay.py` and `run_vp05_sector202_target_b_step65_original_ibp_replay.bat`: bounded checkpointed original-IBP **exact unscaled pivot identity** checked per every integral key included in the pivot row AND **all original source equations present in pivot provenance**, not merely changed source coefficients. Uses exactly audited 40 local rational identities to infer the full scaled Step64→Step65 replay, retains 12h run bound, worker timeout <=3600s, SHA binding to original source, coefficient candidate, independent audit and separately assembled report, writes only separate replay checkpoint. A successful `B_STEP65_ALL_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF` requires all integral keys; does not alter formal B or imply whole Target B proof. Added `examples/test_three_loop_vp05_sector202_target_b_step65_assembly_replay.py` regression and two Windows batch entrypoints.
+
+**No user-local assembly or original-IBP replay has yet run**. PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step65_assembly_replay -v
+.\run_vp05_sector202_target_b_step65_exact_assembly.bat > log_step65_assembly.txt
+.\run_vp05_sector202_target_b_step65_original_ibp_replay.bat --hours 12 --timeout-seconds 1200 --max-new 500 > log_step65_ibp.txt
+```
+If a replay checkpoint already exists use `--resume`; if assembly output already exists do **not** rerun the exclusive assembly. Verify assembly `B_STEP65_ASSEMBLED_FROM_40_EXACT_RECHECKS_PENDING_ORIGINAL_IBP`, residual85/support173. The full original-IBP check has to PASS before implementing an independently SHA-pinned, backup-first Step65 formal promotion. Steps61–63 chain-audit gap and nonzero Target B residual remain explicit.
