@@ -7228,3 +7228,14 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step65_assem
 .\run_vp05_sector202_target_b_step65_original_ibp_replay.bat --hours 12 --timeout-seconds 1200 --max-new 500 > log_step65_ibp.txt
 ```
 If a replay checkpoint already exists use `--resume`; if assembly output already exists do **not** rerun the exclusive assembly. Verify assembly `B_STEP65_ASSEMBLED_FROM_40_EXACT_RECHECKS_PENDING_ORIGINAL_IBP`, residual85/support173. The full original-IBP check has to PASS before implementing an independently SHA-pinned, backup-first Step65 formal promotion. Steps61–63 chain-audit gap and nonzero Target B residual remain explicit.
+
+
+### 2026-11-17 VP05 sector202 Target B: Step65 assembled candidate PASS, original-IBP replay remains pending
+
+User `log_step65_assembly.txt` confirms `B_STEP65_ASSEMBLED_FROM_40_EXACT_RECHECKS_PENDING_ORIGINAL_IBP`. Exactly **40/40 previously independently checked exact coefficient updates** were assembled from saved Step64 into a **separate candidate** for Step65. Residual **86→85**, original-IBP trace support **172→173**, max expression characters **7426 <= 7500**. Step64 formal SHA256 **`9e5ba49502e24f9367e15b42221086c470dd9670519798e8ab555e147a33992a`**, coefficient candidate SHA256 **`9d4a2a24f0d6f15c54fd6cc72b0a542bcfc6fe6756bcd5965594fc73d4608d12`**, independent audit SHA256 **`e060e31240dd304fc9d3bc782004b2054e2a68f382d84eb81c6767cb53cf2851`**, original source and prior backups unchanged. Source/checkpoint/certificate SHA remained pinned. `original_ibp_exact_replay_verified=false`, `formal_state_modified=false`, `target_proven=false`. Do not rerun exclusive Step65 assembly; do not delete the report.
+
+Run the already committed exact normalized original-IBP key replay next (first run **without --resume**, checkpoint absent):
+```powershell
+.\run_vp05_sector202_target_b_step65_original_ibp_replay.bat --hours 12 --timeout-seconds 1200 --max-new 500 > log_step65_ibp.txt
+```
+If checkpoint exists after partial completion, run with `--resume`. Expected full-pass status `B_STEP65_ALL_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF`; do not assert this before examining user output. Only after all exact keys PASS, construct SHA-pinned backup-first Step65 promotion and read-only post-promotion audit. Steps61–63 chain-level exact original-IBP certificate gap and nonzero Target B residual remain explicitly open.
