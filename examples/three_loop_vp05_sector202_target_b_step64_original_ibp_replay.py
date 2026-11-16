@@ -111,6 +111,8 @@ def main():
     ap.add_argument("--timeout-seconds",type=int,default=1200)
     ap.add_argument("--max-new",type=int,default=500)
     ap.add_argument("--resume",action="store_true")
+    ap.add_argument("--normalized",action="store_true",
+                    help="Use exact unscaled source-pivot identity plus 259 independently exact-checked coefficients")
     args=ap.parse_args()
     if args.worker_index is not None:
         worker(args.worker_index)
@@ -165,11 +167,14 @@ def main():
             break
         i=len(progress["checked"])
         try:
-            run=subprocess.run([
-                sys.executable,"-m",
-                "examples.three_loop_vp05_sector202_target_b_step64_original_ibp_replay",
-                "--worker-index",str(i)
-            ],text=True,capture_output=True,timeout=args.timeout_seconds,check=False)
+            cmd=([sys.executable,"-m",
+                  "examples.three_loop_vp05_sector202_target_b_step64_normalized_replay",
+                  "--index",str(i)] if args.normalized else
+                 [sys.executable,"-m",
+                  "examples.three_loop_vp05_sector202_target_b_step64_original_ibp_replay",
+                  "--worker-index",str(i)])
+            run=subprocess.run(cmd,text=True,capture_output=True,
+                               timeout=args.timeout_seconds,check=False)
         except subprocess.TimeoutExpired:
             print("VP05_B_STEP64_ORIGINAL_IBP_REPLAY "+json.dumps({
                 "event":"WORKER_TIMEOUT_NOT_PROOF","index":i}),flush=True)
@@ -187,7 +192,8 @@ def main():
             or result.get("index")!=i or result.get("key")!=list(jobs[i])
             or result.get("assembled_sha256")!=assembled_sha):
             raise RuntimeError("Replay worker returned inconsistent certificate")
-        progress["checked"].append({"index":i,"key":list(jobs[i])})
+        progress["checked"].append({"index":i,"key":list(jobs[i]),
+            "method":result.get("method","direct_original_ibp_exact")})
         atomic_save(REPLAY,progress,True)
         count+=1
         print("VP05_B_STEP64_ORIGINAL_IBP_REPLAY "+json.dumps({
@@ -204,6 +210,7 @@ def main():
         "candidate_sha256":EXPECTED_CANDIDATE_SHA,
         "assembled_sha256":assembled_sha,
         "original_ibp_exact_replay_verified":complete,
+        "method":"normalized_exact_pivot" if args.normalized else "direct_exact",
         "formal_state_modified":False,"target_b_proven":False
     }),flush=True)
 
