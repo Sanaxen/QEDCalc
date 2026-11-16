@@ -7069,3 +7069,14 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step64_exact
 .\run_vp05_sector202_target_b_step64_original_ibp_replay.bat --hours 12 --timeout-seconds 1200 --max-new 500 > log_step64_ibp.txt
 ```
 For interruption after checkpoint exists, use `--resume` on original replay (do not rerun assembly, which refuses overwrite). Exact replay completion is a prerequisite to future SHA-pinned backup-first formal Step64 promotion; retain old Step63/target A backups and do not rerun the 259-coefficient pilot or 259-coefficient independent audit. Note: saved Step61–63 prior continuation had only checkpoint structural audit; if claiming complete original-IBP proof chain, also independently replay Steps61–63 or provide an equivalent audited invariant chain.
+
+
+### 2026-11-16 VP05 sector202 Target B Step64 original-IBP replay: 112/330 verified, worker index112 timeout
+
+User `log_step64_ibp.txt`: Step64 exact original-IBP replay launched with verified candidate SHA `f97a5eee3d99d80bd6bfae9761c2815e3655116a2548dc2e3a465dc12b52890f` and independently assembled snapshot SHA `1d21672a3cccc8e4402091f6a120924107f2da07f612be97dfec60850e420d80`. **112/330 integral keys passed exact symbolic original-IBP verification and were independently checkpointed**; then worker **index112** hit its configured per-key timeout (1200s) without reporting an algebraic counterexample. Final `B_STEP64_ORIGINAL_IBP_PREFIX_NOT_PROOF`, `original_ibp_exact_replay_verified=false`, `formal_state_modified=false`, `target_b_proven=false`. The 112 exact passes are not lost. The observed ~1h11 run duration includes this timeout.
+
+Next safe action requires **no code modification**: existing CLI accepts timeout up to3600 seconds and --resume and per-run hours up to12. Resume once, increasing only the *per-key wall-time budget*, not algebraic expression cap:
+```powershell
+.\run_vp05_sector202_target_b_step64_original_ibp_replay.bat --resume --hours 12 --timeout-seconds 3600 --max-new 500 > log_step64_ibp_resume.txt
+```
+The runner verifies saved prefix binding and resumes at index112. If worker112 times out again at 3600 seconds, stop escalating/retrying and instead implement per-key exact symbolic expression-term diagnostics and factorization/cancellation strategy with bounded work; never treat timeout as PASS, never increase expression cap7500, never delete or reset checkpoint. A full `B_STEP64_ALL_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF` requires **330/330 exact**. Formal B state remains saved Step63 SHA `78bcc7570d5bc8a85b0c478c3b750559e3d73154781889607ac3bde43badf9d5`, awaiting original-IBP replay completion before guarded promotion.
