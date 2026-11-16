@@ -6,7 +6,7 @@ from examples.three_loop_vp05_sector202_target_b_step65_exact_assembly import (
 from examples.three_loop_vp05_sector202_target_b_step65_original_ibp_replay import (
     REPLAY, load, worker,
 )
-from examples.three_loop_vp05_sector202_target_b_step64_formal_promotion import STEP63_BACKUP, EXPECTED_STEP63_SHA
+from examples.three_loop_vp05_sector202_target_b_step64_formal_promotion import BACKUP as STEP63_BACKUP, EXPECTED_STEP63_SHA
 
 class Step65AssemblyReplayTests(unittest.TestCase):
     def test_immutable_hashes(self):
