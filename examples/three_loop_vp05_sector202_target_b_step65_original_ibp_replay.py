@@ -84,7 +84,7 @@ def load():
     if len(original_rows)!=len(original["rows"]) or not set(trace).issubset(original_rows):
         raise RuntimeError("Missing or duplicated original source equation")
     keys=set(old_rem)|set(new_rem)|{tuple(k) for k,_ in pivot["row"]}
-    for rid in changed:
+    for rid in trace:
         keys.update(tuple(t["key"]) for t in original_rows[rid]["terms"])
     jobs=sorted(keys)
     row={tuple(k):raw for k,raw in pivot["row"]}
