@@ -7179,3 +7179,19 @@ If `B_STEP65_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`, then execute **once**:
 .\run_vp05_sector202_target_b_scratch_from64.bat --steps 16 --hours 12 > log_step65_scratch.txt
 ```
 If scratch output already exists, **do not** rerun without `--resume`; if scratch has reached an expression cap, diagnose it and do not assume simply repeating the same engine will make progress. Save SHA of scratch and resulting candidate metrics. Never rerun Step64 promotion/previous replay or mutate/delete any 259/330 certificates. User-local tests/real scratch computation pending.
+
+
+### 2026-11-17 VP05 sector202 B Step65: scratch cap at 7894; no new step saved; SHA-pinned exact coefficient pilot implemented
+
+User uploaded `log_step65_scratch.txt`. Guard passed starting from immutable formal Step64 SHA `9e5ba49502e24f9367e15b42221086c470dd9670519798e8ab555e147a33992a`, next lead `[166596413882371,139]`. The direct exact engine attempted Step65, **saved 0 new steps**, and stopped at **7500-character cap**. Attempted candidate: residual85, original source support173, row chars7865, source chars7894, max7894 (394 above cap), next lead `[166596414013440,139]`. Scratch remained at step64, residual86, source172, max7310, with a no-step reserialization detected: `MULTISTEP_NO_NEW_STEP_RESERIALIZED_REQUIRES_EXACT_AUDIT`. Its SHA after cap is `e7ef7c12cb68cb8492723a864ba80febda9a8a5415581ec4bd1cd2ad15989fcc` (different from original formal SHA); **formal Step64 untouched**, A state/proof untouched, no Target B proof.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step65_scratch_guard.py` that pins scratch SHA and formal Step64 SHA and audits no-step structural invariants/key sets. This audit explicitly reports `scratch_symbolic_equivalence_verified=false` when exact reserialized strings have not been independently algebraically rechecked; it does not promote scratch or regard the scratch as a trusted mathematical starting point. The follow-up `examples/three_loop_vp05_sector202_target_b_step65_exact_candidate.py` uses the independently audited **formal Step64 state**, not the reserialized scratch, as its exact coefficient starting data. It pins SHA, original source/checkpoint/certificate, A state/proof and B backup hashes, and verifies the pinned scratch structure before processing. Each coefficient is independently computed using exact SymPy rational functions with optional string shortening (`cancel/factor_terms/factor/together`), checks the exact local identity, and writes a dedicated atomic/resumable candidate separate from formal state. It does NOT by itself prove Step65 original-IBP replay or Target B. Test `examples/test_three_loop_vp05_sector202_target_b_step65_exact_candidate.py` and Windows runner `run_vp05_sector202_target_b_step65_exact_candidate.bat` committed.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step65_exact_candidate -v
+python -m examples.three_loop_vp05_sector202_target_b_step65_scratch_guard
+.\run_vp05_sector202_target_b_step65_exact_candidate.bat --hours 12 --timeout-seconds 600 --max-new-coefficients 300 > log_step65_exact_candidate.txt
+```
+If Step65 pilot candidate output exists, resume with `--resume`; do NOT restart the same 16-step scratch run against unchanged step64 or delete scratch. Expected if every coefficient is exact and under cap: `ALL_LOCAL_IDENTITIES_PASS_PENDING_FULL_IBP_REPLAY` and `still_oversized=0`. Worker timeouts/oversized candidate coefficients are NOT proof. Next create independent coefficient audit, assemble/replay original IBP equations, and backup-first formal promotion only if audited. User-local Step65 pilot/test unverified at time of commit.
