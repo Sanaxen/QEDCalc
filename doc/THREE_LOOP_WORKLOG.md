@@ -7107,3 +7107,22 @@ Next command, no code change or rerun of earlier checks:
 .\run_vp05_sector202_target_b_step64_original_ibp_replay.bat --resume --normalized --hours 12 --timeout-seconds 3600 --max-new 500 > log_step64_normalized_resume.txt
 ```
 Expected success only when exact replay reaches 330/330: `B_STEP64_ALL_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF`. If successful, audit checkpoint and prepare backup-first formal Step64 promotion, while keeping Target A and previously saved B Step63 unchanged until promotion and recording that earlier Steps61–63 lacked separate original-IBP replay audit.
+
+
+### 2026-11-17 VP05 sector202 Target B: Step64 original-IBP exact replay 330/330 PASS; backup-first formal Step64 promotion prepared
+
+User uploaded `log_step64_normalized_resume.txt`, confirming **330/330 original-IBP integral-key checks PASS**, including last 87 in **97.90 seconds** using normalized exact pivot method. Final status `B_STEP64_ALL_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF`, `original_ibp_exact_replay_verified=true`, `formal_state_modified=false`, `target_b_proven=false`. Previously direct exact replay passed 242 keys and normalized exact replay passed the remaining 88 (including index242) using 259/259 independently audited exact coefficient operations. Inputs: saved formal Step63 SHA `78bcc7570d5bc8a85b0c478c3b750559e3d73154781889607ac3bde43badf9d5`, coefficient candidate SHA `f97a5eee3d99d80bd6bfae9761c2815e3655116a2548dc2e3a465dc12b52890f`, assembled candidate SHA `1d21672a3cccc8e4402091f6a120924107f2da07f612be97dfec60850e420d80`. No full Target B proof. Existing Step61–63 state passed structural SHA audit but does not yet have a separately published complete symbolic original-IBP replay certificate (keep this limitation visible).
+
+Committed `examples/three_loop_vp05_sector202_target_b_step64_formal_promotion.py`, `examples/test_three_loop_vp05_sector202_target_b_step64_formal_promotion.py`, and `run_vp05_sector202_target_b_step64_formal_promotion.bat` on branch `feature/master-basis-initiate-only`. Promotion preflight independently reopens/rechecks the immutable 259-coefficient local audit and 330 original-IBP key checkpoint, checks ordered key-list SHA binding, source checkpoint/source/certificate/A-state/A-proof and previous B Step50/51/52/58/59 backups, validates exactly residual86/source support172, 7500-char bound and pivot lead, and refuses existing Step63 backup or temp file. Exclusive `xb` + fsync backup of byte-identical old Step63 checkpoint is required before atomic overwrite; protected files rechecked afterward. New formal state explicitly retains `EXACT_TARGET_PREFIX_NOT_PROOF`, `exact_target_proven=false`, `original_source_replay_proven=false`. User-local unit test/preflight/promotion are still pending; do **not** report that promotion has run.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step64_formal_promotion -v
+.\run_vp05_sector202_target_b_step64_formal_promotion.bat --check-only
+```
+Require status `B_STEP64_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF`. Then **once only**:
+```powershell
+.\run_vp05_sector202_target_b_step64_formal_promotion.bat
+```
+Expected `B_STEP64_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF` with new Step64 SHA; then create a distinct checksum-pinned read-only audit of the promoted state before Step65 continuation. If check-only raises, do not execute promotion, investigate exact mismatch. Original independent local/IBP checks need not be repeated.
