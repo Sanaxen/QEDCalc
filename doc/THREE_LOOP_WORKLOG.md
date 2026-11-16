@@ -7051,3 +7051,21 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step64_indep
 .\run_vp05_sector202_target_b_step64_independent_audit.bat --hours 12 --timeout-seconds 600 --max-new 259
 ```
 If a partial/timeout audit checkpoint exists, retry only with `--resume` (keep candidate and all original inputs). Expected all259 local independent checks PASS before exact original-source IBP replay. Using a checkpoint avoids loss of ~5h work if interrupted. No new formal proof or state promotion is claimed.
+
+
+### 2026-11-16 VP05 sector202 B Step64: independent exact coefficient audit 259/259 PASS; prepared separate original-IBP replay pipeline
+
+User `log(20261116-091907).txt` reports `ALL_259_LOCAL_RECHECKS_PASS_PENDING_ORIGINAL_IBP_REPLAY` with `checked=259`, `total=259`, elapsed **21483.38 seconds (~5h58m)**, `candidate_sha256=f97a5eee3d99d80bd6bfae9761c2815e3655116a2548dc2e3a465dc12b52890f`. Formal Step63 remains saved/immutable at SHA `78bcc7570d5bc8a85b0c478c3b750559e3d73154781889607ac3bde43badf9d5`. Independent coefficient identities passed for every update; **original IBP replay is still pending** and Target B not proved.
+
+Committed `examples/three_loop_vp05_sector202_target_b_step64_exact_assembly.py`, regression test and `run_vp05_sector202_target_b_step64_exact_assembly.bat`. This strict assembly checks the separately saved independent audit checkpoint contains all259 entries with per-index coefficient SHA256 matching exactly the immutable candidate SHA, verifies starting Step63 hash/config, original source/checkpoint/certificate, target A and prior backup hashes. It builds a new separate candidate snapshot with expected **residual86/support172** and maximum expression chars ≤7500, retaining coefficient strings and flags `original_ibp_exact_replay_verified=false`, `target_proven=false`. No formal B state change.
+
+Committed `examples/three_loop_vp05_sector202_target_b_step64_original_ibp_replay.py`, regression test and `run_vp05_sector202_target_b_step64_original_ibp_replay.bat`. This is an independent **exact original-source IBP replay**, not numeric: it uses original gzip IBP equations and computes, for every integral key in the union of previous/current residuals and changed source row terms, the identity `R_before[k]-R_after[k]+sum_r(S_before[r]-S_after[r])*IBP_r[k] == 0` with SymPy `cancel`. Each integral-key identity runs in a bounded child process with a separate atomic checkpoint, permitting --resume without repeating successful checks. SHA-binding includes original source, old Step63, Step64 candidate, independently checked assembly, source checkpoint and certificate. No overwrite of original files or formal state. Expected `B_STEP64_ALL_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF` only if **every key** verified; finite-prefix status is NOT proof. User-local tests, assembly and original-IBP replay pending; do not assert PASS yet.
+
+PowerShell, sequentially:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step64_exact_assembly examples.test_three_loop_vp05_sector202_target_b_step64_original_ibp_replay -v
+.\run_vp05_sector202_target_b_step64_exact_assembly.bat
+.\run_vp05_sector202_target_b_step64_original_ibp_replay.bat --hours 12 --timeout-seconds 1200 --max-new 500 > log_step64_ibp.txt
+```
+For interruption after checkpoint exists, use `--resume` on original replay (do not rerun assembly, which refuses overwrite). Exact replay completion is a prerequisite to future SHA-pinned backup-first formal Step64 promotion; retain old Step63/target A backups and do not rerun the 259-coefficient pilot or 259-coefficient independent audit. Note: saved Step61–63 prior continuation had only checkpoint structural audit; if claiming complete original-IBP proof chain, also independently replay Steps61–63 or provide an equivalent audited invariant chain.
