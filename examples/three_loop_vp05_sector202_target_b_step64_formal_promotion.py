@@ -46,6 +46,18 @@ BACKUP = STATE.with_name("vp05_sector202_B_exact_target_state_step63_before_step
 ASSEMBLED_SHA = "1d21672a3cccc8e4402091f6a120924107f2da07f612be97dfec60850e420d80"
 
 
+
+def valid_replay_method(row):
+    """Before normalized workers were introduced, direct exact PASS rows
+    contained only index/key. Missing method is a legacy direct exact PASS,
+    not an unknown or unverified method. All other methods are rejected.
+    """
+    return isinstance(row,dict) and row.get("method","direct_original_ibp_exact") in (
+        "direct_original_ibp_exact",
+        "unscaled_source_pivot_exact_with_259_certificates",
+    )
+
+
 def protected_hashes():
     return [
         (A_STATE,A_STATE_SHA),(A_PROOF,A_PROOF_SHA),
@@ -98,8 +110,7 @@ def validate():
         or cfg.get("job_keys_sha256")!=hashlib.sha256(json.dumps([list(k) for k in jobs],separators=(",",":")).encode()).hexdigest()
         or len(jobs)!=330 or not isinstance(checked,list) or len(checked)!=330
         or any(row.get("index")!=i or row.get("key")!=list(jobs[i])
-               or row.get("method","direct_original_ibp_exact") not in
-                 ("direct_original_ibp_exact","unscaled_source_pivot_exact_with_259_certificates")
+               or not valid_replay_method(row)
                for i,row in enumerate(checked))):
         raise RuntimeError("330/330 exact original-IBP key certificates incomplete or incompatible")
     if (before.get("steps")!=63 or before.get("status")!="EXACT_TARGET_CAP_REACHED_NOT_PROOF"
