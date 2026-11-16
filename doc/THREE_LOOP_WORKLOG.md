@@ -7160,3 +7160,22 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step64_read_
 .\run_vp05_sector202_target_b_step64_read_only_audit.bat
 ```
 Expected `B_STEP64_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`. Do NOT rerun Step64 promotion or prior coefficient/original-IBP jobs. After post-promotion SHA audit PASS, proceed with SHA-pinned guarded Step65 continuation or exact coefficient pilot as needed. Ensure full chain of source replay before claiming Target B mathematical proof.
+
+
+### 2026-11-17 VP05 sector202 Target B: formal Step64 read-only audit PASS; isolated Step65–80 scratch continuation prepared
+
+User `log(20261116-222712).txt`: observed **`B_STEP64_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`**, confirming formal B Step64 state SHA256 `9e5ba49502e24f9367e15b42221086c470dd9670519798e8ab555e147a33992a`, residual86, source support172, maximum expression characters7310, next pivot lead `[166596413882371,139]`, protected original source/checkpoint/certificate, preserved Target A and Step50/51/52/58/59/63 B backups. Step63 backup SHA256 `78bcc7570d5bc8a85b0c478c3b750559e3d73154781889607ac3bde43badf9d5`. Whole Target B proof still **false**; before Step64, Steps61–63 lack standalone original-IBP symbolic replay certificates, which must remain a stated chain-audit requirement.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_scratch_from64.py`, tests `examples/test_three_loop_vp05_sector202_target_b_scratch_from64.py`, and `run_vp05_sector202_target_b_scratch_from64.bat`. **Crucial safety distinction:** Step65 onward runs exclusively on an independently named, byte-identical **scratch copy** of formally promoted Step64 state. Original formal B SHA is pinned and verified before and after; does **not** run exact elimination directly on the validated formal state. A no-step cap stop may reserialize scratch but cannot change the formal audited state or historical backups. The existing atomic checkpoint engine is invoked with the original strict 7500-character, 256-column and 400-support caps, 12-hour wall-time upper bound and max16 new steps (Step65–80). Scratch preflight pins prior A proof/state and all backups, checks exact Step64 metadata/next lead and original source hashes. Supports `--resume` only when scratch exists, preserves exact validated 64-step pivot prefix, refuses any alternate state paths and never claims whole-target proof. Any newly completed steps require **separate independent symbolic original-IBP replay** and a distinct backup-first formal promotion before modifying formally protected B state.
+
+Commands (Windows PowerShell):
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_scratch_from64 -v
+.\run_vp05_sector202_target_b_scratch_from64.bat --steps 16 --hours 12 --check-only
+```
+If `B_STEP65_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`, then execute **once**:
+```powershell
+.\run_vp05_sector202_target_b_scratch_from64.bat --steps 16 --hours 12 > log_step65_scratch.txt
+```
+If scratch output already exists, **do not** rerun without `--resume`; if scratch has reached an expression cap, diagnose it and do not assume simply repeating the same engine will make progress. Save SHA of scratch and resulting candidate metrics. Never rerun Step64 promotion/previous replay or mutate/delete any 259/330 certificates. User-local tests/real scratch computation pending.
