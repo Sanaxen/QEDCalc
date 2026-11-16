@@ -7096,3 +7096,14 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step64_norma
 .\run_vp05_sector202_target_b_step64_original_ibp_replay.bat --resume --normalized --hours 2 --timeout-seconds 3600 --max-new 1 > log_step64_normalized_probe.txt
 ```
 This resumes **only index242**, retaining 242 previously passed direct checks. On normalized exact PASS and 243/330, continue with `--resume --normalized --hours 12 --timeout-seconds 3600 --max-new 500`. If timeout again, stop and produce read-only targeted term-count/size diagnostic and different staged exact algebraic algorithm. No formal Step64 promotion until original IBP 330/330 PASS. Prior Steps61-63 also need independent original-IBP audit or equivalent chain to claim whole target provenance.
+
+
+### 2026-11-17 VP05 sector202 Target B Step64 normalized original-IBP replay index242 exact PASS
+
+User `log_step64_normalized_probe.txt` reports checkpoint resumed at 242/330 and index242 passed using `--normalized` in **2.43 seconds**. State after one new verification: **243/330** exact original-IBP key checks, `method=normalized_exact_pivot`, `B_STEP64_ORIGINAL_IBP_PREFIX_NOT_PROOF`, `original_ibp_exact_replay_verified=false`, `formal_state_modified=false`, `target_b_proven=false`. The same key previously exceeded the 3600-second direct SymPy `cancel` timeout; normalized exact source-pivot identity plus 259 audited exact coefficient identities avoids that expression blow-up. The original Step63 state SHA `78bcc7570d5bc8a85b0c478c3b750559e3d73154781889607ac3bde43badf9d5`, candidate SHA `f97a5eee3d99d80bd6bfae9761c2815e3655116a2548dc2e3a465dc12b52890f`, and assembled SHA `1d21672a3cccc8e4402091f6a120924107f2da07f612be97dfec60850e420d80` unchanged.
+
+Next command, no code change or rerun of earlier checks:
+```powershell
+.\run_vp05_sector202_target_b_step64_original_ibp_replay.bat --resume --normalized --hours 12 --timeout-seconds 3600 --max-new 500 > log_step64_normalized_resume.txt
+```
+Expected success only when exact replay reaches 330/330: `B_STEP64_ALL_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF`. If successful, audit checkpoint and prepare backup-first formal Step64 promotion, while keeping Target A and previously saved B Step63 unchanged until promotion and recording that earlier Steps61–63 lacked separate original-IBP replay audit.
