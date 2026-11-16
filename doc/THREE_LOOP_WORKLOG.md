@@ -7195,3 +7195,18 @@ python -m examples.three_loop_vp05_sector202_target_b_step65_scratch_guard
 .\run_vp05_sector202_target_b_step65_exact_candidate.bat --hours 12 --timeout-seconds 600 --max-new-coefficients 300 > log_step65_exact_candidate.txt
 ```
 If Step65 pilot candidate output exists, resume with `--resume`; do NOT restart the same 16-step scratch run against unchanged step64 or delete scratch. Expected if every coefficient is exact and under cap: `ALL_LOCAL_IDENTITIES_PASS_PENDING_FULL_IBP_REPLAY` and `still_oversized=0`. Worker timeouts/oversized candidate coefficients are NOT proof. Next create independent coefficient audit, assemble/replay original IBP equations, and backup-first formal promotion only if audited. User-local Step65 pilot/test unverified at time of commit.
+
+
+### 2026-11-17 VP05 sector202 B Step65: 40/40 exact coefficient pilot PASS, independent audit prepared
+
+User `log_step65_exact_candidate.txt` reports `ALL_LOCAL_IDENTITIES_PASS_PENDING_FULL_IBP_REPLAY`: **40/40 exact local coefficient identities PASS**, zero oversized coefficients (`still_oversized=0`), **max saved expression chars 7426** vs formal cap7500, total **865.29 seconds (~14.4 minutes)**. Previous unrestricted scratch Step65 attempted expressions as long as7894, so exact per-coefficient factorization/shortening made candidate fit formal expression bound without changing it. Candidate preserves formal B Step64 SHA `9e5ba49502e24f9367e15b42221086c470dd9670519798e8ab555e147a33992a`, scratch structural SHA `e7ef7c12cb68cb8492723a864ba80febda9a8a5415581ec4bd1cd2ad15989fcc`, and protects A state and original source. **Not** yet independently replayed against original IBP nor formally promoted; Target B still unproven.
+
+Committed `examples/three_loop_vp05_sector202_target_b_step65_independent_audit.py`, its regression tests and `run_vp05_sector202_target_b_step65_independent_audit.bat`. Adapted earlier proven-by-execution Step64 independent-audit design to the **40 Step65 jobs**: one exact SymPy rational-function check per separate bounded worker process, independently rechecks updates from immutable formal Step64 source, SHA-binds and validates candidate coefficients and protected artifacts, and saves an **independent resumable audit checkpoint** (not B state). This does not declare original-IBP replay or whole target proof. User-local tests/independent audit not run at commit time.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step65_independent_audit -v
+.\run_vp05_sector202_target_b_step65_independent_audit.bat --hours 12 --timeout-seconds 600 --max-new 40 > log_step65_independent_audit.txt
+```
+On interruption after checkpoint exists use `--resume` with same options; never delete existing audit/candidate or rerun original coefficient pilot. Required success `ALL_40_LOCAL_RECHECKS_PASS_PENDING_ORIGINAL_IBP_REPLAY` and 40/40 exact. Next assemble Step65 and independently replay original IBP using prior normalized pivot strategy, then backup-first guarded Step65 promotion and SHA-pinned read-only audit; do not claim complete proof before all checks.
