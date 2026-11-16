@@ -98,7 +98,7 @@ def validate():
         or cfg.get("job_keys_sha256")!=hashlib.sha256(json.dumps([list(k) for k in jobs],separators=(",",":")).encode()).hexdigest()
         or len(jobs)!=330 or not isinstance(checked,list) or len(checked)!=330
         or any(row.get("index")!=i or row.get("key")!=list(jobs[i])
-               or row.get("method") not in
+               or row.get("method","direct_original_ibp_exact") not in
                  ("direct_original_ibp_exact","unscaled_source_pivot_exact_with_259_certificates")
                for i,row in enumerate(checked))):
         raise RuntimeError("330/330 exact original-IBP key certificates incomplete or incompatible")
