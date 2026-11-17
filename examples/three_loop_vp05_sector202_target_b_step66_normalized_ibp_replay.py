@@ -14,6 +14,8 @@ import subprocess
 import sys
 import time
 import sympy as sp
+from sympy.polys.fields import field
+from sympy.polys.domains import QQ
 from examples.three_loop_vp05_sector202_target_b_step66_original_ibp_replay import (
     prepare, AUDIT as DIRECT, STATUS as DIRECT_STATUS, context_config,
     EXPECTED_STEP66_SHA, SAVED_STEP65_SHA, B_STATE, SCRATCH, PROTECTED,
@@ -30,7 +32,7 @@ OUT=BASE/"vp05_sector202_B_step66_normalized_original_ibp_replay_checkpoint.json
 STATUS="B_STEP66_NORMALIZED_ORIGINAL_IBP_PREFIX_NOT_PROOF"
 DIRECT_COUNT=113
 TOTAL_KEYS=330
-METHOD="unscaled_original_source_pivot_with_259_exact_coefficients"
+METHOD="unscaled_QQ_z_d_rational_field_with_259_exact_coefficients"
 
 def check_certificate_prefix(rows,jobs,allowed_method):
     if not isinstance(rows,list) or len(rows)>len(jobs):
@@ -118,12 +120,29 @@ def verify_unscaled_key(key,prow,key_terms):
         raise AssertionError("Step66 unscaled original-IBP pivot mismatch "+str(key))
     return True
 
+def verify_unscaled_key_field(key, prow, key_terms):
+    """Exact unsampled fraction-field replay; avoids SymPy.cancel(huge Add).
+
+    Mirrors the independently PASSed key113 rational-field pilot. Do not
+    fall back to modular checks on a worker failure.
+    """
+    ring,z,d=field("z,d",QQ)
+    zs,ds=sp.symbols("z d")
+    def to_field(raw):
+        return ring.from_expr(expr(raw,zs,ds))
+    total=ring.zero
+    for weight,coefficient in key_terms.get(key,[]):
+        total+=to_field(weight)*to_field(coefficient)
+    if to_field(prow.get(key,"0"))-total!=ring.zero:
+        raise AssertionError("Step66 exact QQ(z,d) original IBP mismatch "+str(key))
+    return True
+
 def worker(index):
     jobs,prow,key_terms,coeff_sha,direct_sha=load()
     if not DIRECT_COUNT<=index<len(jobs):
         raise RuntimeError("Index not in normalized suffix")
     key=jobs[index]
-    verify_unscaled_key(key,prow,key_terms)
+    verify_unscaled_key_field(key,prow,key_terms)
     if (sha(B_STATE)!=SAVED_STEP65_SHA or sha(SCRATCH)!=EXPECTED_STEP66_SHA
         or sha(COEFFICIENT)!=coeff_sha or sha(DIRECT)!=direct_sha):
         raise RuntimeError("Protected exact certificates changed during worker")
