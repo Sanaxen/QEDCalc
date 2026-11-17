@@ -7442,3 +7442,18 @@ If all 3 regression tests pass, rerun existing 0-success normalized checkpoint w
 .\run_vp05_sector202_target_b_step66_normalized_ibp_replay.bat --resume --hours 12 --timeout-seconds 1200 --max-new 217 > log_step66_normalized_field.txt
 ```
 Do not claim normalized replay completion without the actual results.
+
+
+### 2026-11-18 VP05 sector202 Target B: Step66 full 330/330 exact original-IBP replay PASS, promotion preflight prepared
+
+User `log_step66_normalized_field.txt` reports preflight `B_STEP66_NORMALIZED_PREFLIGHT_PASS_NOT_PROOF` with prior **113** independently direct exact original-IBP keys, all **217** remaining suffix keys saved via exact QQ(z,d) rational-field arithmetic in **235.67 seconds**. Final `B_STEP66_ALL_330_COMBINED_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF`, `verified_direct=113`, `verified_normalized=217`, `total_verified=330/330`, `original_ibp_exact_replay_verified=true`, `formal_state_modified=false`, `target_b_proven=false`. The 259/259 independent exact Step65→66 coefficient audits had already fully passed. The *local* Step65→66 elimination now has complete per-key exact original-IBP evidence, but saved Step65 formal state is **not yet promoted**. Earlier Steps61–63 proof-chain limitations remain; do NOT claim Target B proven.
+
+Added SHA-pinned, fail-closed, backup-first `examples/three_loop_vp05_sector202_target_b_step66_formal_promotion.py`, corresponding regression tests and Windows wrapper `run_vp05_sector202_target_b_step66_formal_promotion.bat`. Its read-only preflight checks saved formal Step65 audited SHA, exact scratch Step66 SHA, original A and prior B backups, source/certificate, 113 ordered direct keys, 259 ordered exact coefficient checks, all 217 ordered QQ-field exact suffix keys and provenance hashes, Step66 residual/source size and pivot metrics. Default mode and `--check-only` are read-only. An *explicit* `--promote` exclusively creates `vp05_sector202_B_exact_target_state_step65_before_step66_promotion.json`, fsyncs and verifies backup, stages the **exact bytes** of SHA-pinned scratch Step66 and atomically replaces formal B state. Refuses existing backup/tmp and file path overlaps. No post-promotion saved-state read-only audit implemented yet. GitHub code committed; **not executed on Windows**.
+
+Next verify in PowerShell, do not promote before preflight PASS:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step66_formal_promotion -v
+.\run_vp05_sector202_target_b_step66_formal_promotion.bat --check-only
+```
+Expected `B_STEP66_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF` with `original_ibp_keys=330` and `coefficient_checks=259`. ONLY after successful preflight (and inspection of log) use `--promote` once, then run a separate saved Step66 read-only audit. Never re-run `--promote` against already-promoted state or delete backups/evidence.
