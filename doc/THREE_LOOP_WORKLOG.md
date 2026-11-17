@@ -7258,3 +7258,18 @@ Require `B_STEP65_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF` first. If passed, e
 .\run_vp05_sector202_target_b_step65_formal_promotion.bat
 ```
 Expected `B_STEP65_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`. Report new SHA in subsequent log for pinned read-only post-promotion audit. Never repeat Step65 exact coefficient/102-key replay or assembly. If preflight rejects, do not force formal mutation.
+
+
+### 2026-11-17 VP05 sector202 Target B Step65: formal promotion SUCCESS; SHA-pinned read-only post-promotion audit prepared
+
+User uploaded `log(20261117-001953).txt`, showing `B_STEP65_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`. Saved B Step65 SHA256 **`eeab74cfde337424db3e8d54de8078c3f82c994a0a35a689531842d79a8c941f`**; predecessor Step64 SHA **`9e5ba49502e24f9367e15b42221086c470dd9670519798e8ab555e147a33992a`**; new exclusive Step64 backup SHA matches predecessor. New steps65; residual85; original-IBP source support173; max expression characters7426; original-IBP keys exactly verified102; protected A unchanged true; `exact_target_proven=false`. The formal Step65 save and backup were successful; no need to rerun formal promotion, exact coefficient audit or exact original-IBP replay.
+
+Committed `examples/three_loop_vp05_sector202_target_b_step65_read_only_audit.py`, unit regression and `run_vp05_sector202_target_b_step65_read_only_audit.bat`. Read-only audit pins saved Step65 SHA plus predecessor Step64 backup and all prior protected backup/SOURCE/CERT/A proof hashes, checks saved 65 pivot keys and suffix, residual85/support173/max7426, cap7500 and proof flags false; never modifies saved state.
+
+Next on user Windows PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step65_read_only_audit -v
+.\run_vp05_sector202_target_b_step65_read_only_audit.bat
+```
+Expected `B_STEP65_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`; **user-local audit has not yet run**. Once confirmed, prepare isolated scratch continuation for Step66 or targeted exact coefficient pilot, preserving Step65 formal SHA and prior proof artifacts. Steps61–63 still lack separately published full original-IBP replay certificates; no full B proof claim.
