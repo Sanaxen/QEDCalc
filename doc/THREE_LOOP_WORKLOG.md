@@ -7324,3 +7324,15 @@ Expected preflight `B_STEP66_ORIGINAL_IBP_PREFLIGHT_PASS_NOT_PROOF`. If the audi
 .\run_vp05_sector202_target_b_step66_original_ibp_replay.bat --hours 12 --timeout-seconds 1200 --max-new 500 > log_step66_ibp.txt
 ```
 If a partial audit checkpoint exists, use `--resume` with the same limits; **never delete it**. Require `B_STEP66_ALL_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF` with `verified_keys=total_keys` before implementing separate backup-first Step66 formal promotion. A check-only or partial PASS is not proof. Do not rerun the scratch engine or mutate formal Step65.
+
+
+### 2026-11-17 VP05 sector202 Target B Step66: 106/330 exact source delta keys PASS; key106 timed out
+
+User `log_step66_ibp.txt`: read-only exact original-IBP replay preflight PASS, 330 keys. Exactly **106/330** per-key SymPy exact identities saved (indexes0..105); worker **index106** hit the configured **1200-second per-key timeout** and stopped with `WORKER_TIMEOUT_NOT_PROOF`. No symbolic mismatch reported; elapsed at last saved index105 was **2314.55 seconds**, plus timeout for index106. Final status **`B_STEP66_ORIGINAL_IBP_PREFIX_NOT_PROOF`**, verified_keys106, total_keys330, formal_state_modified=false, exact replay verified=false, target_b_proven=false. Step65 formal SHA `eeab74cfde337424db3e8d54de8078c3f82c994a0a35a689531842d79a8c941f` and Step66 scratch SHA `9b30bed319c5e23cc84016acdb1605fe8082bedb09c84a4f8f4d8f676de82d7d` remain pinned. Do not rerun without `--resume`, delete checkpoint or promote yet.
+
+The existing runner accepts worker timeout up to 3600s (safety limit) and 12h total. First try direct exact resume on precisely index106 using:
+```powershell
+.\run_vp05_sector202_target_b_step66_original_ibp_replay.bat --resume --check-only
+.\run_vp05_sector202_target_b_step66_original_ibp_replay.bat --resume --hours 12 --timeout-seconds 3600 --max-new 224 > log_step66_ibp_resume.txt
+```
+If index106 again times out, **do not increase limits beyond guards**; implement exact normalized source-pivot replay or segmented rational-function certificate for that key, while preserving the 106 direct PASS entries. Only a full 330/330 exact pass permits backup-first formal Step66 promotion. Prior Steps61-63 independent IBP chain gap remains.
