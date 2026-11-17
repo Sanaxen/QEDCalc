@@ -7457,3 +7457,12 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step66_forma
 .\run_vp05_sector202_target_b_step66_formal_promotion.bat --check-only
 ```
 Expected `B_STEP66_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF` with `original_ibp_keys=330` and `coefficient_checks=259`. ONLY after successful preflight (and inspection of log) use `--promote` once, then run a separate saved Step66 read-only audit. Never re-run `--promote` against already-promoted state or delete backups/evidence.
+
+
+### 2026-11-18 Target B Step66: promotion preflight PASS; post-promotion read-only audit added
+
+User reports `B_STEP66_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF` from real Windows preflight after all 113+217=330/330 exact original IBP replay and 259/259 coefficient checks. **Formal Step65 is not yet promoted** on this report.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step66_read_only_audit.py`, unit tests and `run_vp05_sector202_target_b_step66_read_only_audit.bat`. This post-promotion auditor checks SHA-pinned formal Step66 equals the exact saved scratch66 bytes, backup-old Step65 SHA, Target A and previous backups and source/certificate hashes, metadata (66 pivots, remaining 75, original support153, next lead), and immutability/valid counts of all three local validation certificate checkpoints. It does not write files, calculate whole-target proof, or import the predecessor-only validator that requires formal Step65. **Windows execution still pending.**
+
+Recommended local procedure after `git pull --ff-only origin feature/master-basis-initiate-only`: run `python -m unittest examples.test_three_loop_vp05_sector202_target_b_step66_formal_promotion examples.test_three_loop_vp05_sector202_target_b_step66_read_only_audit -v`, and recheck `.\run_vp05_sector202_target_b_step66_formal_promotion.bat --check-only`. If preflight remains PASS, run `.\run_vp05_sector202_target_b_step66_formal_promotion.bat --promote > log_step66_promotion.txt` **once**. Require `B_STEP66_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF` before `.\run_vp05_sector202_target_b_step66_read_only_audit.bat > log_step66_saved_audit.txt`. Do not rerun promotion, force delete backup or claim Target B proven. If post audit fails, preserve all output evidence for inspection.
