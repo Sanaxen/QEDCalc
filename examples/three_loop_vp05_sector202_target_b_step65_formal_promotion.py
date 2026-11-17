@@ -194,8 +194,8 @@ def promote(check_only=False):
     return {
         "status":"B_STEP65_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF",
         "old_sha256":EXPECTED_STEP64_SHA,"new_sha256":sha(STATE),
-        "backup_sha256":sha(BACKUP),"new_steps":64,
-        "remainder_terms":86,"original_support":172,
+        "backup_sha256":sha(BACKUP),"new_steps":65,
+        "remainder_terms":85,"original_support":173,
         "max_expression_chars":new["metrics"]["max_expression_chars"],
         "original_ibp_keys_verified":102,
         "a_protected_unchanged":True,"exact_target_proven":False,
