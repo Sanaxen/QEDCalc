@@ -7355,3 +7355,22 @@ Require `B_STEP66_COEFFICIENT_PREFLIGHT_PASS_NOT_PROOF`. Then, only if the separ
 .\run_vp05_sector202_target_b_step66_coefficient_audit.bat --hours 12 --timeout-seconds 1200 --max-new 500 > log_step66_coeff.txt
 ```
 If audit checkpoint exists, add `--resume`. Need `B_STEP66_ALL_LOCAL_COEFFICIENTS_EXACT_PASS_PENDING_NORMALIZED_IBP` before implementing and applying normalized replay for remaining keys. Step66 original-IBP 113/330 and formal Step65 must remain untouched.
+
+
+### 2026-11-17 VP05 sector202 Target B Step66 coefficient preflight: duplicate protected path registration fixed
+
+User-local Step66 independent coefficient audit raised `RuntimeError("Coefficient checkpoint aliases protected input")` at the preflight path uniqueness guard, before creating or updating the separate coefficient checkpoint. The cause was duplicated path entries: `PROTECTED` (imported from the Step66 original-IBP replay) **already includes** `CHECKPOINT`, `SOURCE` and `CERT`, but the new coefficient audit constructed `protected=[p for p,_ in PROTECTED]+[SCRATCH,CHECKPOINT,SOURCE,CERT]`. Thus the same valid original paths appeared twice, falsely triggering the uniqueness check. This does **not** indicate the audit output truly aliases formal A/B or original artifacts and is not an exact coefficient mismatch.
+
+Fixed only the redundant entries: `protected=[p for p,_ in PROTECTED]+[SCRATCH]`, retaining strict distinct-path checks including `OUT` and hash protection inherited from `PROTECTED`. Added unit regression that the protected inputs are distinct, that source/checkpoint/certificate are included, and that the coefficient output is outside the protected set. No `output/` or source/proof/target state files were edited. GitHub repair only; user-local test/preflight remains to be confirmed.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step66_coefficient_audit -v
+.\run_vp05_sector202_target_b_step66_coefficient_audit.bat --check-only
+```
+Require `B_STEP66_COEFFICIENT_PREFLIGHT_PASS_NOT_PROOF`. Because error happened before checkpoint creation, ordinarily run without `--resume`:
+```powershell
+.\run_vp05_sector202_target_b_step66_coefficient_audit.bat --hours 12 --timeout-seconds 1200 --max-new 500 > log_step66_coeff.txt
+```
+If this *separate coefficient* checkpoint exists for any reason, use `--resume` instead. Preserve the prior **113/330 direct exact original-IBP replay**; no Step66 promotion until exact checks complete.
