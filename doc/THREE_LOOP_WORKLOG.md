@@ -7305,3 +7305,22 @@ If `B_STEP66_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`, execute:
 .\run_vp05_sector202_target_b_scratch_from65.bat --steps 1 --hours 12 > log_step66_scratch.txt
 ```
 If it caps at the first attempted step, retain scratch and derive SHA-pinned exact coefficient pilot from formal Step65; do not simply rerun the same scratch engine. If scratch saves Step66, require independent original-IBP replay and backup-first formal promotion before changing formal B.
+
+
+### 2026-11-17 VP05 sector202 Target B: Step66 isolated scratch succeeds; exact original-IBP delta replay prepared
+
+User uploaded `log_step66_scratch(1).txt`. The original Step65 SHA-pinned scratch runner reported `B_STEP66_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`, then completed exactly **one** new exact elimination, giving `MULTISTEP_STEPS_SAVED_NOT_TARGET_PROOF` with **steps=66, remainder85→75, original source support173→153, max expression chars5707 (<7500)**, next lead `[166596414013441,139]`, returncode0, no timeout. Step66 isolated scratch SHA256 **`9b30bed319c5e23cc84016acdb1605fe8082bedb09c84a4f8f676de82d7d`**. The immutable *formal* B Step65 SHA256 remains **`eeab74cfde337424db3e8d54de8078c3f82c994a0a35a689531842d79a8c941f`**; Target A and original input artifacts unchanged. No exact whole-target proof. Unlike Step65, direct bounded scratch elimination did not hit expression cap.
+
+Added `examples/three_loop_vp05_sector202_target_b_step66_original_ibp_replay.py`, its unit regression and `run_vp05_sector202_target_b_step66_original_ibp_replay.bat`. It independently verifies the **full exact original-IBP difference** for every integral key touched by old/new residuals and source provenance, using the original gzipped IBP source rows, not merely a modular or local pivot-identity check. It verifies the identity `old_residual - new_residual = Σ (new_source-old_source)*original_IBP` per key, with separate bounded SymPy workers and atomic/resumable audit checkpoint. SHA-pins the formal Step65 and scratch Step66, validates protected A/backups/source/certificate hashes, 65-step pivot prefix, and 66-step metrics, and does not alter formal state or promote. This provides exact **local Step65→66** replay when all keys PASS; it is not a complete Target B or Steps61–63 chain certificate.
+
+Next **user-local** PowerShell, after pulling:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step66_original_ibp_replay -v
+.\run_vp05_sector202_target_b_step66_original_ibp_replay.bat --check-only
+```
+Expected preflight `B_STEP66_ORIGINAL_IBP_PREFLIGHT_PASS_NOT_PROOF`. If the audit checkpoint does not yet exist, run:
+```powershell
+.\run_vp05_sector202_target_b_step66_original_ibp_replay.bat --hours 12 --timeout-seconds 1200 --max-new 500 > log_step66_ibp.txt
+```
+If a partial audit checkpoint exists, use `--resume` with the same limits; **never delete it**. Require `B_STEP66_ALL_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF` with `verified_keys=total_keys` before implementing separate backup-first Step66 formal promotion. A check-only or partial PASS is not proof. Do not rerun the scratch engine or mutate formal Step65.
