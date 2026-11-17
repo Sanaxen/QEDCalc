@@ -1,6 +1,6 @@
 import unittest
 from examples.three_loop_vp05_sector202_target_b_step66_normalized_ibp_replay import (
-    verify_unscaled_key,check_certificate_prefix,DIRECT_COUNT,TOTAL_KEYS,METHOD,
+    verify_unscaled_key,verify_unscaled_key_field,check_certificate_prefix,DIRECT_COUNT,TOTAL_KEYS,METHOD,
     OUT,PROTECTED,COEFFICIENT,DIRECT,SCRATCH,
 )
 class Step66NormalizedReplayTest(unittest.TestCase):
@@ -10,6 +10,14 @@ class Step66NormalizedReplayTest(unittest.TestCase):
         with self.assertRaises(AssertionError):
             verify_unscaled_key(k,{k:"z+2"},{k:[("1/2","2*(z+1)")] })
         self.assertTrue(verify_unscaled_key((2,139),{},{}))
+        self.assertTrue(verify_unscaled_key_field(k,{k:"z+1"},
+            {k:[("1/2","2*(z+1)")]}))
+        self.assertTrue(verify_unscaled_key_field((2,139),{},{}))
+        with self.assertRaises(AssertionError):
+            verify_unscaled_key_field(k,{k:"z+2"},
+                {k:[("1/2","2*(z+1)")]}))
+        self.assertTrue(verify_unscaled_key_field(k,{k:"1"},
+            {k:[("1/(z+1)","z"),("1/(z+1)","1")]}))
     def test_direct_prefix_binding(self):
         jobs=[(i,139) for i in range(2)]
         rows=[{"index":0,"key":[0,139],"method":"original_source_delta_exact"}]
