@@ -7336,3 +7336,22 @@ The existing runner accepts worker timeout up to 3600s (safety limit) and 12h to
 .\run_vp05_sector202_target_b_step66_original_ibp_replay.bat --resume --hours 12 --timeout-seconds 3600 --max-new 224 > log_step66_ibp_resume.txt
 ```
 If index106 again times out, **do not increase limits beyond guards**; implement exact normalized source-pivot replay or segmented rational-function certificate for that key, while preserving the 106 direct PASS entries. Only a full 330/330 exact pass permits backup-first formal Step66 promotion. Prior Steps61-63 independent IBP chain gap remains.
+
+
+### 2026-11-17 VP05 sector202 Target B Step66: resumed 113/330 exact PASS, separate coefficient audit prepared
+
+User `log_step66_ibp_resume.txt`: using `--resume --timeout-seconds 3600` resumed saved **106/330** PASS. Timed-out index106 now **PASS** after 1560.17s, subsequent indexes107..112 PASS, total **113/330**. Worker index113 hit **3600-second timeout**, status `B_STEP66_ORIGINAL_IBP_PREFIX_NOT_PROOF`. No symbolic mismatch observed. Formal Step65 untouched and whole B not proven. Do not extend worker safety caps or rerun full direct replay from zero. Preserve existing 113 direct PASS and original audit JSON.
+
+Added isolated exact Step66 coefficient audit `examples/three_loop_vp05_sector202_target_b_step66_coefficient_audit.py`, unit tests, and `run_vp05_sector202_target_b_step66_coefficient_audit.bat`. Purpose: establish exact independent Step65→66 coefficient identities for **all coefficients in old/new residual and source and checkpoint pivot row/trace unions**. Read-only checks SHA-pinned formal65, scratch66, source checkpoint and protected backups; each coefficient is checked in its own bounded SymPy worker and saved into an independent resumable audit JSON. This is a **prerequisite** for faster normalized source-pivot original-IBP replay. It does NOT itself count as original-IBP replay or allow formal promotion. Normalized replay integration is **not yet implemented**; must not mark its keys PASS without both completed coefficient certificates and exact unscaled pivot identities.
+
+Next local PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step66_coefficient_audit -v
+.\run_vp05_sector202_target_b_step66_coefficient_audit.bat --check-only
+```
+Require `B_STEP66_COEFFICIENT_PREFLIGHT_PASS_NOT_PROOF`. Then, only if the separate coefficient audit checkpoint does not exist:
+```powershell
+.\run_vp05_sector202_target_b_step66_coefficient_audit.bat --hours 12 --timeout-seconds 1200 --max-new 500 > log_step66_coeff.txt
+```
+If audit checkpoint exists, add `--resume`. Need `B_STEP66_ALL_LOCAL_COEFFICIENTS_EXACT_PASS_PENDING_NORMALIZED_IBP` before implementing and applying normalized replay for remaining keys. Step66 original-IBP 113/330 and formal Step65 must remain untouched.
