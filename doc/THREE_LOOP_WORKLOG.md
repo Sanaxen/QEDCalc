@@ -7374,3 +7374,22 @@ Require `B_STEP66_COEFFICIENT_PREFLIGHT_PASS_NOT_PROOF`. Because error happened 
 .\run_vp05_sector202_target_b_step66_coefficient_audit.bat --hours 12 --timeout-seconds 1200 --max-new 500 > log_step66_coeff.txt
 ```
 If this *separate coefficient* checkpoint exists for any reason, use `--resume` instead. Preserve the prior **113/330 direct exact original-IBP replay**; no Step66 promotion until exact checks complete.
+
+
+### 2026-11-18 VP05 sector202 Target B: all 259 Step66 independent exact coefficients PASS; normalized original-IBP suffix runner implemented
+
+User `log_step66_coeff.txt`: successful preflight `B_STEP66_COEFFICIENT_PREFLIGHT_PASS_NOT_PROOF`, then **259/259** per-coefficient exact symbolic checks saved, elapsed **14794.94 seconds** (~4 h 6 min 35 s), no mismatch/timeouts; final `B_STEP66_ALL_LOCAL_COEFFICIENTS_EXACT_PASS_PENDING_NORMALIZED_IBP`. Formal Step65 unchanged; target B not proven. Existing Step66 direct exact original-IBP replay checkpoint remains **113/330** PASS (indexes0..112), with heavy index113 previously timing out at 3600s.
+
+Added `examples/three_loop_vp05_sector202_target_b_step66_normalized_ibp_replay.py`, its regression and `run_vp05_sector202_target_b_step66_normalized_ibp_replay.bat`. The normalized approach relies on **all 259 independently exact-rechecked coefficient updates** and proves the **unscaled** original-IBP pivot identity for remaining original integral keys indexes113..329 against the immutable ORIGINAL gzipped source equations. The algebra is `R65-R66 = factor*pivot_row`, `S66-S65 = factor*pivot_trace` (all supported coefficients independently exact-checked), plus `pivot_row = Σ pivot_trace*original_IBP` exactly per integral key; no modular or numerical approximation. The runner validates SHA binding, exact job-order hashes, all 259 ordered coefficient certificate records, all 113 exact direct replay records, original source/checkpoint/certificate, formal Step65 and scratch Step66; it creates a **separate** checkpoint `vp05_sector202_B_step66_normalized_original_ibp_replay_checkpoint.json` and never modifies old 113 direct entries or 259 coefficient audit, formal B, Target A, or protected backups. Only after **217/217** normalized plus preserved **113/113** direct checks may it report `B_STEP66_ALL_330_COMBINED_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF`. This is a complete *Step65→66 local transition* certificate, **not** whole Target B proof; Steps61–63 chain gaps remain. User-local tests and actual replay not yet run.
+
+Next Windows PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step66_normalized_ibp_replay -v
+.\run_vp05_sector202_target_b_step66_normalized_ibp_replay.bat --check-only
+```
+Require `B_STEP66_NORMALIZED_PREFLIGHT_PASS_NOT_PROOF` with `direct_keys_verified=113`, `total_keys=330`, and `normalized_keys_verified=0`. Only then:
+```powershell
+.\run_vp05_sector202_target_b_step66_normalized_ibp_replay.bat --hours 12 --timeout-seconds 1200 --max-new 217 > log_step66_normalized_ibp.txt
+```
+If the **separate normalized checkpoint** already exists, add `--resume`. Stop and investigate if tests, SHA guards or preflight fail; do not delete any existing saved certificate. No promotion until `B_STEP66_ALL_330_COMBINED_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF` is actually observed and a separate backup-first promotion has been engineered and vetted.
