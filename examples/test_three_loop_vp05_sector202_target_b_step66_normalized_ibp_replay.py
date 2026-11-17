@@ -15,7 +15,7 @@ class Step66NormalizedReplayTest(unittest.TestCase):
         self.assertTrue(verify_unscaled_key_field((2,139),{},{}))
         with self.assertRaises(AssertionError):
             verify_unscaled_key_field(k,{k:"z+2"},
-                {k:[("1/2","2*(z+1)")]}))
+                {k:[("1/2","2*(z+1)")]})
         self.assertTrue(verify_unscaled_key_field(k,{k:"1"},
             {k:[("1/(z+1)","z"),("1/(z+1)","1")]}))
     def test_direct_prefix_binding(self):
