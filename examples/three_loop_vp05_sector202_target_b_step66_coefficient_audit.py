@@ -91,7 +91,9 @@ def main():
          "jobs_sha256":hashlib.sha256(json.dumps(
              [[kind,list(k) if kind=="remainder" else k] for kind,k in jobs],
              separators=(",",":")).encode()).hexdigest()}
-    protected=[p for p,_ in PROTECTED]+[SCRATCH,CHECKPOINT,SOURCE,CERT]
+    # CHECKPOINT, SOURCE and CERT are already covered by PROTECTED.
+    # Reject actual path aliases without misclassifying duplicate registrations.
+    protected=[p for p,_ in PROTECTED]+[SCRATCH]
     if len(set(p.resolve() for p in protected+[OUT]))!=len(protected)+1:
         raise RuntimeError("Coefficient checkpoint aliases protected input")
     if OUT.exists()!=args.resume:
