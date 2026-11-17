@@ -7286,3 +7286,22 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step65_read_
 .\run_vp05_sector202_target_b_step65_read_only_audit.bat
 ```
 Expected `B_STEP65_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`; no user-local result yet. Do not rerun Step65 promotion or delete/reset any checkpoint. If further audit rejection, inspect the precise failed guard; do not relax protected hashes. Target B full proof remains false.
+
+
+### 2026-11-17 VP05 sector202 Target B: Step65 post-promotion read-only audit PASS; guarded Step66 scratch pilot prepared
+
+User confirmed `B_STEP65_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` after fixing duplicated backup import. The formal B Step65 SHA256 is `eeab74cfde337424db3e8d54de8078c3f82c994a0a35a689531842d79a8c941f`, residual85, original-IBP source support173, maximum expression chars7426, independent Step65 40/40 coefficient exact checks and 102/102 original-IBP key exact replays PASS. Step64 backup SHA256 `9e5ba49502e24f9367e15b42221086c470dd9670519798e8ab555e147a33992a`; Target A and prior B backups protected. Full Target B proof not yet achieved, and original-IBP replay certification for Steps61–63 remains a separate chain-audit gap.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_scratch_from65.py`, its tests, and `run_vp05_sector202_target_b_scratch_from65.bat`. The scratch-only runner SHA-pins the immutable formal B Step65, all protected original sources, A proof/state, and distinct Step63 and Step64 backups. It creates exclusive byte-identical scratch state under `vp05_sector202_B_step65_to81_scratch_state.json`, then invokes existing exact engine only on scratch, preserving caps: 7500 expression characters, 256 columns, 400 source support, at most 12h and at most 16 steps. **Default Step66 pilot requests only one step** to diagnose expression growth before larger batches. Supports read-only `--check-only` and safe `--resume` for existing scratch, verifies protected hashes after execution, and reports zero-step reserialization distinctly; never promotes or claims final proof. User-local tests and trial execution pending. No current formal B state was changed by GitHub edits.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_scratch_from65 -v
+.\run_vp05_sector202_target_b_scratch_from65.bat --steps 1 --hours 12 --check-only
+```
+If `B_STEP66_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`, execute:
+```powershell
+.\run_vp05_sector202_target_b_scratch_from65.bat --steps 1 --hours 12 > log_step66_scratch.txt
+```
+If it caps at the first attempted step, retain scratch and derive SHA-pinned exact coefficient pilot from formal Step65; do not simply rerun the same scratch engine. If scratch saves Step66, require independent original-IBP replay and backup-first formal promotion before changing formal B.
