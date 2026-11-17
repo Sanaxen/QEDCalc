@@ -7273,3 +7273,16 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step65_read_
 .\run_vp05_sector202_target_b_step65_read_only_audit.bat
 ```
 Expected `B_STEP65_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`; **user-local audit has not yet run**. Once confirmed, prepare isolated scratch continuation for Step66 or targeted exact coefficient pilot, preserving Step65 formal SHA and prior proof artifacts. Steps61–63 still lack separately published full original-IBP replay certificates; no full B proof claim.
+
+
+### 2026-11-17 VP05 sector202 B Step65 post-promotion read-only audit: duplicate backup import fixed
+
+User-local `run_vp05_sector202_target_b_step65_read_only_audit.bat` raised `RuntimeError("Protected paths overlap")` at `inspect()`, before hash/content validation. Verified the GitHub implementation contained an incorrect generated import: both `STEP63_BACKUP` and `STEP64_BACKUP` referred to `BACKUP` in `three_loop_vp05_sector202_target_b_step65_formal_promotion`. The former must be imported from `three_loop_vp05_sector202_target_b_step64_formal_promotion`, which created `vp05_sector202_B_exact_target_state_step63_before_step64_promotion.json`; the latter must refer to `three_loop_vp05_sector202_target_b_step65_formal_promotion`, which created `vp05_sector202_B_exact_target_state_step64_before_step65_promotion.json`. This is a **software import/alias mistake**, not evidence that saved B Step65, original IBP or historical backups have changed. Corrected only import and hardened unit regression to require distinct paths and pinned correct Step63/Step64 SHA values. No formal state/proof/source files were modified by this GitHub repair. The expected Step65 formal SHA remains `eeab74cfde337424db3e8d54de8078c3f82c994a0a35a689531842d79a8c941f`.
+
+User PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step65_read_only_audit -v
+.\run_vp05_sector202_target_b_step65_read_only_audit.bat
+```
+Expected `B_STEP65_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`; no user-local result yet. Do not rerun Step65 promotion or delete/reset any checkpoint. If further audit rejection, inspect the precise failed guard; do not relax protected hashes. Target B full proof remains false.
