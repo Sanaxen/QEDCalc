@@ -24,7 +24,7 @@ from examples.three_loop_vp05_sector202_target_b_step60_formal_promotion import 
     CHECKPOINT, SOURCE, CERT, SOURCE_CHECKPOINT_SHA, ORIGINAL_SOURCE_SHA,
     CERTIFICATE_SHA,
 )
-from examples.three_loop_vp05_sector202_target_b_step65_formal_promotion import BACKUP as STEP63_BACKUP, EXPECTED_STEP63_SHA
+from examples.three_loop_vp05_sector202_target_b_step64_formal_promotion import BACKUP as STEP63_BACKUP, EXPECTED_STEP63_SHA
 from examples.three_loop_vp05_sector202_target_b_step65_formal_promotion import BACKUP as STEP64_BACKUP, EXPECTED_STEP64_SHA
 from examples.three_loop_vp05_sector202_target_exact_reduction import sha
 
