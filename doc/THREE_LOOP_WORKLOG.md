@@ -7425,3 +7425,20 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step66_norma
 .\run_vp05_sector202_target_b_step66_normalized_ibp_replay.bat --resume --hours 12 --timeout-seconds 1200 --max-new 217 > log_step66_normalized_field.txt
 ```
 Expected preflight: `B_STEP66_NORMALIZED_PREFLIGHT_PASS_NOT_PROOF`, `direct_keys_verified=113`, `normalized_keys_verified=0`. The `--resume` flag is **mandatory**: the earlier normalized timeout created the separate 0-key checkpoint. If all217 suffix original-IBP identities pass, expected `B_STEP66_ALL_330_COMBINED_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF`; only then consider independent full saved replay certificate and backup-first Step66 formal promotion. Still no whole Target B claim, and Steps61–63 chain caveat remains. Do not erase checkpoints.
+
+
+### 2026-11-18 VP05 sector202 B Step66: normalized QQ field regression test SyntaxError corrected
+
+User Windows `log(20261117-223731).txt`: `python -m unittest examples.test_three_loop_vp05_sector202_target_b_step66_normalized_ibp_replay -v` failed before running any test at test module line18 with `SyntaxError: unmatched ')'`. This was an accidentally extra closing `) ` after the `verify_unscaled_key_field(...)` call inside `with self.assertRaises(AssertionError)`. Removed the single extra parenthesis in `examples/test_three_loop_vp05_sector202_target_b_step66_normalized_ibp_replay.py`; equivalent corrected module text passed local Python `py_compile` syntax validation. GitHub test file updated; no algorithm, source, certificates, checkpoints, formal Step65, or Target A changed. Windows unittest execution remains to be confirmed.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step66_normalized_ibp_replay -v
+.\run_vp05_sector202_target_b_step66_normalized_ibp_replay.bat --resume --check-only
+```
+If all 3 regression tests pass, rerun existing 0-success normalized checkpoint with **--resume**:
+```powershell
+.\run_vp05_sector202_target_b_step66_normalized_ibp_replay.bat --resume --hours 12 --timeout-seconds 1200 --max-new 217 > log_step66_normalized_field.txt
+```
+Do not claim normalized replay completion without the actual results.
