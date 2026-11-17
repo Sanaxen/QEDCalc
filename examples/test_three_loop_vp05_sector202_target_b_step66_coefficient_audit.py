@@ -1,6 +1,12 @@
 import unittest
-from examples.three_loop_vp05_sector202_target_b_step66_coefficient_audit import verify_coefficient
+from examples.three_loop_vp05_sector202_target_b_step66_coefficient_audit import verify_coefficient, PROTECTED, SCRATCH, OUT, CHECKPOINT, SOURCE, CERT
 class Step66CoefficientAuditTest(unittest.TestCase):
+    def test_protected_paths_are_distinct(self):
+        protected=[p.resolve() for p,_ in PROTECTED]+[SCRATCH.resolve()]
+        self.assertEqual(len(protected),len(set(protected)))
+        self.assertNotIn(OUT.resolve(),set(protected))
+        for path in (CHECKPOINT,SOURCE,CERT):
+            self.assertIn(path.resolve(),set(protected))
     def test_removal_and_source_update(self):
         self.assertTrue(verify_coefficient("remainder",(1,139),"z","0","1","z"))
         self.assertTrue(verify_coefficient("source",1,"0","z/2","1/2","z"))
