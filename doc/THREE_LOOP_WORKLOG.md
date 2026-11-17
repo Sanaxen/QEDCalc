@@ -7393,3 +7393,19 @@ Require `B_STEP66_NORMALIZED_PREFLIGHT_PASS_NOT_PROOF` with `direct_keys_verifie
 .\run_vp05_sector202_target_b_step66_normalized_ibp_replay.bat --hours 12 --timeout-seconds 1200 --max-new 217 > log_step66_normalized_ibp.txt
 ```
 If the **separate normalized checkpoint** already exists, add `--resume`. Stop and investigate if tests, SHA guards or preflight fail; do not delete any existing saved certificate. No promotion until `B_STEP66_ALL_330_COMBINED_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF` is actually observed and a separate backup-first promotion has been engineered and vetted.
+
+
+### 2026-11-18 VP05 sector202 B Step66: normalized key113 timed out; isolated exact rational-field pilot prepared
+
+User `log_step66_normalized_ibp.txt`: preflight `B_STEP66_NORMALIZED_PREFLIGHT_PASS_NOT_PROOF` with prior direct **113/330** keys and complete independent **259/259** coefficient audit; first normalized worker **index113** hit `WORKER_TIMEOUT_NOT_PROOF` after 1200s. Final `B_STEP66_NORMALIZED_ORIGINAL_IBP_PREFIX_NOT_PROOF`, `verified_normalized=0`, `total_verified=113`, no formal mutation. Thus unscaled source-pivot normalization alone is still too expensive for this key under direct `sp.cancel(large Add)`; no algebraic mismatch observed. Preserve all three separate checkpoints: 113 direct, 259 coefficient, and newly created normalized empty prefix. Do not delete/reinitialize/checkpoint-edit, promote, or claim Target B proof.
+
+Added `examples/three_loop_vp05_sector202_target_b_key_rational_field_pilot.py`, unit regression and `run_vp05_sector202_target_b_key_rational_field_pilot.bat`. This is a bounded, **read-only** alternative exact algorithm using SymPy's rational fraction field `QQ(z,d)`: convert each individual source multiplier and original IBP coefficient and accumulate as exact rational functions, compare with the original checkpoint pivot coefficient. Avoids one monolithic `sp.cancel(sp.Add(*parts))`, retains exact symbolic equality (not modular/numeric sampling). The pilot SHA-pins the formal Step65 state, scratch Step66, original source/checkpoint/certificate, 259 exact coefficient audit, 113 direct exact replay and protected A/backups via existing load; does NOT add its result to any original-IBP proof checkpoint or modify formal state. Has `--inspect` for per-key term and string size diagnostics and a subprocess `--timeout-seconds` max3600. Code/test committed; real Windows key113 result **pending**.
+
+Windows PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_key_rational_field_pilot -v
+.\run_vp05_sector202_target_b_key_rational_field_pilot.bat --index 113 --inspect
+.\run_vp05_sector202_target_b_key_rational_field_pilot.bat --index 113 --timeout-seconds 3600 > log_step66_key113_field_pilot.txt
+```
+If pilot exact PASS, independently inspect record and implement a separately validated bridge to continue normalized 217-key checkpoint **without overwriting prior certificates**, then backup-first formal promotion only after complete 330/330. If still timeouts, inspect term size and consider segmented exact rational numerator polynomial certificate with bounded checkpoints instead of increasing limits or reverting to modular-only evidence.
