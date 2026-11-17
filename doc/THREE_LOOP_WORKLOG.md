@@ -7239,3 +7239,22 @@ Run the already committed exact normalized original-IBP key replay next (first r
 .\run_vp05_sector202_target_b_step65_original_ibp_replay.bat --hours 12 --timeout-seconds 1200 --max-new 500 > log_step65_ibp.txt
 ```
 If checkpoint exists after partial completion, run with `--resume`. Expected full-pass status `B_STEP65_ALL_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF`; do not assert this before examining user output. Only after all exact keys PASS, construct SHA-pinned backup-first Step65 promotion and read-only post-promotion audit. Steps61–63 chain-level exact original-IBP certificate gap and nonzero Target B residual remain explicitly open.
+
+
+### 2026-11-17 VP05 sector202 Target B Step65 original-IBP 102/102 exact PASS; backup-first formal promotion implemented
+
+User `log_step65_ibp.txt` confirms **`B_STEP65_ALL_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF`**, **102/102** original-IBP exact integral-key checks passed with normalized source-pivot proof and 40 independently exact-checked coefficient updates; elapsed **49.7 s**. Previously initial 40 exact coefficients and 40 independent exact coefficient checks PASS; Step65 assembled report residual85, source support173, maximum expression chars7426 <=7500. Candidate SHA `9d4a2a24f0d6f15c54fd6cc72b0a542bcfc6fe6756bcd5965594fc73d4608d12`, independently assembled report SHA `ea51e8c0661fdd68c676d4daf1be03c0bace659156f10ee58b021587a0597861`, predecessor formal B Step64 SHA `9e5ba49502e24f9367e15b42221086c470dd9670519798e8ab555e147a33992a`. The replay reports `original_ibp_exact_replay_verified=true`, `formal_state_modified=false`, `target_b_proven=false`.
+
+Committed `examples/three_loop_vp05_sector202_target_b_step65_formal_promotion.py`, `examples/test_three_loop_vp05_sector202_target_b_step65_formal_promotion.py`, and `run_vp05_sector202_target_b_step65_formal_promotion.bat`. Promotion validates exact source inputs, A state/proof, past B backups, verified 40 coefficient audit, 102 ordered exact replay keys and SHA binding, assembled report SHA, safety cap, and step64 pivot history/lead. Creates exclusive fsync backup `vp05_sector202_B_exact_target_state_step64_before_step65_promotion.json` before replacing formal B state atomically with candidate Step65; preserves false whole-Target-B proof flag and unchanged source input. Distinct `--check-only` preflight. **No user-local promotion/preflight result yet**. Target B residual remains 85 terms; Steps61–63 are still missing separately published full original-IBP symbolic replay certificates.
+
+Windows PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step65_formal_promotion -v
+.\run_vp05_sector202_target_b_step65_formal_promotion.bat --check-only
+```
+Require `B_STEP65_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF` first. If passed, execute promotion **once**:
+```powershell
+.\run_vp05_sector202_target_b_step65_formal_promotion.bat
+```
+Expected `B_STEP65_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`. Report new SHA in subsequent log for pinned read-only post-promotion audit. Never repeat Step65 exact coefficient/102-key replay or assembly. If preflight rejects, do not force formal mutation.
