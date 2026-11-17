@@ -7473,3 +7473,22 @@ Recommended local procedure after `git pull --ff-only origin feature/master-basi
 User reports `B_STEP66_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` following the previously confirmed preflight PASS and full 330/330 exact original-IBP replay with independent 259/259 exact coefficient checks. The post-promotion auditor's PASS requires the formal B state SHA to equal pinned Step66 scratch `9b30bed319c5e23cc84016acdb1605fe8082bedb09c84a4f8f676de82d7d`, Step65 backup SHA to match `eeab74cfde337424db3e8d54de8078c3f82c994a0a35a689531842d79a8c941f`, source/Target A/prior backup hashes unchanged, 66 pivots, 75 residual terms, 153 original-support entries, next lead `[166596414013441,139]`, and three original/local audit certificate inventories preserved. Therefore **saved formal Step66 has passed its post-promotion read-only integrity audit**. The separate `log_step66_promotion.txt` was not supplied; this entry records the user-reported post-audit PASS and what that auditor enforces, without fabricating the promotion command's exact stdout.
 
 **Do not rerun Step66 promotion, old Step65-only validation, or earlier Step66 scratch generation against the now-promoted B state.** New formal baseline: Step66, SHA `9b30bed319c5e23cc84016acdb1605fe8082bedb09c84a4f8f676de82d7d`. For Step67, create a distinct read-only formal66 validator and separate scratch copied from this exact state, using the same backup-first exact verification chain and QQ(z,d) fraction-field method. Retain all prior certificates and Step65 backup. Earlier Steps61–63 provenance/proof chain gaps remain for whole Target B; `exact_target_proven=false` and no full-target proof claim.
+
+
+### 2026-11-18 Target B Step67 isolated scratch preparation from formally audited Step66
+
+The user requested continuation after `B_STEP66_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`. The formal B baseline is now Step66, SHA `9b30bed319c5e23cc84016acdb1605fe8082bedb09c84a4f8f676de82d7d`, remaining75, original support153, next pivot `[166596414013441,139]`. Do **not** use old `three_loop_vp05_sector202_target_b_scratch_from65.py` or re-run Step66 promotion, as both expect formal Step65.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step67_scratch.py`, matching unit tests, and `run_vp05_sector202_target_b_step67_scratch.bat` on `feature/master-basis-initiate-only`. A read-only `--check-only` invokes the existing saved Step66 read-only audit, checks the formal SHA and protected Target A/source/previous backups plus Step66 coefficient/direct/normalized evidence, confirms separate exclusive scratch paths, and checks one-step pivot/limit config. Real run creates only `vp05_sector202_B_step67_scratch_state.json` from a byte-identical SHA-checked copy of formal66, then runs existing checkpoint engine for exactly **one** bounded step with 256-column,400-support,7500-char guards and <=12h runtime. Afterwards revalidates formal/evidence SHAs, checks step count/pivot history, reports residual/support and distinct SHA. No formal writes and no Target B proof claim. After result, an independent Step66->67 coefficient audit and exact original-IBP replay will still be required before any formal Step67 promotion. The previous exact rational fraction-field speedup is available for that *future* source replay but was not used as a substitute for the Step67 elimination.
+
+Windows local commands (runtime not verified on user's machine yet):
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step67_scratch -v
+.\run_vp05_sector202_target_b_step67_scratch.bat --check-only
+```
+Require `B_STEP67_SCRATCH_PREFLIGHT_PASS_NOT_PROOF` with formal step66. Then if no Step67 scratch exists:
+```powershell
+.\run_vp05_sector202_target_b_step67_scratch.bat --hours 12 > log_step67_scratch.txt
+```
+If separate Step67 scratch already exists at zero steps, use `--resume`; never overwrite. Inspect returned status and scratch SHA before implementing coefficient and original IBP exact validation. If Step67 is saved, do not resume this one-step runner again. This does not resolve earlier Steps61–63 complete provenance chain limitations.
