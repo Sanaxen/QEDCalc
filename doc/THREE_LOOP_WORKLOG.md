@@ -7492,3 +7492,23 @@ Require `B_STEP67_SCRATCH_PREFLIGHT_PASS_NOT_PROOF` with formal step66. Then if 
 .\run_vp05_sector202_target_b_step67_scratch.bat --hours 12 > log_step67_scratch.txt
 ```
 If separate Step67 scratch already exists at zero steps, use `--resume`; never overwrite. Inspect returned status and scratch SHA before implementing coefficient and original IBP exact validation. If Step67 is saved, do not resume this one-step runner again. This does not resolve earlier Steps61–63 complete provenance chain limitations.
+
+
+### 2026-11-18 VP05 sector202 Target B: Step67 scratch saved, exact coefficient and original-IBP audits prepared
+
+User `log_step67_scratch.txt`: formally audited Step66 SHA `9b30bed319c5e23cc84016acdb1605fe8082bedb09c84a4f8f4d8f676de82d7d` preserved. Isolated one-step exact-engine scratch succeeded: `steps=67`, residual terms **75→74**, original support **153→154**, maximum expression chars **5707→5726**, new lead `[166596414013442,139]`, `returncode=0`, `timed_out=false`, `MULTISTEP_STEPS_SAVED_NOT_TARGET_PROOF`. Scratch SHA `bd5e5dbd92c8636332b006371006891c2bbd1e9870c2f5d5fb353b935a790ba2`; formal Step66 unchanged. Do not rerun Step67 scratch or promote yet.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step67_exact_audit.py`, unit tests, and `run_vp05_sector202_target_b_step67_exact_audit.bat`. Two separate fail-closed resumable phases using exact **QQ(z,d)** rational-function arithmetic: `--phase coeff` checks every old/new residual coefficient against `R66-R67=factor*pivot_row`, and every source coefficient against `S67-S66=factor*pivot_trace` for the union of supports; `--phase ibp` (allowed ONLY after all coefficient certs) checks `pivot_row=Σ pivot_trace*ORIGINAL_IBP` per integral key directly against immutable original gzipped source rows. Each key is an independent bounded subprocess, one exact identity certificate per saved record. Phase-specific JSON checkpoints are exclusive and --resume only, source/target provenance SHA-pinned, **no formal writes**. Exact numerical counts for Step67 supports/jobs are resolved at run time and not invented. Neither phase, even complete, is by itself Target B proof; separate formal Step67 promotion and saved state audit will be needed. GitHub code/test committed; local Windows run pending.
+
+Commands:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step67_exact_audit -v
+.\run_vp05_sector202_target_b_step67_exact_audit.bat --phase coeff --check-only
+.\run_vp05_sector202_target_b_step67_exact_audit.bat --phase coeff --hours 12 --timeout-seconds 1200 --max-new 500 > log_step67_coeff.txt
+```
+Only after final `B_STEP67_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF`, run `--phase ibp --check-only` then:
+```powershell
+.\run_vp05_sector202_target_b_step67_exact_audit.bat --phase ibp --hours 12 --timeout-seconds 1200 --max-new 500 > log_step67_ibp.txt
+```
+If checkpoint already exists, use `--resume` for that particular phase; do not overwrite/delete. Inspect results before moving to promotion.
