@@ -19,8 +19,11 @@ from examples.three_loop_vp05_sector202_target_b_start import (
     B_STATE, A_STATE, A_PROOF, A_STATE_SHA, A_PROOF_SHA,
 )
 from examples.three_loop_vp05_sector202_target_b_step65_read_only_audit import SAVED_STEP65_SHA
-from examples.three_loop_vp05_sector202_target_b_step65_formal_promotion import (
+from examples.three_loop_vp05_sector202_target_b_step64_formal_promotion import (
     BACKUP as STEP63_BACKUP, EXPECTED_STEP63_SHA,
+)
+from examples.three_loop_vp05_sector202_target_b_step65_formal_promotion import (
+    BACKUP as STEP64_BACKUP, EXPECTED_STEP64_SHA,
 )
 from examples.three_loop_vp05_sector202_target_b_step51_formal_promotion import (
     BACKUP as STEP50_BACKUP, B_STEP50_SHA,
@@ -53,6 +56,7 @@ PROTECTED = [
     (STEP50_BACKUP,B_STEP50_SHA),(STEP51_BACKUP,B_STEP51_SHA),
     (STEP52_BACKUP,B_STEP52_SHA),(STEP58_BACKUP,B_STEP58_SHA),
     (STEP59_BACKUP,B_STEP59_SHA),(STEP63_BACKUP,EXPECTED_STEP63_SHA),
+    (STEP64_BACKUP,EXPECTED_STEP64_SHA),
     (CHECKPOINT,SOURCE_CHECKPOINT_SHA),(SOURCE,ORIGINAL_SOURCE_SHA),
     (CERT,CERTIFICATE_SHA),
 ]
@@ -117,7 +121,7 @@ def main():
         scratch=json.loads(SCRATCH.read_text(encoding="utf-8-sig"))
         validate_scratch(before,scratch)
         if scratch["steps"]+args.steps>81:
-            raise RuntimeError("Cannot continue beyond this scratch's audited Step80 range")
+            raise RuntimeError("Cannot continue beyond this scratch's audited Step81 range")
     else:
         scratch=before
     print("VP05_B_STEP66_SCRATCH_GUARD "+json.dumps({
