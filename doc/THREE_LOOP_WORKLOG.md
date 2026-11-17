@@ -7409,3 +7409,19 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_key_rational
 .\run_vp05_sector202_target_b_key_rational_field_pilot.bat --index 113 --timeout-seconds 3600 > log_step66_key113_field_pilot.txt
 ```
 If pilot exact PASS, independently inspect record and implement a separately validated bridge to continue normalized 217-key checkpoint **without overwriting prior certificates**, then backup-first formal promotion only after complete 330/330. If still timeouts, inspect term size and consider segmented exact rational numerator polynomial certificate with bounded checkpoints instead of increasing limits or reverting to modular-only evidence.
+
+
+### 2026-11-18 VP05 sector202 Target B index113: exact QQ(z,d) succeeds in 2.83 s, normalized runner upgraded
+
+User `log_step66_key113_field_pilot.txt` confirmed exact `B_STEP66_KEY_EXACT_FIELD_PASS_NOT_TARGET_PROOF` for **index113**, integral key `[166578159484928,139]`, with **17 original-IBP source terms**, weight chars up to4253, source-coefficient chars up to3, total input-weight/coeff chars40464, pivot coefficient chars1. The read-only test took **2.83 seconds** and marked `formal_state_modified=false`, `certificate_checkpoint_modified=false`; prior original direct and normalized `sp.cancel` attempts had timed out (3600s and 1200s). This proves that ONE local original-IBP identity by exact rational-field arithmetic, **not** all remaining keys or whole Target B.
+
+Updated `examples/three_loop_vp05_sector202_target_b_step66_normalized_ibp_replay.py` to use the same **exact `QQ(z,d)` fraction-field arithmetic** as successful pilot in each resumable worker rather than `sp.cancel(sp.Add(...))`. The 259 independently exact coefficient certificates and saved first113 direct exact identities remain prerequisites; SHA binding and separate checkpoint `vp05_sector202_B_step66_normalized_original_ibp_replay_checkpoint.json` unchanged. The existing normalized checkpoint holds **0 checked suffix keys**, so the revised worker method can be recorded from index113 without reusing or relabeling an earlier normalized PASS. New worker method ID `unscaled_QQ_z_d_rational_field_with_259_exact_coefficients` records exact computation type in fresh checked entries. Expanded symbolic regression tests include matching rational identities and a deliberate nonzero mismatch. No formal Step65, scratch66, A, original data, 113 direct certificates or 259 coefficient certificates modified. GitHub code and tests committed; Windows integrated replay **pending**.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step66_normalized_ibp_replay -v
+.\run_vp05_sector202_target_b_step66_normalized_ibp_replay.bat --resume --check-only
+.\run_vp05_sector202_target_b_step66_normalized_ibp_replay.bat --resume --hours 12 --timeout-seconds 1200 --max-new 217 > log_step66_normalized_field.txt
+```
+Expected preflight: `B_STEP66_NORMALIZED_PREFLIGHT_PASS_NOT_PROOF`, `direct_keys_verified=113`, `normalized_keys_verified=0`. The `--resume` flag is **mandatory**: the earlier normalized timeout created the separate 0-key checkpoint. If all217 suffix original-IBP identities pass, expected `B_STEP66_ALL_330_COMBINED_ORIGINAL_IBP_KEYS_EXACT_PASS_NOT_TARGET_PROOF`; only then consider independent full saved replay certificate and backup-first Step66 formal promotion. Still no whole Target B claim, and Steps61–63 chain caveat remains. Do not erase checkpoints.
