@@ -15,14 +15,14 @@ from examples.three_loop_vp05_sector202_target_b_step71_exact_audit import (
 from examples.three_loop_vp05_sector202_target_b_step71_scratch import (
     B_STATE,EXPECTED_STEP70_SHA,protected_inputs,validate_scratch,formal_next_lead,
 )
-from examples.three_loop_vp05_sector202_target_b_step70_read_only_audit import inspect as inspect69
+from examples.three_loop_vp05_sector202_target_b_step70_read_only_audit import inspect as inspect70
 
 BACKUP=B_STATE.with_name("vp05_sector202_B_exact_target_state_step70_before_step71_promotion.json")
 TEMP=B_STATE.with_name(B_STATE.name+".tmp")
 TAG="VP05_B_STEP71_FORMAL_PROMOTION "
 
 def validate():
-    if inspect69().get("status")!="B_STEP70_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF":
+    if inspect70().get("status")!="B_STEP70_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF":
         raise RuntimeError("Formal Step70 saved-state audit failed")
     c=context()
     evidence={}
@@ -44,7 +44,7 @@ def validate():
     source=candidate.get("source",[])
     metrics=candidate.get("metrics",{})
     if (sha(B_STATE)!=EXPECTED_STEP70_SHA or sha(SCRATCH)!=EXPECTED_STEP71_SHA
-        or formal.get("steps")!=69 or candidate.get("steps")!=70
+        or formal.get("steps")!=70 or candidate.get("steps")!=71
         or candidate.get("status")!="EXACT_TARGET_PREFIX_NOT_PROOF"
         or candidate.get("config")!=formal.get("config")
         or candidate.get("pivot_path")!=formal["pivot_path"]+[formal_next_lead(formal)]
@@ -74,7 +74,7 @@ def validate():
         "original_ibp_keys_verified":evidence["ibp_keys"],
         "coefficient_checkpoint_sha256":evidence["coeff_sha256"],
         "original_ibp_checkpoint_sha256":evidence["ibp_sha256"],
-        "new_steps":70,"remainder_terms":len(rem),
+        "new_steps":71,"remainder_terms":len(rem),
         "original_support":len(source),
         "max_expression_chars":metrics.get("max_expression_chars"),
         "next_lead":metrics.get("lead"),
