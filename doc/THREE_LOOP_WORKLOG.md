@@ -8198,3 +8198,34 @@ Require `B_STEP75_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF`. If coefficient checkpo
 ```
 
 Use `--resume` for a partial IBP checkpoint and skip already complete ones; require `B_STEP75_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF` before any formal Step75 promotion. Full target proof remains false.
+
+
+### 2026-11-18 VP05 sector202 Target B Step75 original-IBP audit 362/362 PASS; guarded nonmonotone promotion implemented
+
+Actual user-supplied `log_step75_ibp.txt` was inspected through its final record (UTF-16LE). `B_STEP75_IBP_PREFLIGHT_PASS_NOT_PROOF` began with a nonexistent IBP certificate checkpoint, `0/362`. All **362/362 original unscaled IBP keys PASS** under exact `QQ(z,d)` replay, finishing in **276.11 s**, final status **`B_STEP75_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF`**, `formal_state_modified=false`, `target_b_proven=false`. IBP auditing requires a completed SHA-bound coefficient checkpoint; the independent coefficient log/count was not supplied separately and is not assumed. Step74 formal state is still SHA **`ec7bf87037fc34bd73e730894bfe09a8e43287628a07ec7c861e6f777b36b694`**. Step75 saved scratch SHA **`2a7e2444c2cb5b65826df964c8e699d057963de4fbf7e68cac025d8c5c9a3dc9`**, candidate dimensions **steps75**, **remaining43 (from26)**, **original support231 (from126)**, **max expression chars3685**, next lead **`[166596414799874,139]`**. This is nonmonotonic fill-in, not grounds for automatic rejection; complete Target B proof remains false.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step75_formal_promotion.py`, `examples/three_loop_vp05_sector202_target_b_step75_read_only_audit.py`, associated unit tests and Windows batch runners. Both promotion preflight and saved audit now use a **mathematically meaningful nonmonotone successor guard**, requiring the old lead/pivot `[166596414799873,139]` to occur in the old remainder but disappear from the new remainder, the new minimum lead to be greater than the old, and a nonempty remainder; **do not require `len(new_remainder)<len(old_remainder)`**. Additional existing guards still enforce exact Step74→75 pivot_path, SHA-pinned formal/scratch, expected 43 remainder and 231 original support, caps 256/400/7500, complete original-source pivot coefficient certificates, all **362 exact original-IBP keys**, cryptographic coefficient→IBP checkpoint association, and intact source CHECKPOINT/SOURCE/CERT and all historical SHA-verified evidence. These exact coefficient and original unscaled IBP identities are the real correctness criteria; support need not decrease.
+
+Formal promotion remains **read-only by default**. Explicit once-only `--promote` creates exclusive SHA-pinned Step74 backup `vp05_sector202_B_exact_target_state_step74_before_step75_promotion.json`, stages the byte-exact Step75 scratch, revalidates all evidence and atomically promotes formal Target B. Independent Step75 saved-state read-only audit checks current formal and scratch byte hashes, backup SHA, all historical states and exact proof checkpoint manifests, SHA binding and the nonmonotone pivot guard. No Step75 promotion or Windows test/preflight has been observed yet. The old Steps61–63 original evidence provenance remains unresolved, so **do not claim whole Target B proof**.
+
+Windows PowerShell handoff:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step75_formal_promotion examples.test_three_loop_vp05_sector202_target_b_step75_read_only_audit -v
+.\run_vp05_sector202_target_b_step75_formal_promotion.bat --check-only
+```
+
+Require `B_STEP75_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF`, positive `coefficient_keys_verified`, `original_ibp_keys_verified=362`, proper predecessor/successor hashes, and correct remainder43/support231. Only after tests and preflight pass, execute **exactly once**:
+
+```powershell
+.\run_vp05_sector202_target_b_step75_formal_promotion.bat --promote > log_step75_promotion.txt
+```
+
+Require `B_STEP75_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`; after that, independent saved audit:
+
+```powershell
+.\run_vp05_sector202_target_b_step75_read_only_audit.bat > log_step75_saved_audit.txt
+```
+
+Require `B_STEP75_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` before preparing or executing Step76 scratch. Never rerun a completed promotion or overwrite Step75 scratch or older states/evidence.
