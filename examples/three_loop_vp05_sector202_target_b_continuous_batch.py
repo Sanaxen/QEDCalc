@@ -102,19 +102,24 @@ def ensure_sources(journal=None):
         raise RuntimeError("Original source hash changed")
     return source_hashes,protected
 
+def validate_imported_step78_evidence():
+    """Recheck already saved exact Step78 certificates without modification."""
+    c=context78()
+    state,jobs=validate_progress78("coeff",c)
+    other,ibp_jobs=validate_progress78("ibp",c)
+    if len(state["checked"])!=len(jobs) or len(other["checked"])!=len(ibp_jobs):
+        raise RuntimeError("Step78 coefficient or original IBP phase incomplete")
+    if len(ibp_jobs)!=232 or other["config"].get("coefficient_checkpoint_sha256")!=sha(STEP78_COEFF):
+        raise RuntimeError("Step78 original IBP inventory or coefficient SHA bridge broken")
+    return len(jobs),len(ibp_jobs)
+
 def initialize(steps):
     if JOURNAL.exists() or WORK.exists():
         raise FileExistsError("Existing continuous batch; use --resume")
     source_hashes,protected=ensure_sources()
-    c=context78()
-    state, jobs=validate_progress78("coeff",c)
-    other, ibp_jobs=validate_progress78("ibp",c)
-    if len(state["checked"])!=len(jobs) or len(other["checked"])!=len(ibp_jobs):
-        raise RuntimeError("Step78 source exact certificates incomplete")
-    if other["config"].get("coefficient_checkpoint_sha256")!=sha(STEP78_COEFF):
-        raise RuntimeError("Step78 coefficient-to-IBP certificate bridge broken")
-    if len(ibp_jobs)!=232 or sha(STEP78_SCRATCH)!=EXPECTED_STEP78_SHA:
-        raise RuntimeError("Step78 independent evidence mismatch")
+    validate_imported_step78_evidence()
+    if sha(STEP78_SCRATCH)!=EXPECTED_STEP78_SHA:
+        raise RuntimeError("Step78 independent scratch SHA mismatch")
     working=STEP78_SCRATCH.read_bytes()
     exclusive_bytes(WORK,working)
     journal={"version":1,"status":END_STATUS,"start_step":START,
@@ -356,6 +361,7 @@ def recover_interrupted_engine_tmp():
 
 def control(args):
     if args.check_only and not RUN_DIR.exists():
+        validate_imported_step78_evidence()
         if WORK.exists() or JOURNAL.exists():
             raise RuntimeError("Unexpected orphan batch artifacts")
         ensure_sources()
@@ -365,6 +371,7 @@ def control(args):
         return
     with locked():
         if args.check_only:
+            validate_imported_step78_evidence()
             sources,_=ensure_sources(load(JOURNAL) if JOURNAL.exists() else None)
             if JOURNAL.exists():
                 j=load(JOURNAL)
