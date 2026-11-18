@@ -7512,3 +7512,18 @@ Only after final `B_STEP67_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF`, run `--phase 
 .\run_vp05_sector202_target_b_step67_exact_audit.bat --phase ibp --hours 12 --timeout-seconds 1200 --max-new 500 > log_step67_ibp.txt
 ```
 If checkpoint already exists, use `--resume` for that particular phase; do not overwrite/delete. Inspect results before moving to promotion.
+
+
+### 2026-11-18 Target B Step67 exact original IBP 32/32 PASS; guarded promotion preflight implemented
+
+User `log_step67_ibp.txt`: `B_STEP67_IBP_PREFLIGHT_PASS_NOT_PROOF` 0/32, then **32/32** saved exact rational-function `QQ(z,d)` original-source IBP identities in **17.12 seconds**; final `B_STEP67_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF`, formal Step66 unchanged, Target B not proven. Phase `ibp` requires the separate exact coefficient phase to have fully passed, but the coefficient count was **not shown in this log**; obtain it from pinned coefficient checkpoint during next promotion preflight.
+
+Added `examples/three_loop_vp05_sector202_target_b_step67_formal_promotion.py`, tests and Windows .bat. Default `--check-only` recomputes/validates manifest and ordered full records for both exact `coeff` and `ibp` phases, 32 IBP keys, SHA-pins original source/checkpoint/certificate, formal66 `9b30bed319c5e23cc84016acdb1605fe8082bedb09c84a4f8f4d8f676de82d7d`, scratch67 `bd5e5dbd92c8636332b006371006891c2bbd1e9870c2f5d5fb353b935a790ba2`, and prior formal66 post-promotion audit. Checks candidate remaining74/source154/next lead `[166596414013442,139]`, avoids all protected path aliases. Explicit `--promote` writes exclusive, fsynced, hash-verified Step66 backup and stages byte-identical scratch67 for atomic formal replacement. **No Windows preflight or actual promotion has yet run**; do not assume proof or promote until user shares preflight PASS.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step67_formal_promotion -v
+.\run_vp05_sector202_target_b_step67_formal_promotion.bat --check-only
+```
+Expected `B_STEP67_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF`; report actual `coefficient_keys_verified` before progressing. Once separately reviewed, run explicit `--promote` once and independent saved Step67 audit. Preserve all old checkpoint JSONs and backups. Earlier Steps61–63 proof chain gap and Target B full proof still outstanding.
