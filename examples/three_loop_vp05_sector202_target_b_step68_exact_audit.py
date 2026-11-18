@@ -18,13 +18,15 @@ import sympy as sp
 from sympy.polys.fields import field
 from sympy.polys.domains import QQ
 from examples.three_loop_vp05_sector202_target_b_step68_scratch import (
-    SCRATCH, B_STATE, CHECKPOINT, SOURCE, CERT, NEXT_LEAD,
-    EXPECTED_STEP67_SHA, protected_inputs, validate_scratch, sha,
+    SCRATCH, B_STATE, NEXT_LEAD, EXPECTED_STEP67_SHA,
+    protected_inputs, validate_scratch, sha,
+)
+from examples.three_loop_vp05_sector202_target_exact_reduction import (
+    BASE, CHECKPOINT, SOURCE, CERT,
 )
 from examples.three_loop_vp05_sector202_target_b_step67_read_only_audit import (
     inspect as audit_saved67,
 )
-from examples.three_loop_vp05_sector202_target_exact_reduction import BASE
 from examples.three_loop_vp05_sector202_exact_prefix_smoke import expr
 from examples.three_loop_vp05_sector202_step51_scratch import atomic_save
 
