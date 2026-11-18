@@ -7721,3 +7721,17 @@ Require `B_STEP69_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`; then run
 .\run_vp05_sector202_target_b_step69_read_only_audit.bat > log_step69_saved_audit.txt
 ```
 Require `B_STEP69_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` before using Step69 as formal baseline. Do not rerun promotion after success. Target B entire proof remains incomplete.
+
+
+### 2026-11-18 Step69 saved post-promotion audit: phase-count comparison bug fixed
+
+User attempted `run_vp05_sector202_target_b_step69_read_only_audit.bat > log_step69_saved_audit.txt` and received `RuntimeError("Step69 coefficient->original IBP evidence not linked")` at source line 123. GitHub inspection established **a validator logic bug**: `ci.get("job_count")!=nc` incorrectly compares the **IBP** config count (`43`) against the **coefficient** checkpoint count (`nc`), which need not equal 43. This is not, by itself, evidence that the prior coefficient or original-IBP computations are wrong. Fixed to compare **coefficient config count with coefficient checked records** and **IBP config count with 43 IBP checked records**, and preserve the SHA-256 binding of the IBP config to the coefficient checkpoint. Factored `validate_certificate_bridge(...)` and added a regression test with intentionally distinct `200` coefficient / `43` IBP keys, plus negative mismatched-SHA/count tests. Read-only audit has no writes; neither this fix nor its test modifies formal Step69, previous Step68 backup, or certificates. The actual Step69 promotion log was not supplied, and **post-promotion audit PASS is not yet confirmed**.
+
+Next Windows:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step69_read_only_audit -v
+.\run_vp05_sector202_target_b_step69_read_only_audit.bat > log_step69_saved_audit.txt
+Get-Content .\log_step69_saved_audit.txt -Tail 5
+```
+Require `B_STEP69_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`. **Do not run `--promote` again**: the post-promotion audit got beyond the saved formal SHA/backup checks, indicating the formal Step69 file and predecessor backup were already installed consistently at the time of this failure. Whole Target B proof remains incomplete.
