@@ -17,8 +17,8 @@ from examples.three_loop_vp05_sector202_target_b_step69_formal_promotion import 
 )
 from examples.three_loop_vp05_sector202_target_b_step68_formal_promotion import (
     BACKUP as STEP67_BACKUP, EXPECTED_STEP67_SHA,
-    SCRATCH as STEP69_SCRATCH,
-    COEFF as STEP69_COEFF,IBP as STEP69_IBP,
+    SCRATCH as STEP68_SCRATCH,
+    COEFF as STEP68_COEFF,IBP as STEP68_IBP,
 )
 from examples.three_loop_vp05_sector202_target_b_step67_formal_promotion import (
     BACKUP as STEP66_BACKUP,EXPECTED_STEP66_SHA,
@@ -94,6 +94,8 @@ def inspect():
         (B_STATE,EXPECTED_STEP70_SHA),(SCRATCH,EXPECTED_STEP70_SHA),
         (BACKUP,EXPECTED_STEP69_SHA),
         (STEP69_SCRATCH,EXPECTED_STEP69_SHA),
+        (STEP68_BACKUP,EXPECTED_STEP68_SHA),
+        (STEP68_SCRATCH,EXPECTED_STEP68_SHA),
         (STEP67_BACKUP,EXPECTED_STEP67_SHA),
         (STEP67_SCRATCH,EXPECTED_STEP67_SHA),
         (STEP66_BACKUP,EXPECTED_STEP66_SHA),
@@ -101,7 +103,7 @@ def inspect():
         (STEP65_BACKUP,SAVED_STEP65_SHA)]
     expected.extend((p,h) for p,h in PRE66_PROTECTED
                     if p.resolve()!=B_STATE.resolve())
-    evidence=(COEFF,IBP,STEP69_COEFF,STEP69_IBP,STEP67_COEFF,STEP67_IBP,
+    evidence=(COEFF,IBP,STEP69_COEFF,STEP69_IBP,STEP68_COEFF,STEP68_IBP,STEP67_COEFF,STEP67_IBP,
               STEP66_DIRECT,STEP66_COEFF,STEP66_NORMALIZED)
     paths=[p.resolve() for p,h in expected]+[p.resolve() for p in evidence]
     if len(paths)!=len(set(paths)):
