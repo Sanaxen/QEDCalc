@@ -7735,3 +7735,22 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step69_read_
 Get-Content .\log_step69_saved_audit.txt -Tail 5
 ```
 Require `B_STEP69_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`. **Do not run `--promote` again**: the post-promotion audit got beyond the saved formal SHA/backup checks, indicating the formal Step69 file and predecessor backup were already installed consistently at the time of this failure. Whole Target B proof remains incomplete.
+
+
+### 2026-11-18 Target B Step69 saved-state post-promotion audit PASS; guarded Step70 scratch prepared
+
+User reports `B_STEP69_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` on rerun after the independent phase-count bridge comparison bug was corrected. This establishes **formal Step69 as the currently audited/accepted baseline**. SHA-256 `97307fc660bc7a5b9cb17e4c6057025c1488d023a6e5b7f87341343de8c57b2d`; formal Step68 historical backup SHA `09368c634e482c40a8ae7dd9e7657c0d0667608f82f7d5b6537cc66067ac5ae8`. Earlier Step69 IBP independently exact-replayed 43/43 keys; coefficient checkpoint already required complete before IBP and was validated by formal preflight. **No full Target B proof. Do not rerun --promote Step69.**
+
+Added `examples/three_loop_vp05_sector202_target_b_step70_scratch.py`, `examples/test_three_loop_vp05_sector202_target_b_step70_scratch.py`, `run_vp05_sector202_target_b_step70_scratch.bat`. New scratch code requires the saved Step69 independent post-promotion audit, SHA-pins formal Step69, safeguards historical Step68/67/66/65 states and proof certificates, and creates only isolated `vp05_sector202_B_step70_scratch_state.json`. The next pivot is obtained from and verified against the **pinned formal69 state's actual remaining integrals**, not guessed. The `--check-only` mode now safely inspects a pre-existing Step70 scratch without requiring `--resume`, reporting `scratch_steps`, `scratch_sha256`, and `already_saved`; no computation can rerun once Step70 is saved. When absent, a single exact step is allowed with 12h max, 256 columns, 400 original support and 7500 character cap. Windows runtime validation pending.
+
+Next:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step70_scratch -v
+.\run_vp05_sector202_target_b_step70_scratch.bat --check-only
+```
+If preflight returns `B_STEP70_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`, `scratch_exists=false`, run:
+```powershell
+.\run_vp05_sector202_target_b_step70_scratch.bat --hours 12 > log_step70_scratch.txt
+```
+If `scratch_exists=true`, inspect `scratch_steps`: at 70 skip computation and proceed to independent exact Step70 audits; at 69 use `--resume` for execution. Formal Step69 remains untouched until complete local exact coefficient and original-IBP audit and a separately approved promotion. The earlier Step61–63 provenance issue and whole-target proof remain unresolved.
