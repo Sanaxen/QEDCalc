@@ -19,20 +19,20 @@ class Step71ReadOnlyAuditTests(unittest.TestCase):
                 {"job_count":48,"coefficient_checkpoint_sha256":"wrong"},48,"abc")
         with self.assertRaises(RuntimeError):
             validate_certificate_bridge(
-                {"job_count":48},48,
+                {"job_count":47},48,
                 {"job_count":48,"coefficient_checkpoint_sha256":"abc"},48,"abc")
     def test_historical_paths_distinct(self):
         paths=[B_STATE,BACKUP,SCRATCH,COEFF,IBP]
         self.assertEqual(len(paths),len({p.resolve() for p in paths}))
     def test_ordered_exact_manifest(self):
-        entries=[["remainder",[8,148]],["source",18]]
+        entries=[["remainder",[8,139]],["source",18]]
         cfg={"version":1,"phase":"coeff",
              "formal_step70_sha256":EXPECTED_STEP70_SHA,
              "scratch_step71_sha256":EXPECTED_STEP71_SHA,
              "source_checkpoint_sha256":"a","source_sha256":"b",
              "certificate_sha256":"c","job_count":2,
              "job_sha256":hashlib.sha256(json.dumps(entries,separators=(",",":")).encode()).hexdigest()}
-        checked=[{"index":0,"key":[8,148],"kind":"remainder","method":"exact_QQ_z_d_coeff"},
+        checked=[{"index":0,"key":[8,139],"kind":"remainder","method":"exact_QQ_z_d_coeff"},
                  {"index":1,"key":18,"kind":"source","method":"exact_QQ_z_d_coeff"}]
         with TemporaryDirectory() as root:
             path=Path(root)/"coeff.json"
