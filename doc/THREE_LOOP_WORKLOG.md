@@ -7691,3 +7691,18 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step69_exact
 .\run_vp05_sector202_target_b_step69_exact_audit.bat --phase coeff --hours 12 --timeout-seconds 1200 --max-new 500 > log_step69_coeff.txt
 ```
 Require `B_STEP69_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF` before running the `ibp` phase, and `B_STEP69_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF` before any formal promotion. If phase-specific checkpoint already exists, inspect and use `--resume` rather than overwriting. Earlier Steps61–63 provenance and entire Target B remain unproven.
+
+
+### 2026-11-18 VP05 sector202 Target B Step69: 43/43 exact original IBP PASS; guarded promotion and post-audit prepared
+
+Actual user-uploaded `log_step69_ibp.txt`: `B_STEP69_IBP_PREFLIGHT_PASS_NOT_PROOF` 0/43, then 43/43 `EXACT_KEY_SAVED` over **24.56 seconds**, final **`B_STEP69_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF`**, `formal_state_modified=false`, `target_b_proven=false`. The IBP runner verifies prior full coefficient audit as a prerequisite, but the **coefficient count/log has not been supplied**; never invent it. Pinned existing Step69 scratch SHA `97307fc660bc7a5b9cb17e4c6057025c1488d023a6e5b7f87341343de8c57b2d`, formal Step68 SHA `09368c634e482c40a8ae7dd9e7657c0d0667608f82f7d5b6537cc66067ac5ae8`. Step69 scratch saved `steps=69`, `status=EXACT_TARGET_PREFIX_NOT_PROOF`. Formal Step68 remains the latest **confirmed** promoted state, and entire Target B NOT PROVEN.
+
+Added `examples/three_loop_vp05_sector202_target_b_step69_formal_promotion.py`, `examples/three_loop_vp05_sector202_target_b_step69_read_only_audit.py`, both unit tests, and two Windows .bat wrappers. Preflight validates **both complete exact coefficient and 43/43 original-source IBP** checkpoint manifests with SHA-pinned formal68/scratch69 and source provenance, saved Step68 post-audit, candidate pivot continuation, bounded metadata, path alias and single-use backup/staging nonexistence. It dynamically reports coefficient count, remainder count, original support and next lead **from the actual SHA-pinned scratch**, avoiding guessed quantities. Only explicit `--promote` makes exclusive byte-verified Step68 backup and atomically stages exact scratch into formal Target B, with a post-promotion independent read-only audit that avoids old formal68-only validators. **No Windows tests or preflight result received yet; do not assert actual formal promotion**.
+
+Next Windows commands:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step69_formal_promotion examples.test_three_loop_vp05_sector202_target_b_step69_read_only_audit -v
+.\run_vp05_sector202_target_b_step69_formal_promotion.bat --check-only
+```
+Require `B_STEP69_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF`, `original_ibp_keys_verified=43` and complete nonzero coefficient count before permission to run --promote **once**. Then check `B_STEP69_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF` and after that `B_STEP69_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`. Never overwrite prior evidence, Step69 scratch or historic backups. Older Steps61–63 full-target proof gaps remain.
