@@ -7549,3 +7549,16 @@ Require `B_STEP67_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF` before:
 .\run_vp05_sector202_target_b_step67_read_only_audit.bat > log_step67_saved_audit.txt
 ```
 Require `B_STEP67_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`. Never rerun --promote or delete prior evidence. Whole Target B remains unproven (including earlier Steps61–63 provenance issues).
+
+
+### 2026-11-18 VP05 sector202 Target B: formal Step67 backup-first promotion PASS (actual Windows log)
+
+User-provided `log_step67_promotion.txt` reports `B_STEP67_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`. The exact saved coefficient inventory was **229/229 PASS**; original-IBP inventory was **32/32 PASS**. Old formal Step66 SHA and byte-identical saved Step66 backup: `9b30bed319c5e23cc84016acdb1605fe8082bedb09c84a4f8f4d8f676de82d7d`. New formal Step67 SHA: `bd5e5dbd92c8636332b006371006891c2bbd1e9870c2f5d5fb353b935a790ba2`. Independent coefficient checkpoint SHA `cf956701e56c556d571defe292662d52c08f1ca5886e56f613f0a99ea06e5a9b`; exact original-IBP checkpoint SHA `82999e6c7ea3e2ea97bfbc7fb2c301d3194c5c2a9e42daee3e442ddc0b5b29bc`. `new_steps=67`, residual terms74, source support154, `formal_state_modified=true`, `target_b_proven=false`. The Step66 backup was created with matching hash.
+
+**Step67 formal promotion is now complete. Do NOT rerun `--promote`, the prepromotion `--check-only` (which expects the formal Step66 state), or Step67 scratch generation.** The next REQUIRED step is the independent post-promotion saved-state audit, not another promotion:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step67_read_only_audit -v
+.\run_vp05_sector202_target_b_step67_read_only_audit.bat > log_step67_saved_audit.txt
+```
+Expected `B_STEP67_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`; actual post-promotion audit result remains pending. Retain all backup and certificate files. Whole Target B and earlier Steps61–63 proof-chain caveats still remain.
