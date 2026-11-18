@@ -25,7 +25,7 @@ from examples.three_loop_vp05_sector202_target_exact_reduction import (
     BASE, CHECKPOINT, SOURCE, CERT,
 )
 from examples.three_loop_vp05_sector202_target_b_step73_read_only_audit import (
-    inspect as audit_saved72,
+    inspect as audit_saved73,
 )
 from examples.three_loop_vp05_sector202_exact_prefix_smoke import expr
 from examples.three_loop_vp05_sector202_step51_scratch import atomic_save
@@ -64,7 +64,7 @@ def coefficient_identity(kind,old,new,pivot,factor):
     raise ValueError("Invalid coefficient kind")
 
 def context():
-    if audit_saved72().get("status")!="B_STEP73_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF":
+    if audit_saved73().get("status")!="B_STEP73_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF":
         raise RuntimeError("Formal Step73 not audited")
     protected=protected_inputs()
     if sha(SCRATCH)!=EXPECTED_STEP74_SHA or sha(B_STATE)!=EXPECTED_STEP73_SHA:
