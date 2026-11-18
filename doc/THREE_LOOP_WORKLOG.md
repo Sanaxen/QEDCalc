@@ -7602,3 +7602,17 @@ Require `B_STEP68_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF`; **then**:
 .\run_vp05_sector202_target_b_step68_exact_audit.bat --phase ibp --hours 12 --timeout-seconds 1200 --max-new 500 > log_step68_ibp.txt
 ```
 Require `B_STEP68_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF` before implementing backup-first formal Step68 promotion and post-promotion read-only audit. Earlier Step61–63 full-chain issues and Target B whole proof remain outstanding.
+
+
+### 2026-11-18 Step68 exact audit import error fixed before validation
+
+User Windows traceback showed `ImportError: cannot import name 'CHECKPOINT' from 'examples.three_loop_vp05_sector202_target_b_step68_scratch'` at module import. This was a code import wiring mistake: `CHECKPOINT`, `SOURCE`, and `CERT` are defined in `examples.three_loop_vp05_sector202_target_exact_reduction`, not in the Step68 scratch runner. Corrected Step68 exact-audit imports to obtain canonical original IBP inputs and `BASE` from `three_loop_vp05_sector202_target_exact_reduction`; scratch module now supplies only actual scratch/formal state, pinned SHA and safety guards. Added explicit regression checks of canonical source artifacts. No formal Step67 or saved Step68 scratch was touched. Since module import failed, **no coefficient/IBP exact audit was performed by that command**, and no completion should be claimed.
+
+Next Windows commands:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step68_exact_audit -v
+.\run_vp05_sector202_target_b_step68_exact_audit.bat --phase coeff --check-only
+.\run_vp05_sector202_target_b_step68_exact_audit.bat --phase coeff --hours 12 --timeout-seconds 1200 --max-new 500 > log_step68_coeff.txt
+```
+If coefficient phase checkpoint exists from a different attempt, inspect and use `--resume` only when validated; never delete evidence. Require `B_STEP68_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF` before IBP phase. No new installation needed.
