@@ -1,11 +1,11 @@
 import unittest
 from examples.three_loop_vp05_sector202_target_b_step74_scratch import (
     START_STEP, EXPECTED_STEP73_SHA, formal_next_lead, validate_scratch,
-    SCRATCH, TEMP, PROOF, B_STATE, STEP73_SCRATCH, STEP71_SCRATCH,
+    SCRATCH, TEMP, PROOF, B_STATE, STEP73_SCRATCH, STEP72_SCRATCH,
 )
 class Step74ScratchTests(unittest.TestCase):
     def setUp(self):
-        self.old={"version":1,"config":{"target":"B"},"steps":74,
+        self.old={"version":1,"config":{"target":"B"},"steps":73,
             "status":"EXACT_TARGET_PREFIX_NOT_PROOF",
             "pivot_path":[[i,139] for i in range(73)],
             "remaining":[[[500,139],"1"],[[510,139],"2"]],
@@ -22,7 +22,7 @@ class Step74ScratchTests(unittest.TestCase):
             formal_next_lead({**self.old,"metrics":{"lead":[510,139]}})
     def test_single_step_and_wrong_pivot(self):
         self.assertTrue(validate_scratch(self.old,self.old))
-        new={**self.old,"steps":73,
+        new={**self.old,"steps":74,
             "pivot_path":self.old["pivot_path"]+[[500,139]],
             "remaining":[[[510,139],"2"]],
             "metrics":{"lead":[510,139],"remainder_terms":1,"original_support":1}}
@@ -31,7 +31,7 @@ class Step74ScratchTests(unittest.TestCase):
             validate_scratch(self.old,{**new,
                 "pivot_path":self.old["pivot_path"]+[[505,139]]})
     def test_paths_distinct(self):
-        paths=[SCRATCH,TEMP,PROOF,B_STATE,STEP73_SCRATCH,STEP71_SCRATCH]
+        paths=[SCRATCH,TEMP,PROOF,B_STATE,STEP73_SCRATCH,STEP72_SCRATCH]
         self.assertEqual(len(paths),len({p.resolve() for p in paths}))
 if __name__=="__main__":
     unittest.main()
