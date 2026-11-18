@@ -1,8 +1,8 @@
-"""Isolated exact Step71->70 coefficient and original-IBP replay, no promotion.
+"""Isolated exact Step70->71 coefficient and original-IBP replay, no promotion.
 
 Two ordered, independently resumable phases: coefficient identities and
 unscaled original-IBP pivot identity. Each worker uses exact QQ(z,d) rational
-functions (no modular/numeric sampling). Pinned formal Step70 and scratch70
+functions (no modular/numeric sampling). Pinned formal Step70 and scratch71
 remain read-only; two new checkpoint files are never overwritten without
 --resume. Phase-2 requires all phase-1 certificates.
 """
@@ -25,7 +25,7 @@ from examples.three_loop_vp05_sector202_target_exact_reduction import (
     BASE, CHECKPOINT, SOURCE, CERT,
 )
 from examples.three_loop_vp05_sector202_target_b_step70_read_only_audit import (
-    inspect as audit_saved69,
+    inspect as audit_saved70,
 )
 from examples.three_loop_vp05_sector202_exact_prefix_smoke import expr
 from examples.three_loop_vp05_sector202_step51_scratch import atomic_save
@@ -64,7 +64,7 @@ def coefficient_identity(kind,old,new,pivot,factor):
     raise ValueError("Invalid coefficient kind")
 
 def context():
-    if audit_saved69().get("status")!="B_STEP70_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF":
+    if audit_saved70().get("status")!="B_STEP70_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF":
         raise RuntimeError("Formal Step70 not audited")
     protected=protected_inputs()
     if sha(SCRATCH)!=EXPECTED_STEP71_SHA or sha(B_STATE)!=EXPECTED_STEP70_SHA:
