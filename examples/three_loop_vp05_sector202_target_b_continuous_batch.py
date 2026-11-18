@@ -359,6 +359,26 @@ def recover_interrupted_engine_tmp():
     print(TAG+json.dumps({"event":"INTERRUPTED_ENGINE_STAGING_QUARANTINED",
         "sha256":key,"path":str(dest)}),flush=True)
 
+def recover_incomplete_bootstrap(steps):
+    """Recover a crash after exclusive working copy but before journal create."""
+    if JOURNAL.exists():return
+    if not WORK.exists():
+        raise FileNotFoundError("Missing batch journal/working state; start without --resume")
+    ensure_sources()
+    validate_imported_step78_evidence()
+    if sha(WORK)!=EXPECTED_STEP78_SHA:
+        raise RuntimeError("Unjournaled working copy differs from original Step78 scratch")
+    state={"version":1,"status":END_STATUS,"start_step":START,
+        "max_step":min(START+steps,128),"audited_step":START,
+        "audited_sha256":EXPECTED_STEP77_SHA,
+        "source_hashes":{"checkpoint":sha(CHECKPOINT),"source":sha(SOURCE),
+                         "certificate":sha(CERT)},
+        "initial_scratch_sha256":EXPECTED_STEP78_SHA,
+        "formal_unchanged":True,"target_b_proven":False}
+    atomic(JOURNAL,state,exclusive=True)
+    print(TAG+json.dumps({"event":"BOOTSTRAP_RECOVERED_FROM_SHA_PINNED_STEP78",
+        "audited_step":START}),flush=True)
+
 def control(args):
     if args.check_only and not RUN_DIR.exists():
         validate_imported_step78_evidence()
@@ -387,9 +407,14 @@ def control(args):
                     "max_step":min(START+args.steps,128),"formal_unchanged":True}),flush=True)
             return
         if args.resume:
-            if not JOURNAL.exists():raise FileNotFoundError("Missing batch journal; run without --resume")
+            if not JOURNAL.exists():recover_incomplete_bootstrap(args.steps)
             j=load(JOURNAL)
             ensure_sources(j)
+            if not WORK.exists():
+                if j["audited_step"]!=START:
+                    raise RuntimeError("Audited working state missing: cannot restore blindly")
+                exclusive_bytes(WORK,STEP78_SCRATCH.read_bytes())
+                print(TAG+json.dumps({"event":"INITIAL_WORKING_COPY_RECOVERED"}),flush=True)
         else:
             j=initialize(args.steps)
         recover_interrupted_engine_tmp()
