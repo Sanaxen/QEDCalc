@@ -7788,3 +7788,10 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step70_exact
 .\run_vp05_sector202_target_b_step70_exact_audit.bat --phase coeff --check-only
 ```
 If `verified==total`, skip coeff calculation and run `--phase ibp --check-only`. If incomplete, resume exact coefficients using `--phase coeff --resume --hours 12 --timeout-seconds 1200 --max-new 500`. Do not delete/overwrite checkpoints. No Step70 promotion without complete coeff and IBP audits; whole Target B not proved.
+
+
+### 2026-11-18 VP05 Target B Step70: coefficient exact 203/203 PASS (saved checkpoint)
+
+User-uploaded `log_step70_coeff.txt` confirms `B_STEP70_COEFF_PREFLIGHT_PASS_NOT_PROOF` with `verified=203,total=203,checkpoint_exists=true,already_complete=true,formal_state_unchanged=true`; final `B_STEP70_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF`, `verified=203,total=203,formal_state_modified=false,target_b_proven=false`. Thus the independent Step70 `QQ(z,d)` coefficient checkpoint is complete; **do not rerun/recreate it**. Step70 scratch SHA remains `b738b82b038d229850e043f63796fd01db4cb50a404ad3247ef1a5962ee07c04`; formal Step69 remains the accepted state.
+
+Next perform `run_vp05_sector202_target_b_step70_exact_audit.bat --phase ibp --check-only`. If no phase checkpoint yet, run `--phase ibp --hours 12 --timeout-seconds 1200 --max-new 500 > log_step70_ibp.txt`; use `--resume` for an existing partial checkpoint. Require `B_STEP70_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF` before implementing/promoting formal Step70. The coefficient result alone is not original-source IBP replay or whole Target B proof.
