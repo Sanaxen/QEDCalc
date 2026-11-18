@@ -7975,3 +7975,26 @@ Require `B_STEP72_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`; then ver
 ```
 
 Require `B_STEP72_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` before starting any Step73 work. **Do not repeat promotion or overwrite historical scratch/checkpoints.**
+
+
+### 2026-11-18 VP05 sector202 Target B Step72 saved-state audit PASS; guarded Step73 scratch prepared
+
+User reports the final status **`B_STEP72_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`** after explicit Step72 promotion. Full audit JSON was **not** attached for this turn, so coefficient count and actual printed post-audit hashes have not been independently read from a log. Based on the SHA-pinned Step72 scratch and promotion/audit implementation, the accepted formal Step72 baseline is SHA-256 **`35cc49631d6f36c46a7f5e7f15f77a7ba825581e0a9b761a897832314ddca7ab`**, historical Step71 SHA **`80d9eee0c153ddbef718bbccfc8b1d0087277d6a13ca51df1986f838436966f8`**; saved metrics: `steps=72`, remaining **44**, original support **148**, max expression chars **2033**, next pivot **`[166596414537729,139]`**. The earlier independent original unscaled IBP check was **265/265 exact PASS**, and promotion preflight and post-audit code require a complete SHA-linked coefficient checkpoint. **Do not rerun Step72 promotion or overwrite Step72 scratch or certificates.** Entire Target B remains not proven; historic Steps61–63 provenance remain unresolved.
+
+Added `examples/three_loop_vp05_sector202_target_b_step73_scratch.py`, `examples/test_three_loop_vp05_sector202_target_b_step73_scratch.py`, and `run_vp05_sector202_target_b_step73_scratch.bat`. Step73 runner requires saved Step72 independent read-only post-promotion audit PASS; SHA-pins accepted formal Step72 and prior Step72 scratch, protects previous backups and exact checkpoints, and writes only a new exclusive `vp05_sector202_B_step73_scratch_state.json`. Exact next lead is derived from pinned formal72, not guessed. One-step calculation with 256-column/400-support/7500-char safeguards and a <=12-hour subprocess limit. `--check-only` is read-only, reports existing scratch state. If already saved step73, do not rerun. Step73 scratch is not independent coefficient/IBP proof and does not promote formal state. **Windows unittest and Step73 execution are still pending**.
+
+Next commands:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step73_scratch -v
+.\run_vp05_sector202_target_b_step73_scratch.bat --check-only
+```
+
+Require `B_STEP73_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`. If `scratch_exists=false`, run:
+
+```powershell
+.\run_vp05_sector202_target_b_step73_scratch.bat --hours 12 > log_step73_scratch.txt
+```
+
+If `scratch_exists=true` and `scratch_steps=73`, skip the engine; preserve saved scratch, record its SHA, and move to independent Step73 exact coefficient and original-source IBP audits. An interrupted scratch at `scratch_steps=72` requires inspection and deliberate `--resume`. No formal Step73 promotion before both exact phases PASS.
