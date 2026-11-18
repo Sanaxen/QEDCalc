@@ -1,4 +1,4 @@
-"""Isolated exact Step68->68 coefficient and original-IBP replay, no promotion.
+"""Isolated exact Step68->69 coefficient and original-IBP replay, no promotion.
 
 Two ordered, independently resumable phases: coefficient identities and
 unscaled original-IBP pivot identity. Each worker uses exact QQ(z,d) rational
@@ -18,7 +18,7 @@ import sympy as sp
 from sympy.polys.fields import field
 from sympy.polys.domains import QQ
 from examples.three_loop_vp05_sector202_target_b_step69_scratch import (
-    SCRATCH, B_STATE, NEXT_LEAD, EXPECTED_STEP69_SHA,
+    SCRATCH, B_STATE, NEXT_LEAD, EXPECTED_STEP68_SHA,
     protected_inputs, validate_scratch, sha,
 )
 from examples.three_loop_vp05_sector202_target_exact_reduction import (
@@ -67,15 +67,15 @@ def context():
     if audit_saved68().get("status")!="B_STEP68_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF":
         raise RuntimeError("Formal Step68 not audited")
     protected=protected_inputs()
-    if sha(SCRATCH)!=EXPECTED_STEP69_SHA or sha(B_STATE)!=EXPECTED_STEP69_SHA:
+    if sha(SCRATCH)!=EXPECTED_STEP69_SHA or sha(B_STATE)!=EXPECTED_STEP68_SHA:
         raise RuntimeError("Step69 scratch or formal Step68 SHA changed")
     old=json.loads(B_STATE.read_text(encoding="utf-8-sig"))
     new=json.loads(SCRATCH.read_text(encoding="utf-8-sig"))
     validate_scratch(old,new)
-    if (new.get("steps")!=69 or new.get("status")!="EXACT_TARGET_PREFIX_NOT_PROOF"
+    if (new.get("steps")!=69 or not new.get("remaining") or new.get("status")!="EXACT_TARGET_PREFIX_NOT_PROOF"
         or new["metrics"].get("remainder_terms")!=len(new["remaining"])
         or new["metrics"].get("original_support")!=len(new["source"])
-        or new["metrics"].get("lead")!=min(tuple(k) for k,v in new["remaining"])):
+        or tuple(new["metrics"].get("lead",[]))!=min(tuple(k) for k,v in new["remaining"])):
         raise RuntimeError("Expected audited Step69 result dimensions mismatch")
     orem=rows_dict(old["remaining"],True);nrem=rows_dict(new["remaining"],True)
     osrc=rows_dict(old["source"],False);nsrc=rows_dict(new["source"],False)
@@ -108,7 +108,7 @@ def job_manifest(phase,c):
     orem,nrem,osrc,nsrc,prow,ptrace,cjobs,keyed,ijobs,protected=c
     jobs=cjobs if phase=="coeff" else ijobs
     serial=[[kind,list(k) if kind=="remainder" else k] for kind,k in jobs] if phase=="coeff" else [list(k) for k in jobs]
-    config={"version":1,"phase":phase,"formal_step68_sha256":EXPECTED_STEP69_SHA,
+    config={"version":1,"phase":phase,"formal_step68_sha256":EXPECTED_STEP68_SHA,
       "scratch_step69_sha256":EXPECTED_STEP69_SHA,
       "source_checkpoint_sha256":sha(CHECKPOINT),"source_sha256":sha(SOURCE),
       "certificate_sha256":sha(CERT),
