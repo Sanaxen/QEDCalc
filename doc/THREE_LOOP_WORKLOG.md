@@ -7527,3 +7527,25 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step67_forma
 .\run_vp05_sector202_target_b_step67_formal_promotion.bat --check-only
 ```
 Expected `B_STEP67_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF`; report actual `coefficient_keys_verified` before progressing. Once separately reviewed, run explicit `--promote` once and independent saved Step67 audit. Preserve all old checkpoint JSONs and backups. Earlier Steps61–63 proof chain gap and Target B full proof still outstanding.
+
+
+### 2026-11-18 Target B Step67 promotion preflight PASS; post-promotion saved audit added
+
+User reports `B_STEP67_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF` from Windows; the preflight validates all saved exact Step67 coefficient identities, full **32/32** exact original-source IBP identities, SHA-pinned formal Step66 and Step67 scratch, and predecessor protected states. Step67 **not yet formally promoted as of this report**. User has not supplied the detailed `coefficient_keys_verified` count or promotion stdout.
+
+Implemented new read-only `examples/three_loop_vp05_sector202_target_b_step67_read_only_audit.py`, corresponding tests, and `run_vp05_sector202_target_b_step67_read_only_audit.bat`. It runs **only after** formal promotion, independently verifies exact saved Step67 SHA `bd5e5dbd92c8636332b006371006891c2bbd1e9870c2f5d5fb353b935a790ba2`, Step66 old-backup SHA `9b30bed319c5e23cc84016acdb1605fe8082bedb09c84a4f8f4d8f676de82d7d`, historical Step65 backup and Target A/source/other backups, pinned Step67 scratch, metadata (67 pivots,74 remaining,154 support, next lead `[166596414013442,139]`), and saved Step67 coefficient/IBP JSON manifest record counts, exact method, key hashes, source provenance and coefficient-to-IBP SHA bridge. It intentionally does not call any prepromotion context validator demanding formal Step66. No file writes. Code/tests committed but Windows result is pending.
+
+After `git pull --ff-only origin feature/master-basis-initiate-only` run:
+```powershell
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step67_formal_promotion examples.test_three_loop_vp05_sector202_target_b_step67_read_only_audit -v
+.\run_vp05_sector202_target_b_step67_formal_promotion.bat --check-only
+```
+If still preflight PASS, perform **once**:
+```powershell
+.\run_vp05_sector202_target_b_step67_formal_promotion.bat --promote > log_step67_promotion.txt
+```
+Require `B_STEP67_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF` before:
+```powershell
+.\run_vp05_sector202_target_b_step67_read_only_audit.bat > log_step67_saved_audit.txt
+```
+Require `B_STEP67_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`. Never rerun --promote or delete prior evidence. Whole Target B remains unproven (including earlier Steps61–63 provenance issues).
