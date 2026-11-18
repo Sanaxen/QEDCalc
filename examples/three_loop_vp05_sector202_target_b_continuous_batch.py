@@ -7,6 +7,7 @@ No claim of whole Target B proof or formal promotion is made.
 """
 from __future__ import annotations
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import contextlib
 import gzip
 import hashlib
@@ -212,7 +213,25 @@ def verify_worker(step,phase,index):
     print(TAG+json.dumps({"event":"EXACT_KEY_PASS","step":step,
         "phase":phase,"index":index,"working_sha256":sha(WORK)}),flush=True)
 
-def run_phase(step,phase,before_sha,after_sha,deadline,worker_timeout):
+def worker_subprocess(step,phase,index,expected_sha,worker_timeout,deadline):
+    left=deadline-time.monotonic()
+    if left<1:raise TimeoutError("Global batch deadline reached")
+    proc=subprocess.run([sys.executable,"-m",
+         "examples.three_loop_vp05_sector202_target_b_continuous_batch",
+         "--worker-step",str(step),"--worker-phase",phase,
+         "--worker-index",str(index)],
+        capture_output=True,text=True,timeout=min(worker_timeout,max(1,left)))
+    if proc.returncode:
+        raise RuntimeError("Exact worker failed "+str(step)+" "+phase+" "+str(index)+": "+proc.stderr[-1600:])
+    reports=[line[len(TAG):] for line in proc.stdout.splitlines() if line.startswith(TAG)]
+    if len(reports)!=1:raise RuntimeError("Missing or duplicate exact worker PASS")
+    result=json.loads(reports[0])
+    if result!={"event":"EXACT_KEY_PASS","step":step,"phase":phase,
+                "index":index,"working_sha256":expected_sha}:
+        raise RuntimeError("Exact worker PASS not bound to saved candidate")
+    return True
+
+def run_phase(step,phase,before_sha,after_sha,deadline,worker_timeout,workers):
     before,after=load(before_path(step)),load(WORK)
     c=phase_context(step,before,after)
     m=manifest(step,phase,c,before_sha,after_sha)
@@ -225,34 +244,25 @@ def run_phase(step,phase,before_sha,after_sha,deadline,worker_timeout):
     path=phase_path(step,phase)
     state=checked_phase(path,m)
     while state["verified"]<m["job_count"]:
-        left=deadline-time.monotonic()
-        if left<5:
+        if deadline-time.monotonic()<5:
             return False,m["job_count"],state["verified"],"time_limit"
-        index=state["verified"]
-        proc=subprocess.run([sys.executable,"-m",
-             "examples.three_loop_vp05_sector202_target_b_continuous_batch",
-             "--worker-step",str(step),"--worker-phase",phase,
-             "--worker-index",str(index)],
-            capture_output=True,text=True,timeout=min(worker_timeout,max(1,left)))
-        if proc.returncode:
-            raise RuntimeError("Exact worker failed "+str(step)+" "+phase+" "+str(index)+": "+proc.stderr[-1600:])
-        reports=[line[len(TAG):] for line in proc.stdout.splitlines() if line.startswith(TAG)]
-        if len(reports)!=1:
-            raise RuntimeError("Missing/duplicate worker PASS")
-        result=json.loads(reports[0])
-        if result!={"event":"EXACT_KEY_PASS","step":step,"phase":phase,
-                    "index":index,"working_sha256":after_sha}:
-            raise RuntimeError("Worker PASS not bound to current checkpoint")
-        if sha(WORK)!=after_sha or sha(before_path(step))!=before_sha:
-            raise RuntimeError("State modified during exact worker")
-        state["verified"]+=1
-        atomic(path,state)
-        if state["verified"]%25==0 or state["verified"]==m["job_count"]:
-            print(TAG+json.dumps({"event":"EXACT_PROGRESS","step":step,
-                "phase":phase,"verified":state["verified"],"total":m["job_count"]}),flush=True)
+        indices=list(range(state["verified"],min(m["job_count"],state["verified"]+workers)))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            tasks={i:pool.submit(worker_subprocess,step,phase,i,after_sha,
+                                 worker_timeout,deadline) for i in indices}
+            for index in indices:
+                tasks[index].result()
+                if sha(WORK)!=after_sha or sha(before_path(step))!=before_sha:
+                    raise RuntimeError("State modified during exact worker")
+                state["verified"]+=1
+                atomic(path,state)
+                if state["verified"]%25==0 or state["verified"]==m["job_count"]:
+                    print(TAG+json.dumps({"event":"EXACT_PROGRESS","step":step,
+                        "phase":phase,"verified":state["verified"],
+                        "total":m["job_count"],"workers":workers}),flush=True)
     return True,m["job_count"],state["verified"],"complete"
 
-def audit_candidate(j,deadline,worker_timeout):
+def audit_candidate(j,deadline,worker_timeout,workers):
     step=j["audited_step"]+1
     before_file=before_path(step)
     if not before_file.exists():
@@ -270,7 +280,7 @@ def audit_candidate(j,deadline,worker_timeout):
     for phase in ("coeff","ibp"):
         try:
             ok,total,verified,reason=run_phase(step,phase,j["audited_sha256"],
-                                              candidate_hash,deadline,worker_timeout)
+                                              candidate_hash,deadline,worker_timeout,workers)
         except subprocess.TimeoutExpired:
             return False,"worker_timeout"
         if not ok:return False,reason
@@ -381,7 +391,7 @@ def control(args):
         while j["audited_step"]<j["max_step"]:
             state=validate_journal(j)
             if state["steps"]==j["audited_step"]+1:
-                ok,reason=audit_candidate(j,deadline,args.worker_timeout)
+                ok,reason=audit_candidate(j,deadline,args.worker_timeout,args.workers)
                 if not ok:break
                 continue
             if not state.get("remaining") and (RUN_DIR/"working_state_proof.json").exists():
@@ -439,6 +449,7 @@ def main():
     ap.add_argument("--hours",type=float,default=12)
     ap.add_argument("--steps",type=int,default=51)
     ap.add_argument("--worker-timeout",type=int,default=1200)
+    ap.add_argument("--workers",type=int,default=4)
     ap.add_argument("--worker-step",type=int)
     ap.add_argument("--worker-phase",choices=["coeff","ibp"])
     ap.add_argument("--worker-index",type=int)
@@ -447,7 +458,7 @@ def main():
         if args.worker_phase is None or args.worker_index is None:ap.error("Worker args incomplete")
         verify_worker(args.worker_step,args.worker_phase,args.worker_index)
         return
-    if not 0<args.hours<=12 or not 1<=args.steps<=51 or not 30<=args.worker_timeout<=3600:
+    if not 0<args.hours<=12 or not 1<=args.steps<=51 or not 30<=args.worker_timeout<=3600 or not 1<=args.workers<=8:
         ap.error("Invalid bounded batch limits")
     control(args)
 
