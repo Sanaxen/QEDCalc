@@ -7706,3 +7706,18 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step69_forma
 .\run_vp05_sector202_target_b_step69_formal_promotion.bat --check-only
 ```
 Require `B_STEP69_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF`, `original_ibp_keys_verified=43` and complete nonzero coefficient count before permission to run --promote **once**. Then check `B_STEP69_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF` and after that `B_STEP69_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`. Never overwrite prior evidence, Step69 scratch or historic backups. Older Steps61–63 full-target proof gaps remain.
+
+
+### 2026-11-18 Target B Step69 formal promotion preflight PASS (user report)
+
+User reports `B_STEP69_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF` on Windows. This is the pre-promotion read-only audit only; no actual Step69 formal state change has been confirmed. The previous 43/43 exact original IBP PASS is recorded above. The reported full preflight validates complete exact coefficient checkpoints, but the exact coefficient count and Step69 residual metrics were not provided in this user message, so do not invent them.
+
+Next, run the guarded formal promotion **once**:
+```powershell
+.\run_vp05_sector202_target_b_step69_formal_promotion.bat --promote > log_step69_promotion.txt
+```
+Require `B_STEP69_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`; then run the *post*-promotion read-only audit:
+```powershell
+.\run_vp05_sector202_target_b_step69_read_only_audit.bat > log_step69_saved_audit.txt
+```
+Require `B_STEP69_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` before using Step69 as formal baseline. Do not rerun promotion after success. Target B entire proof remains incomplete.
