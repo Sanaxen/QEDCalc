@@ -274,6 +274,9 @@ def audit_candidate(j,deadline,worker_timeout):
         except subprocess.TimeoutExpired:
             return False,"worker_timeout"
         if not ok:return False,reason
+    ensure_sources(j)
+    if sha(WORK)!=candidate_hash:
+        raise RuntimeError("Candidate changed before certificate commit")
     certificate={"status":"EXACT_AUDITED_PREFIX_NOT_TARGET_PROOF",
         "step":step,"before_sha256":j["audited_sha256"],
         "after_sha256":candidate_hash,"coefficient_keys_verified":len(c[6]),
@@ -322,6 +325,25 @@ def validate_journal(j):
         raise RuntimeError("Initial saved Step78 scratch copy mismatch")
     return current
 
+def recover_interrupted_engine_tmp():
+    """Quarantine stale engine staging only under the exclusive process lock.
+
+    A killed engine can leave `working_state.json.tmp`. The authoritative
+    working state is never replaced by an unaudited temporary file.
+    """
+    tmp=WORK.with_name(WORK.name+".tmp")
+    if not tmp.exists():return
+    if not WORK.exists():raise RuntimeError("Orphan engine staging without working state")
+    quarantine=RUN_DIR/"quarantine"
+    quarantine.mkdir(parents=True,exist_ok=True)
+    key=sha(tmp)
+    dest=quarantine/("interrupted_engine_"+key+".tmp")
+    if dest.exists():
+        raise RuntimeError("Quarantine hash collision; inspect stale engine staging")
+    os.replace(tmp,dest)
+    print(TAG+json.dumps({"event":"INTERRUPTED_ENGINE_STAGING_QUARANTINED",
+        "sha256":key,"path":str(dest)}),flush=True)
+
 def control(args):
     if args.check_only and not RUN_DIR.exists():
         if WORK.exists() or JOURNAL.exists():
@@ -353,6 +375,7 @@ def control(args):
             ensure_sources(j)
         else:
             j=initialize(args.steps)
+        recover_interrupted_engine_tmp()
         deadline=time.monotonic()+args.hours*3600
         reason="max_steps"
         while j["audited_step"]<j["max_step"]:
