@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 from examples.three_loop_vp05_sector202_target_b_step76_read_only_audit import (
     manifest,validate_certificate_bridge,STATUS,CHECKPOINT,SOURCE,CERT,
-    B_STATE,BACKUP,SCRATCH,COEFF,IBP,EXPECTED_undefined_SHA,EXPECTED_STEP76_SHA,
+    B_STATE,BACKUP,SCRATCH,COEFF,IBP,EXPECTED_STEP75_SHA,EXPECTED_STEP76_SHA,
 )
 class Step76ReadOnlyAuditTests(unittest.TestCase):
     def test_phase_bridge(self):
@@ -27,7 +27,7 @@ class Step76ReadOnlyAuditTests(unittest.TestCase):
     def test_manifest(self):
         entries=[["remainder",[8,139]],["source",18]]
         cfg={"version":1,"phase":"coeff",
-            "formal_step75_sha256":EXPECTED_undefined_SHA,
+            "formal_step75_sha256":EXPECTED_STEP75_SHA,
             "scratch_step76_sha256":EXPECTED_STEP76_SHA,
             "source_checkpoint_sha256":"a","source_sha256":"b",
             "certificate_sha256":"c","job_count":2,
