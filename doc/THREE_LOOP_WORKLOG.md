@@ -7643,3 +7643,16 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step68_forma
 .\run_vp05_sector202_target_b_step68_formal_promotion.bat --check-only
 ```
 Inspect full preflight values and require `B_STEP68_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF`, `coefficient_keys_verified=232`, `original_ibp_keys_verified=298`. Only after this approval should explicit promotion be run **once**, followed by the independent saved-state read-only audit. Never overwrite/delete the old states or exact evidence. Earlier Steps61–63 provenance gaps and whole Target B remain unresolved.
+
+
+### 2026-11-18 Target B Step68 formal promotion preflight PASS (reported)
+
+User reports `B_STEP68_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF` from Windows after 232/232 exact coefficient and 298/298 original IBP source certificates. Preflight success authorizes **one** explicit backup-first formal promotion but does **not** constitute the actual promotion. Formal Step67 currently remains the last confirmed promoted state. Next run:
+```powershell
+.\run_vp05_sector202_target_b_step68_formal_promotion.bat --promote > log_step68_promotion.txt
+```
+Require `B_STEP68_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`; then independently verify:
+```powershell
+.\run_vp05_sector202_target_b_step68_read_only_audit.bat > log_step68_saved_audit.txt
+```
+Require `B_STEP68_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`. Do not run `--promote` twice. Neither step proves complete Target B; older Steps61–63 provenance limitations remain.
