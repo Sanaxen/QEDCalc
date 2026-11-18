@@ -323,6 +323,14 @@ def validate_journal(j):
     return current
 
 def control(args):
+    if args.check_only and not RUN_DIR.exists():
+        if WORK.exists() or JOURNAL.exists():
+            raise RuntimeError("Unexpected orphan batch artifacts")
+        ensure_sources()
+        print(TAG+json.dumps({"status":"BATCH_PREFLIGHT_PASS_NOT_TARGET_PROOF",
+            "audited_step":START,"working_step":78,
+            "max_step":min(START+args.steps,128),"formal_unchanged":True}),flush=True)
+        return
     with locked():
         if args.check_only:
             sources,_=ensure_sources(load(JOURNAL) if JOURNAL.exists() else None)
@@ -353,6 +361,9 @@ def control(args):
                 ok,reason=audit_candidate(j,deadline,args.worker_timeout)
                 if not ok:break
                 continue
+            if not state.get("remaining") and (RUN_DIR/"working_state_proof.json").exists():
+                reason="exact_source_replay_proof_requires_independent_review"
+                break
             if deadline-time.monotonic()<30:
                 reason="time_limit"
                 break
@@ -379,6 +390,9 @@ def control(args):
                     reason="engine_timeout"
                     break
             after=load(WORK)
+            if not after.get("remaining") and (RUN_DIR/"working_state_proof.json").exists():
+                reason="exact_source_replay_proof_requires_independent_review"
+                break
             if after["steps"]==state["steps"]:
                 reason="engine_no_progress_or_cap"
                 break
@@ -400,7 +414,7 @@ def main():
     op.add_argument("--check-only",action="store_true")
     op.add_argument("--resume",action="store_true")
     ap.add_argument("--hours",type=float,default=12)
-    ap.add_argument("--steps",type=int,default=32)
+    ap.add_argument("--steps",type=int,default=51)
     ap.add_argument("--worker-timeout",type=int,default=1200)
     ap.add_argument("--worker-step",type=int)
     ap.add_argument("--worker-phase",choices=["coeff","ibp"])
