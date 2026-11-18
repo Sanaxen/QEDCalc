@@ -7616,3 +7616,15 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step68_exact
 .\run_vp05_sector202_target_b_step68_exact_audit.bat --phase coeff --hours 12 --timeout-seconds 1200 --max-new 500 > log_step68_coeff.txt
 ```
 If coefficient phase checkpoint exists from a different attempt, inspect and use `--resume` only when validated; never delete evidence. Require `B_STEP68_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF` before IBP phase. No new installation needed.
+
+
+### 2026-11-18 VP05 sector202 Target B Step68: 232/232 exact independent coefficients PASS
+
+User-provided `log_step68_coeff.txt` confirms repaired Step68 audit import and `B_STEP68_COEFF_PREFLIGHT_PASS_NOT_PROOF`, followed by all **232/232** independent exact coefficient identities in `QQ(z,d)` verified and checkpointed over **267.3 seconds**. Final `B_STEP68_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF`, `formal_state_modified=false`, `target_b_proven=false`. This only verifies the Step67→68 local coefficient transition; no original-IBP Step68 replay result is yet supplied. Pinned formal Step67 SHA remains `bd5e5dbd92c8636332b006371006891c2bbd1e9870c2f5d5fb353b935a790ba2`, Step68 scratch `09368c634e482c40a8ae7dd9e7657c0d0667608f82f7d5b6537cc66067ac5ae8`. Do not rerun coefficient phase or promote Step68.
+
+Next Windows commands (new IBP checkpoint absent):
+```powershell
+.\run_vp05_sector202_target_b_step68_exact_audit.bat --phase ibp --check-only
+.\run_vp05_sector202_target_b_step68_exact_audit.bat --phase ibp --hours 12 --timeout-seconds 1200 --max-new 500 > log_step68_ibp.txt
+```
+If the Step68 IBP checkpoint exists, use `--resume` instead of starting a new checkpoint. Require `B_STEP68_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF`; only then prepare guarded, backup-first Step68 formal promotion and saved-state independent audit. Whole Target B proof remains incomplete.
