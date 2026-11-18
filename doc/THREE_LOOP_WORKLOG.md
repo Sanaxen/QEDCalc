@@ -7775,3 +7775,16 @@ Require `B_STEP70_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF` before:
 .\run_vp05_sector202_target_b_step70_exact_audit.bat --phase ibp --hours 12 --timeout-seconds 1200 --max-new 500 > log_step70_ibp.txt
 ```
 Require `B_STEP70_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF` before even considering guarded promotion. For existing phase checkpoints, inspect and use `--resume` rather than recreating. Target B entire proof and older source provenance gaps remain not proved.
+
+
+### 2026-11-18 Step70 coeff phase preflight: existing checkpoint must be inspected read-only
+
+User received `RuntimeError("Step70 phase checkpoint exists: use --resume or omit for new")` from `run_vp05_sector202_target_b_step70_exact_audit.bat --phase coeff --check-only`. This **only means the Step70 coefficient checkpoint file already exists**; its saved verified count has not yet been supplied, so do not claim coeff phase PASS. Root cause: Step70 exact audit required `path.exists()==args.resume` even in `--check-only` mode. Fixed Step70 exact audit CLI so `--check-only` reads and validates a saved checkpoint without requiring `--resume`, displaying `verified`, `total`, `checkpoint_exists` and `already_complete`. State-changing runs continue to require explicit `--resume` when a checkpoint exists and preserve all saved keys. Added regression test. Formal Step69, Step70 scratch SHA `b738b82b038d229850e043f63796fd01db4cb50a404ad3247ef1a5962ee07c04`, source and other evidence remain untouched.
+
+Next:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step70_exact_audit -v
+.\run_vp05_sector202_target_b_step70_exact_audit.bat --phase coeff --check-only
+```
+If `verified==total`, skip coeff calculation and run `--phase ibp --check-only`. If incomplete, resume exact coefficients using `--phase coeff --resume --hours 12 --timeout-seconds 1200 --max-new 500`. Do not delete/overwrite checkpoints. No Step70 promotion without complete coeff and IBP audits; whole Target B not proved.
