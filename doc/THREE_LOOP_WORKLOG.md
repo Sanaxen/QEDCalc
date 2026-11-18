@@ -7754,3 +7754,24 @@ If preflight returns `B_STEP70_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`, `scratch_exist
 .\run_vp05_sector202_target_b_step70_scratch.bat --hours 12 > log_step70_scratch.txt
 ```
 If `scratch_exists=true`, inspect `scratch_steps`: at 70 skip computation and proceed to independent exact Step70 audits; at 69 use `--resume` for execution. Formal Step69 remains untouched until complete local exact coefficient and original-IBP audit and a separately approved promotion. The earlier Step61–63 provenance issue and whole-target proof remain unresolved.
+
+
+### 2026-11-18 Target B Step70: single-step scratch saved; two independent exact audit phases implemented
+
+Actual user-provided `log_step70_scratch.txt` confirms `B_STEP70_SCRATCH_PREFLIGHT_PASS_NOT_PROOF` at pinned formal Step69 SHA `97307fc660bc7a5b9cb17e4c6057025c1488d023a6e5b7f87341343de8c57b2d`, next old lead `[166596414144513,139]`, and a one-step exact calculation finishing `steps=70`, `remainder_terms=57`, `original_support=145`, `max_expression_chars=3392`, next lead `[166596414144515,139]`, `timeout=false`, `returncode=0`, `formal_state_unchanged=true`. New Step70 scratch SHA pin **`b738b82b038d229850e043f63796fd01db4cb50a404ad3247ef1a5962ee07c04`**. Status `MULTISTEP_STEPS_SAVED_NOT_TARGET_PROOF`; original-source replay was **not yet verified**. Never rerun or overwrite saved Step70 scratch.
+
+Added `examples/three_loop_vp05_sector202_target_b_step70_exact_audit.py`, unit test and `run_vp05_sector202_target_b_step70_exact_audit.bat`, following successful Step69 two-phase audit. Guards: saved Step69 read-only audit PASS; formal Step69 SHA; exact saved Step70 scratch SHA; source checkpoint/SOURCE/CERT hash provenance; protected historical states and certificates; exact next pivot from formal69 (not guessed); actual saved Step70 dimensions; identity checks over `QQ(z,d)` for every coefficient and each original unscaled IBP pivot key; exclusive ordered checkpoint output `vp05_sector202_B_step70_exact_coefficient_checkpoint.json` then `vp05_sector202_B_step70_exact_original_ibp_checkpoint.json`, IBP config bound to completed coefficient SHA; subprocess timeout and <=12h job cap. Neither phase changes formal Step69. **Windows tests and exact audit runs pending**.
+
+Next:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step70_exact_audit -v
+.\run_vp05_sector202_target_b_step70_exact_audit.bat --phase coeff --check-only
+.\run_vp05_sector202_target_b_step70_exact_audit.bat --phase coeff --hours 12 --timeout-seconds 1200 --max-new 500 > log_step70_coeff.txt
+```
+Require `B_STEP70_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF` before:
+```powershell
+.\run_vp05_sector202_target_b_step70_exact_audit.bat --phase ibp --check-only
+.\run_vp05_sector202_target_b_step70_exact_audit.bat --phase ibp --hours 12 --timeout-seconds 1200 --max-new 500 > log_step70_ibp.txt
+```
+Require `B_STEP70_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF` before even considering guarded promotion. For existing phase checkpoints, inspect and use `--resume` rather than recreating. Target B entire proof and older source provenance gaps remain not proved.
