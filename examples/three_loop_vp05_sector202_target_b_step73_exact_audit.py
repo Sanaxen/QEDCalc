@@ -1,8 +1,8 @@
-"""Isolated exact Step72->72 coefficient and original-IBP replay, no promotion.
+"""Isolated exact Step72->73 coefficient and original-IBP replay, no promotion.
 
 Two ordered, independently resumable phases: coefficient identities and
 unscaled original-IBP pivot identity. Each worker uses exact QQ(z,d) rational
-functions (no modular/numeric sampling). Pinned formal Step72 and scratch72
+functions (no modular/numeric sampling). Pinned formal Step72 and scratch73
 remain read-only; two new checkpoint files are never overwritten without
 --resume. Phase-2 requires all phase-1 certificates.
 """
