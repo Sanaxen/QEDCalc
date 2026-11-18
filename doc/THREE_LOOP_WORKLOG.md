@@ -8297,3 +8297,26 @@ Require `B_STEP76_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`, then:
 .\run_vp05_sector202_target_b_step76_read_only_audit.bat > log_step76_saved_audit.txt
 ```
 Require `B_STEP76_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` before proceeding to Step77 scratch. Whole Target B proof remains false.
+
+
+### 2026-11-19 VP05 sector202 Target B Step76 saved-state audit PASS (user reported), Step77 scratch prepared
+
+User reports **`B_STEP76_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`** after Step76's guarded promotion and independent post-audit. The complete saved-state audit JSON/log and specific exact coefficient count were not attached, so these are not independently reproduced in this turn. Previously verified Step76 Original unscaled IBP exact replay: **371/371 PASS**. Pinned formal Step76 SHA **`33e29f0cd4e00522c27c748b0cbb45d58130db39788a2a26dfa66c71c0337222`**, identical to saved Step76 scratch; Step75 predecessor SHA **`2a7e2444c2cb5b65826df964c8e699d057963de4fbf7e68cac025d8c5c9a3dc9`**. Audited Step76 prefix dimensions: `steps=76`, remainder **25**, original support **135**, maximum expression chars **2036**; next lead **`[166596417552384,139]`**. The target B proof remains false, and historical Steps61–63 original evidence provenance is still outstanding.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step77_scratch.py`, `examples/test_three_loop_vp05_sector202_target_b_step77_scratch.py`, `run_vp05_sector202_target_b_step77_scratch.bat` on `feature/master-basis-initiate-only`. It uses isolated Step77 scratch `vp05_sector202_B_step77_scratch_state.json`, `--check-only` read-only by default, exclusive file creation, strict resume only for an unchanged one-step partial scratch, dynamic next pivot from SHA-pinned formal76, and independent Step76 saved audit PASS. Protects SHA-pinned formal76/scratch76, predecessor backups and scratches, the original input/certificate chain and all previous exact coefficient/IBP certificates. One new step maximum per run; caps: columns256, original-support400, expression characters7500, wall-clock12h. A cap/timeout/partial result is not an exact-target proof and never authorizes automatic formal promotion. Do not rerun Step76 promotion. **Windows tests, Step77 preflight and actual Step77 computation are pending.**
+
+PowerShell:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step77_scratch -v
+.\run_vp05_sector202_target_b_step77_scratch.bat --check-only
+```
+
+Require `B_STEP77_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`. Only if `scratch_exists=false`, execute:
+
+```powershell
+.\run_vp05_sector202_target_b_step77_scratch.bat --hours 12 > log_step77_scratch.txt
+```
+
+If an existing partial scratch has `scratch_steps=76`, review and use `--resume`; never overwrite existing scratch. If `scratch_steps=77`, skip engine execution and SHA-pin the result for independent exact Step77 coefficient/ORIGINAL IBP audits. Do not treat prefix success as Target B proof.
