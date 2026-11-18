@@ -117,7 +117,7 @@ def main():
     args=ap.parse_args()
     if not 0<args.hours<=12:
         ap.error("Only (0,12] hours permitted")
-    audit=audit_saved70()
+    audit=audit_saved71()
     if audit.get("status")!="B_STEP71_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF":
         raise RuntimeError("Saved Step71 post-promotion audit failed")
     protected=protected_inputs()
