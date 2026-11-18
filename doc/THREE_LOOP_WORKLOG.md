@@ -7795,3 +7795,20 @@ If `verified==total`, skip coeff calculation and run `--phase ibp --check-only`.
 User-uploaded `log_step70_coeff.txt` confirms `B_STEP70_COEFF_PREFLIGHT_PASS_NOT_PROOF` with `verified=203,total=203,checkpoint_exists=true,already_complete=true,formal_state_unchanged=true`; final `B_STEP70_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF`, `verified=203,total=203,formal_state_modified=false,target_b_proven=false`. Thus the independent Step70 `QQ(z,d)` coefficient checkpoint is complete; **do not rerun/recreate it**. Step70 scratch SHA remains `b738b82b038d229850e043f63796fd01db4cb50a404ad3247ef1a5962ee07c04`; formal Step69 remains the accepted state.
 
 Next perform `run_vp05_sector202_target_b_step70_exact_audit.bat --phase ibp --check-only`. If no phase checkpoint yet, run `--phase ibp --hours 12 --timeout-seconds 1200 --max-new 500 > log_step70_ibp.txt`; use `--resume` for an existing partial checkpoint. Require `B_STEP70_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF` before implementing/promoting formal Step70. The coefficient result alone is not original-source IBP replay or whole Target B proof.
+
+
+### 2026-11-18 VP05 sector202 Target B Step70: 203 coefficient + 39 original IBP exact PASS; promotion guarded
+
+User uploaded `log_step70_ibp.txt`: `B_STEP70_IBP_PREFLIGHT_PASS_NOT_PROOF` initial 0/39 with `checkpoint_exists=false`; every original unscaled IBP key was independently saved 1 through 39, final `B_STEP70_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF` **39/39** after **22.94 seconds**, `formal_state_modified=false`, `target_b_proven=false`. Previously supplied `log_step70_coeff.txt`: `B_STEP70_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF` **203/203**. Thus the two exact `QQ(z,d)` audit phases are complete at user runtime, with phase-2 requiring the full SHA-bound coefficient checkpoint.
+
+Source: formal Step69 SHA `97307fc660bc7a5b9cb17e4c6057025c1488d023a6e5b7f87341343de8c57b2d`; Step70 scratch SHA `b738b82b038d229850e043f63796fd01db4cb50a404ad3247ef1a5962ee07c04`. Saved Step70 dimensions: `steps=70`, `remainder_terms=57`, `original_support=145`, `max_expression_chars=3392`, next lead `[166596414144515,139]`.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step70_formal_promotion.py` and `examples/three_loop_vp05_sector202_target_b_step70_read_only_audit.py`, both Windows .bat wrappers and unittest files. Promotion default `--check-only` does not write; requires all **203 coefficient and 39 IBP** saved exact records + ordered manifests, the IBP config's coefficient-checkpoint SHA binding, historically audited formal Step69, SHA-pinned Step70 successor and exact pivot path, historical source SHA and no overlapping paths or pre-existing backup/temp. Explicit `--promote` exclusively creates `vp05_sector202_B_exact_target_state_step69_before_step70_promotion.json`, verifies byte-identical Step69 backup, stages byte-identical pinned Step70 scratch, atomically replaces formal state, then SHA verifies. The independent post-promotion read-only audit validates the new state and historical backup/evidence, checks independent saved certificate manifests, and **compares coefficient count with its own 203 and IBP count with its own 39** rather than the cross-phase-count bug seen at Step69. Added regression tests for correct/incorrect cross-phase SHA/count. Formal Step69 has **not** yet been promoted in the user runtime; Windows tests and preflight pending. Target B total proof and earlier Step61–63 provenance gaps remain unresolved.
+
+Next Windows commands:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step70_formal_promotion examples.test_three_loop_vp05_sector202_target_b_step70_read_only_audit -v
+.\run_vp05_sector202_target_b_step70_formal_promotion.bat --check-only
+```
+Require `B_STEP70_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF`, `coefficient_keys_verified=203` and `original_ibp_keys_verified=39` before explicit **once-only** `--promote` followed by `run_vp05_sector202_target_b_step70_read_only_audit.bat`. Do not delete/overwrite prior certificates or rerun previous scratch.
