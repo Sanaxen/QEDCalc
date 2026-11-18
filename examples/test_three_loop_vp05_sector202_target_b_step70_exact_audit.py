@@ -19,6 +19,14 @@ class Step70ExactAuditTests(unittest.TestCase):
     def test_formal_next_lead_is_derived(self):
         baseline={"remaining":[[[7,139],"1"],[[8,139],"1"]],"metrics":{"lead":[7,139]}}
         self.assertEqual(formal_next_lead(baseline),[7,139])
+    def test_read_only_preflight_can_inspect_existing_checkpoint(self):
+        # The CLI must not require --resume for an existing checkpoint in --check-only.
+        import inspect
+        from examples.three_loop_vp05_sector202_target_b_step70_exact_audit import main
+        code=inspect.getsource(main)
+        self.assertIn("exists!=args.resume and not args.check_only",code)
+        self.assertIn("if exists:",code)
+        self.assertIn("checkpoint_exists",code)
     def test_source_provenance_imports_canonical(self):
         from examples.three_loop_vp05_sector202_target_exact_reduction import (
             CHECKPOINT as CP,SOURCE as SO,CERT as CE,
