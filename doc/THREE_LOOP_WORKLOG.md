@@ -7581,3 +7581,24 @@ Require `B_STEP68_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`. If no Step68 scratch previo
 .\run_vp05_sector202_target_b_step68_scratch.bat --hours 12 > log_step68_scratch.txt
 ```
 If the *new* Step68 scratch exists with zero completed steps, specify `--resume`; if saved steps=68, never rerun. After result, independently audit Step67→68 coefficients and exact original IBP rational identities before any formal promotion. Earlier Steps61–63 full-target proof chain limitations remain.
+
+
+### 2026-11-18 VP05 sector202 Target B Step68 scratch PASS; two-phase exact QQ(z,d) audit prepared
+
+User `log_step68_scratch.txt` reports `B_STEP68_SCRATCH_PREFLIGHT_PASS_NOT_PROOF` and `MULTISTEP_STEPS_SAVED_NOT_TARGET_PROOF` with `returncode=0`, `timed_out=false`, saved step **68** and formal Step67 SHA unchanged. Formal Step67 SHA `bd5e5dbd92c8636332b006371006891c2bbd1e9870c2f5d5fb353b935a790ba2`. New **unpromoted scratch Step68** SHA `09368c634e482c40a8ae7dd9e7657c0d0667608f82f7d5b6537cc66067ac5ae8`. One-step saved reduction: residual **74→59**, original support **154→144**, max expression chars **5726→3174**, next lead `[166596414013443,139]`. `exact_target_proven=false`, `step68_original_ibp_exact_replay_verified=false`. Do **not** rerun Step68 scratch or promote without exact audit.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step68_exact_audit.py`, matching test module and `run_vp05_sector202_target_b_step68_exact_audit.bat`. It uses independently resumable `--phase coeff` and `--phase ibp`, one key per bounded subprocess; exact `QQ(z,d)` rational-function equality, not point checks, SHA-pinned formal67/scratch68/source/provenance. The coefficient phase checks the complete union of old/new/pivot residual/source key supports and signed Step67→68 update; phase IBP requires all coefficient certificates and exactly replays pivot trace against **original gzipped IBP source** per integral key. Two separate exclusive checkpoints `vp05_sector202_B_step68_exact_coefficient_checkpoint.json` and `vp05_sector202_B_step68_exact_original_ibp_checkpoint.json`; `--resume` required only if that checkpoint already exists. Job counts are determined at runtime, not assumed. Neither audit changes the formal state or promotes Step68. **Windows execution pending**.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step68_exact_audit -v
+.\run_vp05_sector202_target_b_step68_exact_audit.bat --phase coeff --check-only
+.\run_vp05_sector202_target_b_step68_exact_audit.bat --phase coeff --hours 12 --timeout-seconds 1200 --max-new 500 > log_step68_coeff.txt
+```
+Require `B_STEP68_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF`; **then**:
+```powershell
+.\run_vp05_sector202_target_b_step68_exact_audit.bat --phase ibp --check-only
+.\run_vp05_sector202_target_b_step68_exact_audit.bat --phase ibp --hours 12 --timeout-seconds 1200 --max-new 500 > log_step68_ibp.txt
+```
+Require `B_STEP68_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF` before implementing backup-first formal Step68 promotion and post-promotion read-only audit. Earlier Step61–63 full-chain issues and Target B whole proof remain outstanding.
