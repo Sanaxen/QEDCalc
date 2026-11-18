@@ -74,7 +74,7 @@ def promote(check_only=True):
     if check_only:return summary
     old=B_STATE.read_bytes()
     if hashlib.sha256(old).hexdigest()!=EXPECTED_STEP67_SHA:
-        raise RuntimeError("Formal Step66 changed before backup")
+        raise RuntimeError("Formal Step67 changed before backup")
     with BACKUP.open("xb") as stream:
         stream.write(old);stream.flush();os.fsync(stream.fileno())
     if sha(BACKUP)!=EXPECTED_STEP67_SHA:
