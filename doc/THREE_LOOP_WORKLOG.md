@@ -8348,3 +8348,37 @@ After complete coefficient phase:
 .\run_vp05_sector202_target_b_step77_exact_audit.bat --phase ibp --hours 12 --timeout-seconds 1200 --max-new 500 > log_step77_ibp.txt
 ```
 Use `--resume` for any preexisting partial IBP checkpoint. Require `B_STEP77_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF` before designing Step77 guarded formal promotion.
+
+
+### 2026-11-19 VP05 sector202 Target B Step77 original IBP 41/41 PASS, guarded formal promotion implemented
+
+Inspected attached `log_step77_ibp.txt` through its final record, `B_STEP77_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF`, **41/41 exact original unscaled IBP keys verified in 24.67 seconds**. Starting preflight was `B_STEP77_IBP_PREFLIGHT_PASS_NOT_PROOF` with 0/41 and a newly created checkpoint; final `formal_state_modified=false`, `target_b_proven=false`. IBP worker enforces full previous coefficient phase completion; however the independent coefficient log/key count was not supplied, so must be verified from live checkpoints at promotion preflight. Formal Step76 remains unchanged SHA **`33e29f0cd4e00522c27c748b0cbb45d58130db39788a2a26dfa66c71c0337222`**; immutable Step77 scratch SHA **`9df3d205bdee62f00533df12da0ee6918861f4d11ae31d91a474f3614d44622f`**. Step77 scratch: `steps=77`, remainder 28 (from 25), original support 137 (from 135), max expression chars 2036, next lead `[166596417552385,139]`. A small increase in support is mathematically permissible and not a failed step.
+
+Added and committed:
+- `examples/three_loop_vp05_sector202_target_b_step77_formal_promotion.py` and corresponding guarded tests and Windows batch launcher
+- `examples/three_loop_vp05_sector202_target_b_step77_read_only_audit.py` and corresponding independent post-audit tests and Windows batch launcher.
+These explicitly require complete SHA-bound coefficient and **41 original IBP exact** inventories, the coefficient→IBP SHA evidence bridge, the pinned original Step76 formal and immutable Step77 scratch states, a strictly advancing next lead after elimination of the Step76 pivot despite nonmonotone support, original source provenance, bounded metrics, and historical checkpoint SHA guards. Default mode is read-only; explicit one-time `--promote` saves a unique SHA-verified Step76 backup, stages bytes, rechecks input integrity and atomically promotes formal Step77. Saved-state independent audit checks the original source, the entire historical backup/scratch chain and exact audit manifests. **No formal promotion, Windows tests or post-promotion Step77 audit observed yet.** Target B remains unproven overall, and Steps61–63 provenance still outstanding.
+
+Also fixed regression test typo `EXPECTED_undefined_SHA` → `EXPECTED_STEP75_SHA` in two prior Step76 tests. No data state files or user-owned saved checkpoints modified.
+
+Next Windows PowerShell:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step76_formal_promotion examples.test_three_loop_vp05_sector202_target_b_step76_read_only_audit examples.test_three_loop_vp05_sector202_target_b_step77_formal_promotion examples.test_three_loop_vp05_sector202_target_b_step77_read_only_audit -v
+.\run_vp05_sector202_target_b_step77_formal_promotion.bat --check-only
+```
+
+Require `B_STEP77_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF`, `original_ibp_keys_verified=41`, positive full coefficient count, correct old/new SHA, and candidate dimension checks. Only after unit tests and preflight PASS, run **exactly once**:
+
+```powershell
+.\run_vp05_sector202_target_b_step77_formal_promotion.bat --promote > log_step77_promotion.txt
+```
+
+Require `B_STEP77_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`; then:
+
+```powershell
+.\run_vp05_sector202_target_b_step77_read_only_audit.bat > log_step77_saved_audit.txt
+```
+
+Require `B_STEP77_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` before Step78. Do not rerun Step77 scratch or promotion after successful completion.
