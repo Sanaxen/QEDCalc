@@ -1,7 +1,7 @@
 import unittest
 from examples.three_loop_vp05_sector202_target_b_step78_scratch import (
     START_STEP, EXPECTED_STEP77_SHA, formal_next_lead, validate_scratch,
-    SCRATCH, TEMP, PROOF, B_STATE, STEP77_SCRATCH, STEP75_SCRATCH,
+    SCRATCH, TEMP, PROOF, B_STATE, STEP77_SCRATCH, STEP76_SCRATCH,
 )
 class Step78ScratchTests(unittest.TestCase):
     def setUp(self):
@@ -31,7 +31,7 @@ class Step78ScratchTests(unittest.TestCase):
             validate_scratch(self.old,{**new,
                 "pivot_path":self.old["pivot_path"]+[[505,139]]})
     def test_paths_distinct(self):
-        paths=[SCRATCH,TEMP,PROOF,B_STATE,STEP77_SCRATCH,STEP75_SCRATCH]
+        paths=[SCRATCH,TEMP,PROOF,B_STATE,STEP77_SCRATCH,STEP76_SCRATCH]
         self.assertEqual(len(paths),len({p.resolve() for p in paths}))
 if __name__=="__main__":
     unittest.main()
