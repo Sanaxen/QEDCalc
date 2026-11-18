@@ -1,7 +1,7 @@
 import unittest
 from examples.three_loop_vp05_sector202_target_b_step68_exact_audit import (
     field_equal,coefficient_identity,COEFF,IBP,SCRATCH,
-    EXPECTED_STEP68_SHA,EXPECTED_STEP67_SHA,
+    EXPECTED_STEP68_SHA,EXPECTED_STEP67_SHA,CHECKPOINT,SOURCE,CERT,
 )
 class Step68ExactAuditTests(unittest.TestCase):
     def test_exact_field_original_identity(self):
@@ -12,6 +12,15 @@ class Step68ExactAuditTests(unittest.TestCase):
         self.assertTrue(coefficient_identity("source","2","z+2","1","z"))
         self.assertFalse(coefficient_identity("remainder","z+2","3","1","z"))
         self.assertFalse(coefficient_identity("source","2","z+3","1","z"))
+    def test_imported_source_paths_match_canonical_definitions(self):
+        from examples.three_loop_vp05_sector202_target_exact_reduction import (
+            CHECKPOINT as CANONICAL_CHECKPOINT,
+            SOURCE as CANONICAL_SOURCE,
+            CERT as CANONICAL_CERT,
+        )
+        self.assertEqual(CHECKPOINT,CANONICAL_CHECKPOINT)
+        self.assertEqual(SOURCE,CANONICAL_SOURCE)
+        self.assertEqual(CERT,CANONICAL_CERT)
     def test_independent_paths_and_hashes(self):
         self.assertEqual(len({COEFF.resolve(),IBP.resolve(),SCRATCH.resolve()}),3)
         self.assertEqual(EXPECTED_STEP67_SHA,"bd5e5dbd92c8636332b006371006891c2bbd1e9870c2f5d5fb353b935a790ba2")
