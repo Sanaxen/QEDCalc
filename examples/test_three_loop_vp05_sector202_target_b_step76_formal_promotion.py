@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 from examples.three_loop_vp05_sector202_target_b_step76_formal_promotion import (
     promote,B_STATE,BACKUP,TEMP,SCRATCH,COEFF,IBP,valid_nonmonotone_successor,
-    EXPECTED_undefined_SHA,EXPECTED_STEP76_SHA,
+    EXPECTED_STEP75_SHA,EXPECTED_STEP76_SHA,
 )
 class Step76PromotionTests(unittest.TestCase):
     def test_read_only_default(self):
@@ -26,7 +26,7 @@ class Step76PromotionTests(unittest.TestCase):
         self.assertFalse(valid_nonmonotone_successor(formal,{"remaining":[]}))
 
     def test_expected_sha(self):
-        self.assertEqual(EXPECTED_undefined_SHA,
+        self.assertEqual(EXPECTED_STEP75_SHA,
             "2a7e2444c2cb5b65826df964c8e699d057963de4fbf7e68cac025d8c5c9a3dc9")
         self.assertEqual(EXPECTED_STEP76_SHA,
             "33e29f0cd4e00522c27c748b0cbb45d58130db39788a2a26dfa66c71c0337222")
