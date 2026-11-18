@@ -5,7 +5,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 from examples.three_loop_vp05_sector202_target_b_step69_read_only_audit import (
-    manifest,STATUS,CHECKPOINT,SOURCE,CERT,
+    manifest,validate_certificate_bridge,STATUS,CHECKPOINT,SOURCE,CERT,
     B_STATE,BACKUP,SCRATCH,COEFF,IBP,
     EXPECTED_STEP68_SHA,EXPECTED_STEP69_SHA,
 )
@@ -13,6 +13,19 @@ class Step69SavedAuditTests(unittest.TestCase):
     def test_no_path_overlap(self):
         paths=[B_STATE,BACKUP,SCRATCH,COEFF,IBP]
         self.assertEqual(len(paths),len({p.resolve() for p in paths}))
+    def test_distinct_coefficient_and_ibp_counts_allowed(self):
+        # Regression: coefficient job inventory need not contain 43 keys.
+        validate_certificate_bridge(
+            {"job_count":200},200,
+            {"job_count":43,"coefficient_checkpoint_sha256":"abc"},43,"abc")
+        with self.assertRaises(RuntimeError):
+            validate_certificate_bridge(
+                {"job_count":200},200,
+                {"job_count":43,"coefficient_checkpoint_sha256":"wrong"},43,"abc")
+        with self.assertRaises(RuntimeError):
+            validate_certificate_bridge(
+                {"job_count":200},200,
+                {"job_count":42,"coefficient_checkpoint_sha256":"abc"},43,"abc")
     def test_complete_exact_coefficient_manifest(self):
         entries=[["remainder",[8,139]],["source",18]]
         cfg={"version":1,"phase":"coeff",
