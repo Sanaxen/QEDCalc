@@ -7851,3 +7851,26 @@ Get-Content .\log_step71_scratch.txt -Tail 10
 ```
 
 If `scratch_exists=true` and `scratch_steps=71`, **do not compute again**; preserve saved scratch and move to its independent coefficient and original-IBP exact audit. If scratch has `scratch_steps=70`, inspect and use `--resume` only when appropriate. After actual Step71 scratch confirmation, independently audit exact coefficients and original unscaled IBP before any promotion.
+
+
+### 2026-11-18 Target B Step71 scratch saved; independent exact checks prepared
+
+Actual user `log_step71_scratch.txt`: preflight `B_STEP71_SCRATCH_PREFLIGHT_PASS_NOT_PROOF` from audited formal Step70 SHA `b738b82b038d229850e043f63796fd01db4cb50a404ad3247ef1a5962ee07c04` and old pivot lead `[166596414144515,139]`. One exact step completed (`returncode=0`, no timeout), producing scratch step71, remainder **57**, original support **146**, max expression chars **2937**, next lead **`[166596414406657,139]`**, scratch SHA **`80d9eee0c153ddbef718bbccfc8b1d0087277d6a13ca51df1986f838436966f8`**. Formal state unchanged; original source IBP replay unverified and full Target B not proven. **Do not rerun saved Step71 scratch**.
+
+Added `examples/three_loop_vp05_sector202_target_b_step71_exact_audit.py`, its unittest, and `run_vp05_sector202_target_b_step71_exact_audit.bat`. Follows the established Step70 two-phase rational-function `QQ(z,d)` independent audit: first coefficient identities, then original unscaled IBP source replay; separate exclusive resumable checkpoints; recorded exact keys and SHA-bound phase-2 evidence; protected formal Step70 and historical backups. Actual Step71 dimensions and scratch SHA are pinned. No promotion and no complete proof. **Local Windows execution/tests not yet observed.**
+
+Next commands:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step71_exact_audit -v
+.\run_vp05_sector202_target_b_step71_exact_audit.bat --phase coeff --check-only
+```
+
+If coefficient checkpoint absent (`checkpoint_exists=false`), run:
+
+```powershell
+.\run_vp05_sector202_target_b_step71_exact_audit.bat --phase coeff --hours 12 --timeout-seconds 1200 --max-new 500 > log_step71_coeff.txt
+```
+
+If checkpoint already exists partially, use `--resume`, never erase it. Require `B_STEP71_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF` before `ibp`. Then read-only preflight `--phase ibp --check-only` and run `--phase ibp --hours 12 --timeout-seconds 1200 --max-new 500 > log_step71_ibp.txt` only if that checkpoint does not exist. Require `B_STEP71_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF` before preparing any guarded promotion. This does not resolve historic Step61–63 provenance gaps or prove the entire Target B.
