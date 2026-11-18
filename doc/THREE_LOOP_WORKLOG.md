@@ -7656,3 +7656,22 @@ Require `B_STEP68_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`; then ind
 .\run_vp05_sector202_target_b_step68_read_only_audit.bat > log_step68_saved_audit.txt
 ```
 Require `B_STEP68_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`. Do not run `--promote` twice. Neither step proves complete Target B; older Steps61–63 provenance limitations remain.
+
+
+### 2026-11-18 VP05 sector202 Target B: Step68 formal promotion + post-promotion audit BOTH PASS, Step69 isolated scratch ready
+
+Two actual user logs: `log_step68_promotion.txt` reports `B_STEP68_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`; formal old Step67 SHA `bd5e5dbd92c8636332b006371006891c2bbd1e9870c2f5d5fb353b935a790ba2`, new formal Step68 SHA `09368c634e482c40a8ae7dd9e7657c0d0667608f82f7d5b6537cc66067ac5ae8`, coefficient checkpoint SHA `f4a4cfeffb49c33e485f4e51334491ceff63c949e44464c9a10e11b36d4593c7`, original-IBP checkpoint SHA `8095202a3b96efe5db449d0f88e15216eeb5a9e414aac2349e8a93fd07a213d5`, **232/232** exact coefficients, **298/298** original-IBP keys, Step67 backup SHA matches old formal state, formal state modified as intended. `log_step68_saved_audit.txt` independently reports **`B_STEP68_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`**, steps68, residual59, original support144, max expression chars3174, next lead `[166596414013443,139]`, post-audit read-only and `target_b_proven=false`. **Formal Step68 is now confirmed. Do not rerun Step68 promotion, prepromotion context checks or scratch.**
+
+Added `examples/three_loop_vp05_sector202_target_b_step69_scratch.py`, `examples/test_three_loop_vp05_sector202_target_b_step69_scratch.py`, and `run_vp05_sector202_target_b_step69_scratch.bat`. This Step69 tool uses **formal Step68** as SHA-pinned starting point, requires successful saved Step68 read-only audit, protects Step67/66/65 backups, prior Step66/67/68 scratch and exact certificate checkpoint files and protected source/Target A, writes ONLY a new exclusive `vp05_sector202_B_step69_scratch_state.json`, checks expected initial pivot `[166596414013443,139]`, runs exactly one saved exact reduction step with 256-column/400-support/7500-expression-char caps and <=12h. It does NOT perform independent Step69 coefficients/original-IBP proof or promote formal B. GitHub code/tests committed; Windows execution pending.
+
+Next PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step69_scratch -v
+.\run_vp05_sector202_target_b_step69_scratch.bat --check-only
+```
+Require `B_STEP69_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`. If no Step69 scratch yet:
+```powershell
+.\run_vp05_sector202_target_b_step69_scratch.bat --hours 12 > log_step69_scratch.txt
+```
+If a scratch exists but only 68 steps were saved, use `--resume`; if 69 already saved, do not run again. After checking result, prepare independent exact coefficient and original-source IBP replay before formal promotion. Whole Target B and earlier Step61–63 provenance gaps remain NOT PROVEN.
