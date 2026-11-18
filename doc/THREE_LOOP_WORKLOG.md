@@ -8441,3 +8441,32 @@ Require `B_STEP78_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF`, then:
 ```
 
 Use `--resume` instead if an existing partial phase checkpoint is present; never overwrite. Require `B_STEP78_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF` before implementing a guarded formal promotion and independent post-promotion audit.
+
+
+### 2026-11-19 VP05 sector202 Target B: Step78 232/232 Original IBP exact PASS; continuous exact-audited batch controller introduced
+
+User explicitly requested to stop operating manually one pivot at a time: recent exact elimination and audits each finish within minutes, leaving the current 12-hour limit ineffective. Inspected the uploaded `log_step78_ibp.txt`: preflight 0/232 with newly created checkpoint; final **`B_STEP78_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF`** with **232/232 original unscaled IBP keys exact `QQ(z,d)` PASS**, in 177.96 seconds. The IBP phase requires a complete coefficient checkpoint, but its individual count/log was not uploaded. Step78 candidate SHA **`3658cb213a837e0e8bed62c17897b659e737d1ecc04a9809e614fcc9c154bc0f`**, formal Step77 SHA **`9df3d205bdee62f00533df12da0ee6918861f4d11ae31d91a474f3614d44622f`**. Step78 scratch metrics: 38 residual, 159 original support, max expression chars 2805, next lead [166596417552386,139]. Step78 has **NOT been formally promoted**.
+
+Implemented:
+- `examples/three_loop_vp05_sector202_target_b_continuous_batch.py`
+- `examples/test_three_loop_vp05_sector202_target_b_continuous_batch.py`
+- `run_vp05_sector202_target_b_continuous_batch.bat`.
+
+The batch controls the existing exact engine `examples.three_loop_vp05_sector202_target_exact_checkpoint` instead of reimplementing reduction. A single invocation may progress up to **51 additional pivots (Step128 bound)** or stop after **12 hours**. There is **no per-pivot manual approval/promotion**. It creates an independent `output/three_loop_integral_family_audit/vp05_sector202_B_continuous_batch_from77/working_state.json` copied from immutable already-audited Step78 scratch and preserves the formal Step77 state, saved Step78 scratch and historical checkpoints. The initial Step78 will also be audited by the new generic independent verifier before Step79. Each succeeding pivot is computed and atomically saved by the engine; separately SHA-pinned before snapshots are retained. The controller reconstructs all coefficient identities and all original unscaled IBP pivot identities using exact `QQ(z,d)` algebra, with per-key phase progress checkpointed, a per-step immutable verification summary containing before/after hashes and phase certificate hashes, and a single auditable journal that advances **only when both exact phases have completed**. Original source/checkpoint SHA256, prior saved-state audit and full protected history are checked. Four independent exact worker processes run by default in parallel (`--workers 1..8`), while the reduction engine stays sequential to avoid unstable RAM/swap usage. Worker timeouts are individually bounded, and global wall-clock is enforced across the entire multi-step run. Exclusive host file lock prevents concurrent batch owners. If terminated during a pivot, the engine's atomic save retains completed pivots; if stopped during exact checks, per-key checkpoints resume. The engine's orphan `working_state.json.tmp` from an interrupted write is quarantined rather than replacing the trusted state. No automatic resource-cap raise, no automatic formal promotion, no false Target B proof. If the exact source replay reaches a full target certificate, stop for independent review rather than blindly continue. These are **implementation design and safeguards**, not yet demonstrated on user's Windows machine.
+
+Recommended **initial smoke run** after pulling code: Windows PowerShell:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_continuous_batch -v
+.\run_vp05_sector202_target_b_continuous_batch.bat --check-only
+.\run_vp05_sector202_target_b_continuous_batch.bat --hours 1 --steps 51 --workers 4 > log_vp05_batch.txt
+```
+
+Expect `BATCH_PREFLIGHT_PASS_NOT_TARGET_PROOF`, then a stream of `EXACT_PROGRESS`, `STEP_AUDITED` events and a resumable terminal `BATCH_STOPPED_RESUMABLE_NOT_TARGET_PROOF` status. To resume and run for another full 12-hour window:
+
+```powershell
+.\run_vp05_sector202_target_b_continuous_batch.bat --resume --hours 12 --workers 4 >> log_vp05_batch.txt
+```
+
+Do not create a second fresh run once the journal exists; use `--resume`. The initially accepted formality remains Step77 until a future **separately gated batch promotion and independent saved-state audit** is designed and run. Whole Target B proof still false, with Steps61–63 source provenance outstanding. No code has been run against user data in this environment; all actual Windows runtime/tests remain pending.
