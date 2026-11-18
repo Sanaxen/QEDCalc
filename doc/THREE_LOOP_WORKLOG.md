@@ -7891,3 +7891,26 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step71_forma
 ```
 
 Require `B_STEP71_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF`, `original_ibp_keys_verified=48`, and a nonzero complete `coefficient_keys_verified` before deciding to run the explicit promotion. Then run **once only** `run_vp05_sector202_target_b_step71_formal_promotion.bat --promote > log_step71_promotion.txt` and independently check `run_vp05_sector202_target_b_step71_read_only_audit.bat > log_step71_saved_audit.txt`. Require `B_STEP71_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` before treating formal Step71 as verified baseline. Do not repeat promotion or overwrite prior evidence.
+
+
+### 2026-11-18 Target B Step71 formally audited PASS; Step72 isolated scratch prepared
+
+User-uploaded `log_step71_saved_audit.txt` independently reports **`B_STEP71_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`**. Formal Step71 now accepted and SHA-pinned at **`80d9eee0c153ddbef718bbccfc8b1d0087277d6a13ca51df1986f838436966f8`**. Formal metrics: `steps=71`, `remainder_terms=57`, `original_support=146`, `max_expression_chars=2937`, next pivot `[166596414406657,139]`. Independently verified coefficients **206/206** and original unscaled IBP **48/48**. Historical Step70 backup SHA **`b738b82b038d229850e043f63796fd01db4cb50a404ad3247ef1a5962ee07c04`**. Post-audit is read-only (`formal_state_modified=false`) and `target_b_proven=false`. **Do not rerun Step71 promotion, Step71 scratch or re-create historical certificates.** Whole Target B and older Step61–63 provenance remain incomplete.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step72_scratch.py`, `examples/test_three_loop_vp05_sector202_target_b_step72_scratch.py`, and `run_vp05_sector202_target_b_step72_scratch.bat`. The new runner requires saved Step71 independent post-promotion audit PASS, SHA-pins saved formal Step71 and historical Step71 scratch, protects old backups and coefficient/IBP proof evidence through Step71, creates exclusively `vp05_sector202_B_step72_scratch_state.json`, and performs at most one bounded exact reduction step. Caps: 256 columns, 400 source support, 7500 chars, max 12h. `--check-only` is read-only and inspects pre-existing saved state. Do not rerun an already completed scratch. This is a scratch transition, **not** Step72 coefficient or original-IBP independent proof and **not** Target B complete proof. Windows tests and actual Step72 execution still unobserved.
+
+Next Windows PowerShell:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step72_scratch -v
+.\run_vp05_sector202_target_b_step72_scratch.bat --check-only
+```
+
+Require `B_STEP72_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`. Only if `scratch_exists=false` run:
+
+```powershell
+.\run_vp05_sector202_target_b_step72_scratch.bat --hours 12 > log_step72_scratch.txt
+```
+
+If `scratch_exists=true` with `scratch_steps=72`, do not rerun; inspect saved SHA and proceed to independent Step72 coefficient and original-source IBP audits. If scratch was interrupted with `scratch_steps=71`, inspect the saved state and consider guarded `--resume`. No formal Step72 promotion until both independent phases PASS.
