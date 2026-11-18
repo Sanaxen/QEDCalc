@@ -7827,3 +7827,27 @@ Require `B_STEP70_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`. Then run
 .\run_vp05_sector202_target_b_step70_read_only_audit.bat > log_step70_saved_audit.txt
 ```
 Require `B_STEP70_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` before declaring Step70 the confirmed formal baseline. Do not rerun promotion after a successful run; do not overwrite protected historical source, scratch or certificate checkpoints. Target B full proof and previous Step61–63 provenance gaps remain unresolved.
+
+
+### 2026-11-18 VP05 sector202 Target B: Step70 saved audit PASS, guarded Step71 scratch prepared
+
+Actual user-uploaded `log_step70_saved_audit(1).txt` reports **`B_STEP70_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`** with formal `steps=70`, `remainder_terms=57`, `original_support=145`, `max_expression_chars=3392`, `next_lead=[166596414144515,139]`; formal SHA-256 **`b738b82b038d229850e043f63796fd01db4cb50a404ad3247ef1a5962ee07c04`** and Step69 historical backup SHA **`97307fc660bc7a5b9cb17e4c6057025c1488d023a6e5b7f87341343de8c57b2d`**. Independent exact coefficients **203/203** and original-source IBP **39/39** validated; post-audit `formal_state_modified=false` and `target_b_proven=false`. **Formal Step70 is the accepted baseline; do not re-promote, rerun Step70 scratch, or rewrite prior evidence.**
+
+Created `examples/three_loop_vp05_sector202_target_b_step71_scratch.py`, its unit test, and `run_vp05_sector202_target_b_step71_scratch.bat`. The Step71 runner requires the successful **saved Step70 read-only audit**, SHA-pins formal70 and scratch70, and protects the Step69 promotion backup, older formal backups and saved exact certificates. It creates only the exclusive, independent `vp05_sector202_B_step71_scratch_state.json` and attempts exactly one exact reduction step, with 256-column/400-source-support/7500-character bounds and a maximum 12-hour subprocess cap. The next pivot is derived from the SHA-pinned saved formal Step70 rather than guessed. Read-only `--check-only` safely inspects a pre-existing scratch; fully saved Step71 cannot be rerun using `--resume`. Step71 is **scratch only**: no independent coefficient/IBP audit, no formal promotion, and **no complete Target B proof**. Step61–63 historical provenance gaps remain unresolved.
+
+The code was committed to GitHub; **Windows unit tests, Step71 preflight and actual calculation are not yet observed**. Next run locally:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step71_scratch -v
+.\run_vp05_sector202_target_b_step71_scratch.bat --check-only
+```
+
+Require `B_STEP71_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`. If `scratch_exists=false`, run:
+
+```powershell
+.\run_vp05_sector202_target_b_step71_scratch.bat --hours 12 > log_step71_scratch.txt
+Get-Content .\log_step71_scratch.txt -Tail 10
+```
+
+If `scratch_exists=true` and `scratch_steps=71`, **do not compute again**; preserve saved scratch and move to its independent coefficient and original-IBP exact audit. If scratch has `scratch_steps=70`, inspect and use `--resume` only when appropriate. After actual Step71 scratch confirmation, independently audit exact coefficients and original unscaled IBP before any promotion.
