@@ -8082,3 +8082,33 @@ Require `B_STEP74_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`. If `scratch_exists=false` t
 ```
 
 If `scratch_exists=true` with saved `scratch_steps=74`, do not rerun the engine; preserve and SHA-pin existing scratch for the independent Step74 coefficient and original-source IBP phases. An interrupted scratch at step73 must be examined before deliberate `--resume`. Never rerun Step73 promotion.
+
+
+### 2026-11-18 VP05 sector202 Target B Step74 scratch saved; exact coefficient + original IBP audits prepared
+
+User-supplied `log_step74_scratch.txt` reports `B_STEP74_SCRATCH_PREFLIGHT_PASS_NOT_PROOF` from accepted formal Step73 SHA **`4ade410c0ecf50f10698d899a1ae14bc762e4f0107b044ee55a3fb7d5ec7004c`** and old next lead `[166596414668800,139]`. Exactly one saved Step73→74 transition with `returncode=0`, `timed_out=false`, and `formal_state_unchanged=true`. Scratch `steps=74`, remainder **26** (previous 42), original support **126** (previous 129), max expression chars **1742** (previous 1007), next lead **`[166596414799873,139]`**, scratch SHA256 **`ec7bf87037fc34bd73e730894bfe09a8e43287628a07ec7c861e6f777b36b694`**. Output `MULTISTEP_STEPS_SAVED_NOT_TARGET_PROOF`; `step74_original_ibp_exact_replay_verified=false`, `target_b_proven=false`. **Step74 scratch is already saved; never rerun it or overwrite protected historical checkpoints.** Increased expression size remains below the configured 7500-char cap.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step74_exact_audit.py`, `examples/test_three_loop_vp05_sector202_target_b_step74_exact_audit.py`, `run_vp05_sector202_target_b_step74_exact_audit.bat` for two ordered and independently resumable exact `QQ(z,d)` phases. Coefficient phase checks all Step73→74 remainder and source identities against the original pivot; original-IBP phase checks all original unscaled IBP term identities. The runner requires the independent saved Step73 read-only audit, SHA-bound formal Step73 and Step74 scratch, exact pivot continuation and fixed metrics, source CHECKPOINT/SOURCE/CERT hashes and protected historical states/evidence. Each phase writes its own exclusive, ordered certificate checkpoint; phase-2 requires completed coefficient phase and SHA binds to that checkpoint. `--check-only` does not mutate even if a partial checkpoint exists; `--resume` is mandatory if modifying an existing partial checkpoint. <=12-hour phase bounds and <=3600 second worker timeout cap remain. **Windows unit tests and actual exact phase runs have not been observed.** No formal Step74 promotion and no complete Target B proof; old Steps61–63 provenance remains unresolved.
+
+Next Windows PowerShell:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step74_exact_audit -v
+.\run_vp05_sector202_target_b_step74_exact_audit.bat --phase coeff --check-only
+```
+
+If `checkpoint_exists=false`:
+
+```powershell
+.\run_vp05_sector202_target_b_step74_exact_audit.bat --phase coeff --hours 12 --timeout-seconds 1200 --max-new 500 > log_step74_coeff.txt
+```
+
+If the checkpoint exists and remains incomplete, inspect and use `--resume`; do not overwrite. Require **`B_STEP74_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF`** before:
+
+```powershell
+.\run_vp05_sector202_target_b_step74_exact_audit.bat --phase ibp --check-only
+.\run_vp05_sector202_target_b_step74_exact_audit.bat --phase ibp --hours 12 --timeout-seconds 1200 --max-new 500 > log_step74_ibp.txt
+```
+
+Use `--resume` on existing partial IBP state, or skip if complete. Require **`B_STEP74_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF`** before creating any backup-first formal Step74 promotion. Job counts must come from actual checked source inventory; do not guess.
