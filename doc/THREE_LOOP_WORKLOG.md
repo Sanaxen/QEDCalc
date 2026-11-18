@@ -8470,3 +8470,12 @@ Expect `BATCH_PREFLIGHT_PASS_NOT_TARGET_PROOF`, then a stream of `EXACT_PROGRESS
 ```
 
 Do not create a second fresh run once the journal exists; use `--resume`. The initially accepted formality remains Step77 until a future **separately gated batch promotion and independent saved-state audit** is designed and run. Whole Target B proof still false, with Steps61–63 source provenance outstanding. No code has been run against user data in this environment; all actual Windows runtime/tests remain pending.
+
+
+#### Continuous-batch implementation follow-up (2026-11-19)
+
+- Updated controller to `--steps 51` by default (remaining Step77→Step128 bound). It runs a sequential exact elimination engine but executes independent coefficient/IBP key checks using `--workers 4` subprocesses by default; `--workers 1..8` is accepted. The per-worker timeout defaults to 1200 seconds and the global `--hours` limit covers the whole batch, not each pivot.
+- `--check-only` now validates existing Step78 exact coefficient checkpoint, all 232 unscaled original IBP keys and their SHA linkage before reporting PASS; on initial use it creates no batch checkpoint or lock file. Step78 remains separately immutable; the batch copy is the only mutable target state.
+- Aborted engine `.tmp` staging is SHA-named and quarantined; it never replaces the authoritative working JSON. Bootstrap interruptions between working copy and journal creation can be recovered from SHA-pinned Step78 on `--resume`. If interrupted after journal creation but before the working copy, the initial immutable Step78 copy can be reconstructed. Per-key audits are recorded in order even when several workers run concurrently.
+- Rechecks original evidence and the unchanged formal state at each step's certificate commit. If the exact reduction engine produces its full replay proof, the batch stops for independent review rather than silently treating a prefix as Target B proof.
+- Regression tests were added and committed, but no local Windows runtime run was available to validate performance or exact counts. Start with `--hours 1 --workers 4` as an integration smoke test; then resume with `--hours 12 --workers 4`. Monitor RAM and swap; reduce to `--workers 2` if necessary. If stopped for resource caps or source-integrity failures, review without auto-raising caps or modifying formal state. Explicit final batch formal promotion remains a separate, future gated operation.
