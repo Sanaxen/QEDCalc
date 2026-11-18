@@ -119,7 +119,8 @@ def inspect():
         raise RuntimeError("Saved formal Step69 not a valid successor")
     cc,nc=manifest("coeff",COEFF)
     ci,ni=manifest("ibp",IBP)
-    if ni!=43 or ci.get("job_count")!=nc or ci.get("coefficient_checkpoint_sha256")!=sha(COEFF):
+    if (ni!=43 or cc.get("job_count")!=nc or ci.get("job_count")!=ni
+        or ci.get("coefficient_checkpoint_sha256")!=sha(COEFF)):
         raise RuntimeError("Step69 coefficient->original IBP evidence not linked")
     saved_evidence=[(p,sha(p)) for p in evidence]
     for p,h in expected+saved_evidence:
