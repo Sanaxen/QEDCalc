@@ -8028,3 +8028,34 @@ If a partial checkpoint exists, inspect and use `--resume`, never delete. Requir
 ```
 
 Use `--resume` for an already existing incomplete IBP checkpoint; skip recomputation if already complete. Require **`B_STEP73_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF`** before preparing any formal promotion. Do not invent audit counts. Previous Step61–63 provenance and entire Target B proof remain unresolved.
+
+
+### 2026-11-18 VP05 sector202 Target B Step73: original IBP 252/252 exact PASS; guarded promotion prepared
+
+Actual user-provided `log_step73_ibp.txt`: `B_STEP73_IBP_PREFLIGHT_PASS_NOT_PROOF` initially `verified=0/252`, no existing original-IBP checkpoint; all **252/252** original unscaled source IBP keys verified and saved via exact `QQ(z,d)` arithmetic by **162.65 seconds**. Final **`B_STEP73_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF`**, `formal_state_modified=false`, `target_b_proven=false`. The original-IBP worker requires a complete and SHA-bound Step73 coefficient certificate, but its specific job count was not supplied separately, and is therefore not assumed. No whole Target B proof.
+
+Formal predecessor Step72 is SHA **`35cc49631d6f36c46a7f5e7f15f77a7ba825581e0a9b761a897832314ddca7ab`**; saved Step73 scratch is SHA **`4ade410c0ecf50f10698d899a1ae14bc762e4f0107b044ee55a3fb7d5ec7004c`**. Candidate dimensions: `steps=73`, remainder **42**, original support **129**, max expression chars **1007**, next lead `[166596414668800,139]`. Formal Step72 remains accepted and must be preserved until guarded Step73 promotion passes.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step73_formal_promotion.py`, `examples/three_loop_vp05_sector202_target_b_step73_read_only_audit.py`, corresponding unit tests and Windows .bat runners. Promotion is **read-only by default**; preflight independently revalidates saved Step72 audit, SHA-pinned predecessor and scratch, exact coefficient and 252 original-IBP checkpoints against source-derived job inventory and SHAs, coefficient→IBP checkpoint SHA binding, candidate dimensions, pivot path, protected historical evidence, and backup/output path non-overlap. Only explicit **once-only `--promote`** creates exclusive SHA-verified Step72 backup `vp05_sector202_B_exact_target_state_step72_before_step73_promotion.json`, stages byte-exact scratch and atomically replaces formal B. Separate read-only post-promotion audit checks saved formal Step73 digest, Step72 backup, all prior historical states and evidence, ordered job manifests and SHA binding. Target B full proof remains false and historic Step61–63 provenance is not fixed. **Windows tests, promotion preflight and promotion not observed yet.**
+
+Next Windows PowerShell:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step73_formal_promotion examples.test_three_loop_vp05_sector202_target_b_step73_read_only_audit -v
+.\run_vp05_sector202_target_b_step73_formal_promotion.bat --check-only
+```
+
+Require `B_STEP73_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF`, `original_ibp_keys_verified=252` and complete positive `coefficient_keys_verified`. Only after PASS, execute **once**:
+
+```powershell
+.\run_vp05_sector202_target_b_step73_formal_promotion.bat --promote > log_step73_promotion.txt
+```
+
+Require `B_STEP73_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`, then independently audit saved state:
+
+```powershell
+.\run_vp05_sector202_target_b_step73_read_only_audit.bat > log_step73_saved_audit.txt
+```
+
+Require `B_STEP73_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` before proceeding to Step74. Never re-run promotion or overwrite old scratch/checkpoints.
