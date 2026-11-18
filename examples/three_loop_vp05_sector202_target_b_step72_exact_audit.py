@@ -1,8 +1,8 @@
-"""Isolated exact Step71->71 coefficient and original-IBP replay, no promotion.
+"""Isolated exact Step71->72 coefficient and original-IBP replay, no promotion.
 
 Two ordered, independently resumable phases: coefficient identities and
 unscaled original-IBP pivot identity. Each worker uses exact QQ(z,d) rational
-functions (no modular/numeric sampling). Pinned formal Step71 and scratch71
+functions (no modular/numeric sampling). Pinned formal Step71 and scratch72
 remain read-only; two new checkpoint files are never overwritten without
 --resume. Phase-2 requires all phase-1 certificates.
 """
@@ -25,12 +25,12 @@ from examples.three_loop_vp05_sector202_target_exact_reduction import (
     BASE, CHECKPOINT, SOURCE, CERT,
 )
 from examples.three_loop_vp05_sector202_target_b_step71_read_only_audit import (
-    inspect as audit_saved70,
+    inspect as audit_saved71,
 )
 from examples.three_loop_vp05_sector202_exact_prefix_smoke import expr
 from examples.three_loop_vp05_sector202_step51_scratch import atomic_save
 
-EXPECTED_STEP72_SHA="80d9eee0c153ddbef718bbccfc8b1d0087277d6a13ca51df1986f838436966f8"
+EXPECTED_STEP72_SHA="35cc49631d6f36c46a7f5e7f15f77a7ba825581e0a9b761a897832314ddca7ab"
 COEFF=BASE/"vp05_sector202_B_step72_exact_coefficient_checkpoint.json"
 IBP=BASE/"vp05_sector202_B_step72_exact_original_ibp_checkpoint.json"
 TAG="VP05_B_STEP72_EXACT_AUDIT "
@@ -64,7 +64,7 @@ def coefficient_identity(kind,old,new,pivot,factor):
     raise ValueError("Invalid coefficient kind")
 
 def context():
-    if audit_saved70().get("status")!="B_STEP71_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF":
+    if audit_saved71().get("status")!="B_STEP71_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF":
         raise RuntimeError("Formal Step71 not audited")
     protected=protected_inputs()
     if sha(SCRATCH)!=EXPECTED_STEP72_SHA or sha(B_STATE)!=EXPECTED_STEP71_SHA:
