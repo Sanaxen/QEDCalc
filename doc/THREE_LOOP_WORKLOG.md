@@ -7812,3 +7812,18 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step70_forma
 .\run_vp05_sector202_target_b_step70_formal_promotion.bat --check-only
 ```
 Require `B_STEP70_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF`, `coefficient_keys_verified=203` and `original_ibp_keys_verified=39` before explicit **once-only** `--promote` followed by `run_vp05_sector202_target_b_step70_read_only_audit.bat`. Do not delete/overwrite prior certificates or rerun previous scratch.
+
+
+### 2026-11-18 VP05 Target B Step70 formal promotion preflight PASS (user report)
+
+User reports `B_STEP70_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF` from Windows. This follows previously confirmed independent 203/203 Step70 coefficient exact checks and 39/39 original unscaled IBP exact replay. The reported preflight PASS indicates both complete checkpoints, phase binding, SHA-pinned Step69 formal baseline and Step70 scratch successor passed the guarded validator. The user did not provide the full preflight JSON here, so do not claim to have seen individual saved checkpoint hashes. **Formal Step70 promotion and post-promotion saved audit are still pending confirmation.**
+
+Next steps, once only:
+```powershell
+.\run_vp05_sector202_target_b_step70_formal_promotion.bat --promote > log_step70_promotion.txt
+```
+Require `B_STEP70_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`. Then run:
+```powershell
+.\run_vp05_sector202_target_b_step70_read_only_audit.bat > log_step70_saved_audit.txt
+```
+Require `B_STEP70_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` before declaring Step70 the confirmed formal baseline. Do not rerun promotion after a successful run; do not overwrite protected historical source, scratch or certificate checkpoints. Target B full proof and previous Step61–63 provenance gaps remain unresolved.
