@@ -1,6 +1,6 @@
 """Isolated, bounded one-step Target B Step70 scratch from saved formal Step69.
 
-Read-only preflight, SHA-bound formal68, exclusive scratch creation. A saved
+Read-only preflight, SHA-bound formal69, exclusive scratch creation. A saved
 Step70 scratch is not a proof and must receive independent exact audits.
 """
 from __future__ import annotations
