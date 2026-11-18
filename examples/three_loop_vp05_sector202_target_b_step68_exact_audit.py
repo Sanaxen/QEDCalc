@@ -1,8 +1,8 @@
-"""Isolated exact Step68->68 coefficient and original-IBP replay, no promotion.
+"""Isolated exact Step67->68 coefficient and original-IBP replay, no promotion.
 
 Two ordered, independently resumable phases: coefficient identities and
 unscaled original-IBP pivot identity. Each worker uses exact QQ(z,d) rational
-functions (no modular/numeric sampling). Pinned formal Step67 and scratch67
+functions (no modular/numeric sampling). Pinned formal Step67 and scratch68
 remain read-only; two new checkpoint files are never overwritten without
 --resume. Phase-2 requires all phase-1 certificates.
 """
@@ -63,7 +63,7 @@ def coefficient_identity(kind,old,new,pivot,factor):
 
 def context():
     if audit_saved67().get("status")!="B_STEP67_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF":
-        raise RuntimeError("Formal Step66 not audited")
+        raise RuntimeError("Formal Step67 not audited")
     protected=protected_inputs()
     if sha(SCRATCH)!=EXPECTED_STEP68_SHA or sha(B_STATE)!=EXPECTED_STEP67_SHA:
         raise RuntimeError("Step68 scratch or formal Step67 SHA changed")
