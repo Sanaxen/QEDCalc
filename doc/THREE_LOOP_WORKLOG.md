@@ -7562,3 +7562,22 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step67_read_
 .\run_vp05_sector202_target_b_step67_read_only_audit.bat > log_step67_saved_audit.txt
 ```
 Expected `B_STEP67_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`; actual post-promotion audit result remains pending. Retain all backup and certificate files. Whole Target B and earlier Steps61–63 proof-chain caveats still remain.
+
+
+### 2026-11-18 VP05 sector202 Target B: Step67 saved formal audit PASS, guarded Step68 scratch prepared
+
+User `log_step67_saved_audit.txt` gives **`B_STEP67_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`**, actual formal67 state SHA `bd5e5dbd92c8636332b006371006891c2bbd1e9870c2f5d5fb353b935a790ba2`, Step66 backup SHA `9b30bed319c5e23cc84016acdb1605fe8082bedb09c84a4f8f4d8f676de82d7d`, `coefficient_keys_verified=229`, `original_ibp_keys_verified=32`, steps67, residual74, original support154, max expression chars5726, next pivot `[166596414013442,139]`, formal state unchanged by audit, Target B unproven. **Step67 promotion and its independent saved-state audit are now confirmed.** Neither Step67 promotion nor older Step66 promotion should run again.
+
+Created `examples/three_loop_vp05_sector202_target_b_step68_scratch.py`, regression tests, and `run_vp05_sector202_target_b_step68_scratch.bat`. Preflight requires audited formal67 and SHA-pins historical Step66/65 backups, old saved scratch states, original source/Target A and saved Step66/67 evidence checkpoints. The only mutable path is the new, exclusive `vp05_sector202_B_step68_scratch_state.json`. Runs exactly **one** reduction step with saved engine safety bounds 256 columns/400 source support/7500 expression chars and <=12h. Checks expected initial lead, pivot history and protected hashes after run; **no formal writes, no promotion, no whole-target proof claim**. Real Windows test and execution still pending.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step68_scratch -v
+.\run_vp05_sector202_target_b_step68_scratch.bat --check-only
+```
+Require `B_STEP68_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`. If no Step68 scratch previously created:
+```powershell
+.\run_vp05_sector202_target_b_step68_scratch.bat --hours 12 > log_step68_scratch.txt
+```
+If the *new* Step68 scratch exists with zero completed steps, specify `--resume`; if saved steps=68, never rerun. After result, independently audit Step67→68 coefficients and exact original IBP rational identities before any formal promotion. Earlier Steps61–63 full-target proof chain limitations remain.
