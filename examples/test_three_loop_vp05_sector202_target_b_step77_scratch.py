@@ -31,7 +31,7 @@ class Step77ScratchTests(unittest.TestCase):
             validate_scratch(self.old,{**new,
                 "pivot_path":self.old["pivot_path"]+[[505,139]]})
     def test_paths_distinct(self):
-        paths=[SCRATCH,TEMP,PROOF,B_STATE,STEP76_SCRATCH,STEP74_SCRATCH]
+        paths=[SCRATCH,TEMP,PROOF,B_STATE,STEP76_SCRATCH,STEP75_SCRATCH]
         self.assertEqual(len(paths),len({p.resolve() for p in paths}))
 if __name__=="__main__":
     unittest.main()
