@@ -8250,3 +8250,27 @@ Require `B_STEP76_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`. If `scratch_exists=false` a
 ```
 
 If scratch exists, inspect `scratch_steps` and resume only a legitimate partial step75 state; never overwrite completed step76 scratch. SHA-pin actual saved scratch for independent coefficient and original source IBP audits before any future promotion. Do not repeat Step75 promotion or alter original source/certificates.
+
+
+### 2026-11-18 VP05 sector202 Target B Step76 scratch 25 terms; independent exact audits prepared
+
+Directly inspected user-supplied `log_step76_scratch.txt` (UTF-16): initial preflight `B_STEP76_SCRATCH_PREFLIGHT_PASS_NOT_PROOF` against formal Step75 SHA **`2a7e2444c2cb5b65826df964c8e699d057963de4fbf7e68cac025d8c5c9a3dc9`** and previous lead `[166596414799874,139]`. One exact reduction step completed with `returncode=0`, `timed_out=false`, `formal_state_unchanged=true`, status **`MULTISTEP_STEPS_SAVED_NOT_TARGET_PROOF`**. Saved Step76 scratch SHA **`33e29f0cd4e00522c27c748b0cbb45d58130db39788a2a26dfa66c71c0337222`**, `steps=76`, remainder **25** (down from 43), original support **135** (down from 231), max expression chars **2036** (down from 3685), row expression chars **2027**, source expression chars **2036**, next lead **`[166596417552384,139]`**. The Step75 expansion was substantially reversed on this next pivot. `exact_target_proven=false`, `step76_original_ibp_exact_replay_verified=false`, `target_b_proven=false`; source protected.
+
+Added `examples/three_loop_vp05_sector202_target_b_step76_exact_audit.py`, `examples/test_three_loop_vp05_sector202_target_b_step76_exact_audit.py`, `run_vp05_sector202_target_b_step76_exact_audit.bat`. Two ordered independent exact `QQ(z,d)` phases: all source/remainder coefficient update identities for Step75→76, then unscaled original IBP pivot identity; the second requires completed SHA-bound coefficient checkpoint. Both use exclusive resumable phase checkpoints and verify the accepted Step75 formal saved-state audit, current formal/scratch SHA, exact pivot path, saved metrics, original CHECKPOINT/SOURCE/CERT hashes, and historical state/certificates. The actual coefficient and original-IBP job inventories are derived from preserved source data. No additional Step76 engine run, exact audit run, formal promotion or Windows tests were observed. **The Step76 scratch is already saved: do not rerun or overwrite.**
+
+Windows PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step76_exact_audit -v
+.\run_vp05_sector202_target_b_step76_exact_audit.bat --phase coeff --check-only
+```
+If coefficient `checkpoint_exists=false`, execute:
+```powershell
+.\run_vp05_sector202_target_b_step76_exact_audit.bat --phase coeff --hours 12 --timeout-seconds 1200 --max-new 500 > log_step76_coeff.txt
+```
+Require `B_STEP76_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF`, or inspect an incomplete checkpoint and `--resume` without overwriting. Then:
+```powershell
+.\run_vp05_sector202_target_b_step76_exact_audit.bat --phase ibp --check-only
+.\run_vp05_sector202_target_b_step76_exact_audit.bat --phase ibp --hours 12 --timeout-seconds 1200 --max-new 500 > log_step76_ibp.txt
+```
+Use `--resume` instead for an existing partial IBP checkpoint; require `B_STEP76_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF` before designing the backup-first Step76 promotion. Target B complete proof remains false and Steps61–63 provenance is still unresolved.
