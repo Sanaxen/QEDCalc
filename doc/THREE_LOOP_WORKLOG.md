@@ -8059,3 +8059,26 @@ Require `B_STEP73_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`, then ind
 ```
 
 Require `B_STEP73_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` before proceeding to Step74. Never re-run promotion or overwrite old scratch/checkpoints.
+
+
+### 2026-11-18 VP05 sector202 Target B Step73 saved-state audit passed; Step74 guarded scratch implemented
+
+User's `log_step73_saved_audit.txt` reports **`B_STEP73_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`**: formal Step73 `steps=73`, remainder **42**, original support **129**, max expression characters **1007**, next lead **`[166596414668800,139]`**, `state_sha256=4ade410c0ecf50f10698d899a1ae14bc762e4f0107b044ee55a3fb7d5ec7004c`, Step72 backup SHA **`35cc49631d6f36c46a7f5e7f15f77a7ba825581e0a9b761a897832314ddca7ab`**. Independent saved audit verified **194/194 coefficient keys** and **252/252 original unscaled IBP keys**; `formal_state_modified=false`, `target_b_proven=false`. The backup, scratch and coefficient/IBP proof checkpoints must not be overwritten. **Step73 is accepted formal baseline**, but entire Target B proof and historical Steps61–63 provenance are still incomplete.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step74_scratch.py`, `examples/test_three_loop_vp05_sector202_target_b_step74_scratch.py`, and `run_vp05_sector202_target_b_step74_scratch.bat`. Requires independent Step73 saved-state audit PASS, SHA-pins accepted formal Step73 and Step73 scratch, protects all predecessor backups and exact coefficient/IBP evidence through Step73. A fresh isolated `vp05_sector202_B_step74_scratch_state.json` is created exclusively, with at most one exact reduction step, bounds of 256 columns / 400 source support / 7500 chars and <=12-hour subprocess limit. The exact pivot is derived from SHA-pinned formal Step73 rather than guessed. `--check-only` is read-only and reports whether the scratch already exists; do not rerun completed scratch. No Step74 independent coefficient/IBP proof or promotion yet. **Windows test and Step74 run not yet observed**.
+
+Next local Windows PowerShell:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step74_scratch -v
+.\run_vp05_sector202_target_b_step74_scratch.bat --check-only
+```
+
+Require `B_STEP74_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`. If `scratch_exists=false` then run:
+
+```powershell
+.\run_vp05_sector202_target_b_step74_scratch.bat --hours 12 > log_step74_scratch.txt
+```
+
+If `scratch_exists=true` with saved `scratch_steps=74`, do not rerun the engine; preserve and SHA-pin existing scratch for the independent Step74 coefficient and original-source IBP phases. An interrupted scratch at step73 must be examined before deliberate `--resume`. Never rerun Step73 promotion.
