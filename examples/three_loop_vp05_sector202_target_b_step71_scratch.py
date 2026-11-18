@@ -11,7 +11,7 @@ import os
 import subprocess
 import sys
 from examples.three_loop_vp05_sector202_target_b_step70_read_only_audit import (
-    inspect as audit_saved69,
+    inspect as audit_saved70,
 )
 from examples.three_loop_vp05_sector202_target_b_step70_formal_promotion import (
     B_STATE, BACKUP, SCRATCH as STEP70_SCRATCH, COEFF, IBP,
@@ -112,7 +112,7 @@ def main():
     args=ap.parse_args()
     if not 0<args.hours<=12:
         ap.error("Only (0,12] hours permitted")
-    audit=audit_saved69()
+    audit=audit_saved70()
     if audit.get("status")!="B_STEP70_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF":
         raise RuntimeError("Saved Step70 post-promotion audit failed")
     protected=protected_inputs()
