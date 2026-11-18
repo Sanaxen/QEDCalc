@@ -8166,3 +8166,35 @@ Require `B_STEP75_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`. If `scratch_exists=false` t
 ```
 
 If `scratch_exists=true` and `scratch_steps=75`, do not rerun or overwrite it. Preserve scratch and its actual SHA for subsequent exact Step75 coefficient and original unscaled IBP verification. Do not rerun Step74 promotion. All prior protected states and input proof evidence must remain immutable.
+
+
+### 2026-11-18 VP05 sector202 Target B Step75 scratch saved: nonmonotonic growth; two-phase exact audit implemented
+
+Direct inspection of uploaded `log_step75_scratch.txt` (UTF-16LE): formal Step74 SHA **`ec7bf87037fc34bd73e730894bfe09a8e43287628a07ec7c861e6f777b36b694`**, `scratch_exists=false` initial preflight `B_STEP75_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`, input lead `[166596414799873,139]`. One original-source elimination step finished `returncode=0`, `timed_out=false`, `formal_state_unchanged=true`; saved scratch Step75 SHA **`2a7e2444c2cb5b65826df964c8e699d057963de4fbf7e68cac025d8c5c9a3dc9`**, `steps=75`, **remaining 43 (from 26)**, **original support 231 (from 126)**, **max expression chars 3685 (from 1742)**, `row_expression_chars=3495`, `source_expression_chars=3685`, and next lead `[166596414799874,139]`. Status `MULTISTEP_STEPS_SAVED_NOT_TARGET_PROOF`, `step75_original_ibp_exact_replay_verified=false`, `target_b_proven=false`. **This is nonmonotone fill-in, not in itself evidence of an incorrect reduction**; support and expression sizes remain under per-step caps of 400 and 7500, respectively. However it increases complexity and reduces resource headroom: inspect future steps closely; no extrapolation of linear improvement is valid. Do not rerun or overwrite the saved scratch.
+
+Implemented `examples/three_loop_vp05_sector202_target_b_step75_exact_audit.py`, `examples/test_three_loop_vp05_sector202_target_b_step75_exact_audit.py`, `run_vp05_sector202_target_b_step75_exact_audit.bat`. Strictly require the saved formal Step74 independent read-only post-promotion audit, SHA-pinned formal Step74 and Step75 scratch, fixed saved Step75 dimensions and next lead, original-source CHECKPOINT/SOURCE/CERT provenance and all historical states/evidence. The exact `QQ(z,d)` coefficient phase validates all Step74→75 remainder and original-support transformations against the original pivot; the separately resumable original unscaled IBP phase verifies all original source term identities, only after complete coefficient phase. Job counts are derived from original data, not estimated. Each phase creates an exclusive SHA-bound ordered checkpoint and can safely resume partial work using `--resume`. **Windows tests and exact runs are pending.** Formal Step74 is unchanged. No formal Step75 promotion and no whole Target B proof; historical Steps61–63 provenance remains incomplete.
+
+**Caution for next promotion:** earlier promotion/saved-state audit stages enforce `len(new_remaining) < len(old_remaining)`. Step75 has **43 > 26**, so do **not** clone that guard unchanged: use mathematically appropriate checks (pinned state SHA, eliminated pivot and exact coefficient+original IBP identities, limits, complete certificate link) rather than assuming the algebraic remainder support must decrease. Implement and test this explicitly only after independent exact Step75 phases PASS.
+
+Next PowerShell:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step75_exact_audit -v
+.\run_vp05_sector202_target_b_step75_exact_audit.bat --phase coeff --check-only
+```
+
+If `checkpoint_exists=false`:
+
+```powershell
+.\run_vp05_sector202_target_b_step75_exact_audit.bat --phase coeff --hours 12 --timeout-seconds 1200 --max-new 500 > log_step75_coeff.txt
+```
+
+Require `B_STEP75_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF`. If coefficient checkpoint is partial, inspect and use `--resume`, never overwrite. Then:
+
+```powershell
+.\run_vp05_sector202_target_b_step75_exact_audit.bat --phase ibp --check-only
+.\run_vp05_sector202_target_b_step75_exact_audit.bat --phase ibp --hours 12 --timeout-seconds 1200 --max-new 500 > log_step75_ibp.txt
+```
+
+Use `--resume` for a partial IBP checkpoint and skip already complete ones; require `B_STEP75_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF` before any formal Step75 promotion. Full target proof remains false.
