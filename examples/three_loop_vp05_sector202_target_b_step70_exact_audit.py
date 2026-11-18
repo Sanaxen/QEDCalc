@@ -193,16 +193,21 @@ def main():
     path=COEFF if args.phase=="coeff" else IBP
     if len(set(p.resolve() for p,_ in c[-1]+[(SCRATCH,EXPECTED_STEP70_SHA)])|set((COEFF.resolve(),IBP.resolve())))!=len(c[-1])+3:
         raise RuntimeError("Audit outputs alias protected paths")
-    if path.exists()!=args.resume:
+    # Read-only preflight inspects an existing checkpoint without --resume.
+    # State-changing runs still require explicit --resume for existing files.
+    exists=path.exists()
+    if exists!=args.resume and not args.check_only:
         raise RuntimeError("Step70 phase checkpoint exists: use --resume or omit for new")
-    if args.resume:
+    if exists:
         state,_=validate_progress(args.phase,c)
     else:
         state={"version":1,"status":STATUS,"config":cfg,"checked":[],
                "formal_state_modified":False,"target_b_proven":False}
     print(TAG+json.dumps({"status":"B_STEP70_"+args.phase.upper()+"_PREFLIGHT_PASS_NOT_PROOF",
         "verified":len(state["checked"]),"total":len(jobs),
-        "formal_state_unchanged":True}),flush=True)
+        "formal_state_unchanged":True,
+        "checkpoint_exists":exists,
+        "already_complete":len(state["checked"])==len(jobs)}),flush=True)
     if args.check_only:return
     if not args.resume:atomic_save(path,state,False)
     start=time.monotonic();new=0
