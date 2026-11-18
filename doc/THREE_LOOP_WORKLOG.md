@@ -8382,3 +8382,33 @@ Require `B_STEP77_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`; then:
 ```
 
 Require `B_STEP77_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` before Step78. Do not rerun Step77 scratch or promotion after successful completion.
+
+
+### 2026-11-19 VP05 sector202 Target B Step77 post-promotion saved audit PASS (user report); Step78 guarded scratch implemented
+
+User reports `B_STEP77_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` after formal Step77 promotion. This is a reported PASS, not a separately uploaded full JSON saved audit. Accepted formal Step77 SHA **`9df3d205bdee62f00533df12da0ee6918861f4d11ae31d91a474f3614d44622f`**, the previously SHA-pinned Step77 scratch digest; prior formal Step76 SHA **`33e29f0cd4e00522c27c748b0cbb45d58130db39788a2a26dfa66c71c0337222`** preserved in the Step77 backup. Step77 exact original IBP **41/41 PASS** in 24.67 seconds, with the saved-state audit additionally checking coefficient certificate completeness and its SHA bridge. Accepted Step77 dimensions: `steps=77`, remainder **28**, original support **137**, max expression chars **2036**. Next pivot `[166596417552385,139]`. **Target B complete proof is still false; earlier Steps61–63 source provenance is unresolved.**
+
+Implemented and committed:
+- `examples/three_loop_vp05_sector202_target_b_step78_scratch.py`
+- `examples/test_three_loop_vp05_sector202_target_b_step78_scratch.py`
+- `run_vp05_sector202_target_b_step78_scratch.bat`
+
+Step78 requires independent Step77 saved-state audit PASS; pins the accepted Step77 formal and identical scratch SHA, predecessor backups and scratch history through Step66, and complete available exact coefficient / original IBP evidence certificates through Step77. Builds a separate new scratch `vp05_sector202_B_step78_scratch_state.json` by exclusive creation, supports only safe legitimate resumption of an unchanged `steps=77` partial scratch, and uses one new pivot/step maximum. Defaults to `--check-only` read-only; strict caps columns256, support400, expression chars7500 and wallclock <=12h. No formal source is modified even if cap/timeout occurs. **Windows tests, Step78 preflight and scratch execution are pending.** Existing Step77 scratch/backup/proof must not be overwritten.
+
+Fixed a pre-existing undefined `STEP74_SCRATCH` reference in `examples/test_three_loop_vp05_sector202_target_b_step77_scratch.py` and corrected the new Step78 test to reference `STEP76_SCRATCH` rather than the older `STEP75_SCRATCH`. No data checkpoint content changed.
+
+Next PowerShell:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step77_scratch examples.test_three_loop_vp05_sector202_target_b_step78_scratch -v
+.\run_vp05_sector202_target_b_step78_scratch.bat --check-only
+```
+
+Require `B_STEP78_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`. Only if `scratch_exists=false` and tests pass:
+
+```powershell
+.\run_vp05_sector202_target_b_step78_scratch.bat --hours 12 > log_step78_scratch.txt
+```
+
+If `scratch_exists=true`, inspect `scratch_steps`: an incomplete exact `steps=77` scratch can be resumed only with `--resume`; completed `steps=78` must not run again. SHA-pin the new scratch digest for independent exact coefficient and original IBP audits before any next promotion.
