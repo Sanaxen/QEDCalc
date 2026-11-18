@@ -30,7 +30,7 @@ class Step71ScratchTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             validate_scratch(self.old,{**new,"pivot_path":self.old["pivot_path"]+[[505,139]]})
     def test_historical_scratch_and_formal_paths_distinct(self):
-        paths=[SCRATCH,TEMP,PROOF,B_STATE,STEP70_SCRATCH,STEP68_SCRATCH]
+        paths=[SCRATCH,TEMP,PROOF,B_STATE,STEP70_SCRATCH,STEP69_SCRATCH]
         self.assertEqual(len(paths),len({p.resolve() for p in paths}))
         self.assertEqual(EXPECTED_STEP70_SHA,
             "b738b82b038d229850e043f63796fd01db4cb50a404ad3247ef1a5962ee07c04")
