@@ -76,6 +76,14 @@ def manifest(phase,path):
         raise RuntimeError("Step69 saved exact job manifest mismatch")
     return cfg,len(records)
 
+def validate_certificate_bridge(coeff_cfg,coeff_count,ibp_cfg,ibp_count,coeff_sha):
+    """Different phase counts are expected: 43 original-IBP keys need not equal coefficient keys."""
+    if (coeff_count<=0 or ibp_count!=43
+        or coeff_cfg.get("job_count")!=coeff_count
+        or ibp_cfg.get("job_count")!=ibp_count
+        or ibp_cfg.get("coefficient_checkpoint_sha256")!=coeff_sha):
+        raise RuntimeError("Step69 coefficient->original IBP evidence not linked")
+
 def inspect():
     expected=[
         (B_STATE,EXPECTED_STEP69_SHA),(SCRATCH,EXPECTED_STEP69_SHA),
@@ -119,9 +127,7 @@ def inspect():
         raise RuntimeError("Saved formal Step69 not a valid successor")
     cc,nc=manifest("coeff",COEFF)
     ci,ni=manifest("ibp",IBP)
-    if (ni!=43 or cc.get("job_count")!=nc or ci.get("job_count")!=ni
-        or ci.get("coefficient_checkpoint_sha256")!=sha(COEFF)):
-        raise RuntimeError("Step69 coefficient->original IBP evidence not linked")
+    validate_certificate_bridge(cc,nc,ci,ni,sha(COEFF))
     saved_evidence=[(p,sha(p)) for p in evidence]
     for p,h in expected+saved_evidence:
         if sha(p)!=h:
