@@ -8412,3 +8412,32 @@ Require `B_STEP78_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`. Only if `scratch_exists=fal
 ```
 
 If `scratch_exists=true`, inspect `scratch_steps`: an incomplete exact `steps=77` scratch can be resumed only with `--resume`; completed `steps=78` must not run again. SHA-pin the new scratch digest for independent exact coefficient and original IBP audits before any next promotion.
+
+
+### 2026-11-19 VP05 sector202 Target B Step78 scratch saved; exact coefficient/original-IBP audit implemented
+
+Inspected uploaded `log_step78_scratch.txt`: `B_STEP78_SCRATCH_PREFLIGHT_PASS_NOT_PROOF` with formal Step77 SHA **`9df3d205bdee62f00533df12da0ee6918861f4d11ae31d91a474f3614d44622f`**, `scratch_exists=false` and prior lead `[166596417552385,139]`. One step completed with `returncode=0`, `timed_out=false`, `formal_state_unchanged=true`, saving `steps=78`, `MULTISTEP_STEPS_SAVED_NOT_TARGET_PROOF`, scratch SHA **`3658cb213a837e0e8bed62c17897b659e737d1ecc04a9809e614fcc9c154bc0f`**. Step78 metrics: remainder **38** vs Step77 28, original support **159** vs 137, row expression chars **2391** vs 1785, source expression chars **2805** vs 2036, maximum chars **2805** vs 2036, next lead **`[166596417552386,139]`**. Some fill-in is allowed; caps remain remainder256, support400, chars7500. `exact_target_proven=false`, `step78_original_ibp_exact_replay_verified=false`, `target_b_proven=false`; Step77 formal remains protected/unchanged.
+
+Committed `examples/three_loop_vp05_sector202_target_b_step78_exact_audit.py`, `examples/test_three_loop_vp05_sector202_target_b_step78_exact_audit.py`, `run_vp05_sector202_target_b_step78_exact_audit.bat`. Independent two-phase exact `QQ(z,d)` arithmetic audits: first verifies every coefficient update identity (remainder and original source) Step77→78, next replays original unscaled IBP pivot for every key. Phase2 requires fully completed SHA-bound phase1. Uses newly distinct exclusive resumable certificate checkpoints, verifies exact formal Step77/scratch78 digests, independently rechecks post-promotion Step77 saved audit and protected historical checkpoint and original-source SHA256 identities. Job counts are derived dynamically from source data and not assumed. **No Windows unit test or Step78 coefficient/original-IBP execution observed yet.** Scratch78 already saved; do not rerun or overwrite. No Step78 formal promotion until both phases pass. Historic Steps61–63 provenance remains open and Target B whole proof remains false.
+
+Windows PowerShell:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step78_exact_audit -v
+.\run_vp05_sector202_target_b_step78_exact_audit.bat --phase coeff --check-only
+```
+
+Only if coefficient `checkpoint_exists=false`:
+```powershell
+.\run_vp05_sector202_target_b_step78_exact_audit.bat --phase coeff --hours 12 --timeout-seconds 1200 --max-new 500 > log_step78_coeff.txt
+```
+
+Require `B_STEP78_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF`, then:
+
+```powershell
+.\run_vp05_sector202_target_b_step78_exact_audit.bat --phase ibp --check-only
+.\run_vp05_sector202_target_b_step78_exact_audit.bat --phase ibp --hours 12 --timeout-seconds 1200 --max-new 500 > log_step78_ibp.txt
+```
+
+Use `--resume` instead if an existing partial phase checkpoint is present; never overwrite. Require `B_STEP78_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF` before implementing a guarded formal promotion and independent post-promotion audit.
