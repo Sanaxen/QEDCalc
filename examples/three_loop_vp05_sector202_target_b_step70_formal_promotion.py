@@ -33,7 +33,7 @@ def validate():
         evidence[phase+"_keys"]=len(jobs)
         evidence[phase+"_sha256"]=sha(path)
     if evidence["coeff_keys"]!=203 or evidence["ibp_keys"]!=39:
-        raise RuntimeError("Wrong Step70 original-IBP key inventory")
+        raise RuntimeError("Wrong Step70 coefficient/original-IBP key inventory")
     cfg=json.loads(IBP.read_text(encoding="utf-8-sig"))["config"]
     if cfg.get("coefficient_checkpoint_sha256")!=evidence["coeff_sha256"]:
         raise RuntimeError("Step70 original-IBP certificate not tied to exact coefficients")
@@ -44,7 +44,7 @@ def validate():
     source=candidate.get("source",[])
     metrics=candidate.get("metrics",{})
     if (sha(B_STATE)!=EXPECTED_STEP69_SHA or sha(SCRATCH)!=EXPECTED_STEP70_SHA
-        or formal.get("steps")!=68 or candidate.get("steps")!=70
+        or formal.get("steps")!=69 or candidate.get("steps")!=70
         or candidate.get("status")!="EXACT_TARGET_PREFIX_NOT_PROOF"
         or candidate.get("config")!=formal.get("config")
         or candidate.get("pivot_path")!=formal["pivot_path"]+[formal_next_lead(formal)]
