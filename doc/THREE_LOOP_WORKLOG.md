@@ -7675,3 +7675,19 @@ Require `B_STEP69_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`. If no Step69 scratch yet:
 .\run_vp05_sector202_target_b_step69_scratch.bat --hours 12 > log_step69_scratch.txt
 ```
 If a scratch exists but only 68 steps were saved, use `--resume`; if 69 already saved, do not run again. After checking result, prepare independent exact coefficient and original-source IBP replay before formal promotion. Whole Target B and earlier Step61–63 provenance gaps remain NOT PROVEN.
+
+
+### 2026-11-18 Target B Step69: pre-existing exact scratch identified; SHA-pinned independent audits added
+
+User tried `run_vp05_sector202_target_b_step69_scratch.bat --check-only`, which refused with `Scratch exists: use --resume; otherwise omit --resume`. User inspected local JSON directly: `steps=69`, `status=EXACT_TARGET_PREFIX_NOT_PROOF`, and SHA-256 **`97307fc660bc7a5b9cb17e4c6057025c1488d023a6e5b7f87341343de8c57b2d`**. There is no user-provided Step69 engine log, so do NOT assert when/how it was produced, that it was time-bounded, or that original-IBP identities have passed. **Do not rerun Step69 scratch, `--resume`, or delete/overwrite scratch.** Formal Step68 remains baseline SHA `09368c634e482c40a8ae7dd9e7657c0d0667608f82f7d5b6537cc66067ac5ae8`.
+
+Added `examples/three_loop_vp05_sector202_target_b_step69_exact_audit.py`, regression tests, Windows batch `run_vp05_sector202_target_b_step69_exact_audit.bat`. This follows the successful Step68 independent-audit method with two separate `QQ(z,d)` phases, exclusive resumable coefficients then original-source IBP source replay. `context()` demands Step68 saved read-only audit PASS, formal68 and scratch69 SHA pins, exact 68→69 pivot transition `[166596414013443,139]`, `steps=69`, `EXACT_TARGET_PREFIX_NOT_PROOF`, consistent metrics and next lead (discovered from the pinned actual saved file, not guessed), and protected historical backups and certificates. Both stages use separate new checkpoint files `vp05_sector202_B_step69_exact_coefficient_checkpoint.json` and `vp05_sector202_B_step69_exact_original_ibp_checkpoint.json`; source `CHECKPOINT/SOURCE/CERT` imported from canonical `three_loop_vp05_sector202_target_exact_reduction`, avoiding prior Step68 wiring error. Worker subprocess limit, 12-hour cap, `--resume` for existing phase checkpoint only. No formal promotion. **Windows verification remains pending**.
+
+Next:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step69_exact_audit -v
+.\run_vp05_sector202_target_b_step69_exact_audit.bat --phase coeff --check-only
+.\run_vp05_sector202_target_b_step69_exact_audit.bat --phase coeff --hours 12 --timeout-seconds 1200 --max-new 500 > log_step69_coeff.txt
+```
+Require `B_STEP69_COEFF_ALL_EXACT_PASS_NOT_TARGET_PROOF` before running the `ibp` phase, and `B_STEP69_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF` before any formal promotion. If phase-specific checkpoint already exists, inspect and use `--resume` rather than overwriting. Earlier Steps61–63 provenance and entire Target B remain unproven.
