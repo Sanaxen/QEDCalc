@@ -8143,3 +8143,26 @@ Require `B_STEP74_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`, then ind
 ```
 
 Require `B_STEP74_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` before implementing or running Step75 scratch. Do not repeat promotion or overwrite old scratch/protected certificates.
+
+
+### 2026-11-18 VP05 sector202 Target B Step74 saved-state audit PASS (user status); guarded Step75 scratch implemented
+
+User reports **`B_STEP74_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF`** after the Step74 guarded formal promotion and independent saved-state audit. The full read-only audit JSON/log was not provided for this turn; therefore the exact coefficient key count was not independently observed and must not be guessed. From the SHA-pinned Step74 scratch, the accepted formal Step74 digest is **`ec7bf87037fc34bd73e730894bfe09a8e43287628a07ec7c861e6f777b36b694`**. Previous formal Step73 SHA **`4ade410c0ecf50f10698d899a1ae14bc762e4f0107b044ee55a3fb7d5ec7004c`** remains protected as the Step74 backup. Audited candidate metrics: steps **74**, remainder **26**, original support **126**, maximum expression length **1742**, next lead **`[166596414799873,139]`**. Earlier unscaled original-IBP exact audit was **242/242 PASS**; the saved-state audit code checks ordered coefficient and original-IBP certificates and their cryptographic binding. Whole Target B proof remains **false**; prior Steps61–63 provenance remains outstanding.
+
+Implemented and committed `examples/three_loop_vp05_sector202_target_b_step75_scratch.py`, `examples/test_three_loop_vp05_sector202_target_b_step75_scratch.py`, and `run_vp05_sector202_target_b_step75_scratch.bat` on branch `feature/master-basis-initiate-only`. The Step75 runner requires saved formal Step74 post-promotion read-only audit PASS, SHA-pins formal74 and historical Step74 scratch, and protects past formal backups and coefficient/IBP checkpoints from Step65 through Step74. Step75 uses an exclusive `vp05_sector202_B_step75_scratch_state.json`, exactly one original-source reduction step, 256-column / 400-support / 7500-character limits and <=12-hour process ceiling. The next pivot comes dynamically from SHA-pinned formal Step74 rather than hardcoded. `--check-only` is read-only; `--resume` is only for pre-existing partial scratch at step74, not completed step75. No Step75 independent exact coefficient/IBP audits or formal promotion have been done. Windows unit tests, preflight, and Step75 run have not been observed.
+
+Next commands on Windows PowerShell:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step75_scratch -v
+.\run_vp05_sector202_target_b_step75_scratch.bat --check-only
+```
+
+Require `B_STEP75_SCRATCH_PREFLIGHT_PASS_NOT_PROOF`. If `scratch_exists=false` then:
+
+```powershell
+.\run_vp05_sector202_target_b_step75_scratch.bat --hours 12 > log_step75_scratch.txt
+```
+
+If `scratch_exists=true` and `scratch_steps=75`, do not rerun or overwrite it. Preserve scratch and its actual SHA for subsequent exact Step75 coefficient and original unscaled IBP verification. Do not rerun Step74 promotion. All prior protected states and input proof evidence must remain immutable.
