@@ -7628,3 +7628,18 @@ Next Windows commands (new IBP checkpoint absent):
 .\run_vp05_sector202_target_b_step68_exact_audit.bat --phase ibp --hours 12 --timeout-seconds 1200 --max-new 500 > log_step68_ibp.txt
 ```
 If the Step68 IBP checkpoint exists, use `--resume` instead of starting a new checkpoint. Require `B_STEP68_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF`; only then prepare guarded, backup-first Step68 formal promotion and saved-state independent audit. Whole Target B proof remains incomplete.
+
+
+### 2026-11-18 VP05 sector202 Target B Step68: exact 298/298 original-IBP PASS, promotion/preflight and saved-state audit implemented
+
+Actual user `log_step68_ibp.txt`: `B_STEP68_IBP_PREFLIGHT_PASS_NOT_PROOF` with 0/298, followed by **298/298** exact rational `QQ(z,d)` source-pivot original-IBP key identities verified in **258.03 seconds**; final `B_STEP68_IBP_ALL_EXACT_PASS_NOT_TARGET_PROOF`, `formal_state_modified=false`, `target_b_proven=false`. Previous Step68 coefficient result **232/232 exact PASS in 267.3s**. Formal Step67 SHA `bd5e5dbd92c8636332b006371006891c2bbd1e9870c2f5d5fb353b935a790ba2`; separate saved Step68 scratch SHA `09368c634e482c40a8ae7dd9e7657c0d0667608f82f7d5b6537cc66067ac5ae8`. Step68 remains unpromoted pending its own guarded preflight and explicit --promote.
+
+Added `examples/three_loop_vp05_sector202_target_b_step68_formal_promotion.py`, `examples/three_loop_vp05_sector202_target_b_step68_read_only_audit.py`, both unit test modules and corresponding `.bat` wrappers. `--check-only` preflight is read-only, reruns the prior saved Step67 post-promotion audit, validates both complete **232 coeff / 298 original IBP** manifests and their source/historical SHA bindings, checks exact scratch metadata `steps=68,remaining=59,support=144,maxchars=3174,next=[166596414013443,139]`, validates no path overlaps or existing backups/staging, then returns `B_STEP68_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF`. Only explicit `--promote` first creates a SHA-verified exclusive backup of the formal Step67 state, stages byte-identical saved Step68 scratch, then atomically replaces formal B, and returns `B_STEP68_FORMAL_PREFIX_PROMOTED_WITH_BACKUP_NOT_TARGET_PROOF`. Independent post-promotion read-only audit checks new formal SHA, old Step67 backup SHA, all historical hashes, both 232/298 evidence manifests, and returns `B_STEP68_SAVED_STATE_READ_ONLY_AUDIT_PASS_NOT_TARGET_PROOF` if valid. No Target B full proof claim. **Windows code execution and promotion are not yet observed**.
+
+Run locally before promotion:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step68_formal_promotion examples.test_three_loop_vp05_sector202_target_b_step68_read_only_audit -v
+.\run_vp05_sector202_target_b_step68_formal_promotion.bat --check-only
+```
+Inspect full preflight values and require `B_STEP68_FORMAL_PROMOTION_PREFLIGHT_PASS_NOT_TARGET_PROOF`, `coefficient_keys_verified=232`, `original_ibp_keys_verified=298`. Only after this approval should explicit promotion be run **once**, followed by the independent saved-state read-only audit. Never overwrite/delete the old states or exact evidence. Earlier Steps61–63 provenance gaps and whole Target B remain unresolved.
