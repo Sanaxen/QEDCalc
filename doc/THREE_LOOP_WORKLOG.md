@@ -8479,3 +8479,28 @@ Do not create a second fresh run once the journal exists; use `--resume`. The in
 - Aborted engine `.tmp` staging is SHA-named and quarantined; it never replaces the authoritative working JSON. Bootstrap interruptions between working copy and journal creation can be recovered from SHA-pinned Step78 on `--resume`. If interrupted after journal creation but before the working copy, the initial immutable Step78 copy can be reconstructed. Per-key audits are recorded in order even when several workers run concurrently.
 - Rechecks original evidence and the unchanged formal state at each step's certificate commit. If the exact reduction engine produces its full replay proof, the batch stops for independent review rather than silently treating a prefix as Target B proof.
 - Regression tests were added and committed, but no local Windows runtime run was available to validate performance or exact counts. Start with `--hours 1 --workers 4` as an integration smoke test; then resume with `--hours 12 --workers 4`. Monitor RAM and swap; reduce to `--workers 2` if necessary. If stopped for resource caps or source-integrity failures, review without auto-raising caps or modifying formal state. Explicit final batch formal promotion remains a separate, future gated operation.
+
+
+### 2026-11-19 VP05 sector202 Target B continuous-batch first Windows smoke: Steps78–85 exact-audited, Step86 partially audited
+
+Inspected user-uploaded `log_vp05_batch.txt` (UTF-16LE, 143 lines). The first **one-hour** run of `run_vp05_sector202_target_b_continuous_batch.bat --hours 1 --steps 51 --workers 4` initialized the independent batch journal at audited_step77 / working_step78 / max_step128. Exact `QQ(z,d)` coefficient and original unscaled IBP verification both reached full counts and `STEP_AUDITED` was logged for **each Step78–85** (eight consecutive audited steps). No intervening errors in the supplied log. Key completed values:
+
+| Step | Coeff PASS | Original IBP PASS | Remainder | Original support | Max expr chars |
+|---|---:|---:|---:|---:|---:|
+| 78 | 198/198 | 232/232 | 38 | 159 | 2805 |
+| 79 | 200/200 | 234/234 | 22 | 127 | 1365 |
+| 80 | 154/154 | 16/16 | 23 | 128 | 1365 |
+| 81 | 154/154 | 175/175 | 22 | 130 | 908 |
+| 82 | 155/155 | 32/32 | 22 | 131 | 908 |
+| 83 | 157/157 | 27/27 | 22 | 132 | 908 |
+| 84 | 159/159 | 220/220 | 20 | 133 | 882 |
+| 85 | 157/157 | 188/188 | 18 | 135 | 1057 |
+
+Step86 has already been computed/saved, with candidate remainder **17**, original support **205**, max expression chars **1168**, next lead `[166596418469889,139]`. Its coefficient phase **223/223 PASS**; Original IBP phase **225/332 PASS** at last logged event, leaving **107** to verify before `STEP_AUDITED` can be committed. The terminal status was **`BATCH_STOPPED_RESUMABLE_NOT_TARGET_PROOF`**, reason **`time_limit`**, `audited_step=85`, `working_step=86`, `max_step=128`, `formal_state_modified=false`, `target_b_proven=false`. This is an expected non-error stoppage due to the one-hour global limit, and the existing per-key journal allows resuming exactly the remaining Step86 IBP work. The formal Step77 remains unchanged and no batch promotion is authorized. This outcome is user-observed via log, not a locally reproduced Windows run.
+
+Next PowerShell, without new `git pull` or regeneration needed:
+```powershell
+.\run_vp05_sector202_target_b_continuous_batch.bat --check-only
+.\run_vp05_sector202_target_b_continuous_batch.bat --resume --hours 12 --workers 4 >> log_vp05_batch.txt
+```
+Monitor RAM and swap. The batch is capped at Step128, not expected to prove Target B merely by finishing this cap. No auto-increase of caps, no automatic formal promotion. If source SHA, engine, or exact checks fail, inspect instead of resetting the journal.
