@@ -8993,3 +8993,34 @@ python -m unittest examples.test_three_loop_vp05_sector202_reuse_audit -v
 ```
 
 Review both the unit-test results and the **final** `VP05_SECTOR202_REUSE_READ_ONLY_AUDIT` JSON from the console log. If any fail-closed error arises, do not prepare or execute new Kira jobs before resolving the evidence discrepancy. The upcoming decision is whether existing A/C evidence covers the exact new equation/weight envelope; only if it does not, design a **new isolated, non-overwriting** sector202 `r7s5d3` diagnostic with 90-minute, RAM 22 GiB and swap 8 GiB sampled stops. Independently address the `r8s6d2` seed and cross-sector closure. **No formal promotion authorized.**
+
+ 
+### 2026-11-20 VP05 sector202 original-source audit PASS and protected isolated diagnostic implementation
+
+The user's real UTF-16LE log_vp05_sector202_reuse_audit.txt was parsed. Report: VP05_SECTOR202_EVIDENCE_REUSED_FRONTIER_OPEN; 19/26 sector groups, 40/63 candidates locally retained (initiate-only, NOT global IBP closure). Seven sector202-containing groups remain: sector202(3),203(4),206(1),207(4),234(2),238(5),239(4), a total of 23 candidates.
+
+Step93 formally archived original-source exact Target B identity remains authenticated: SHA256 of the original 2241-row source gzip = f0dd7f338ead97e455306bc49c4ce475fe8a8bee3e5a866f6fa17de1e9ad0163, 389-support checkpoint = df4bb33ceec4e9bdc60b88090eb358f7a5c5cffbb24ae345c92ffdec821f7107, original provenance certificate = 512114a669d3fb8761d89bfe11a51cc8ec146d46739a36b61e869edcddb583eb, all matched the formal archive. Step93 does NOT establish new exact A/C identities or guarantee equivalence between the original restricted sector203 source project and a fresh r7s5d3 sector202 Kira run. There is no verified local r8s5d3 retention for A/B/C.
+
+Saved stopped parents remain immutable and unresolved: sector206 at recursive sector202 (9/13), RAM 22.11 GiB, swap 0; sector234 at recursive sector202 (9/10), RAM 22.00 GiB, swap 0. Both have no retained final masters and no saved SYSTEM gzip in the stopped project. These records are protective resource stops, NOT mathematical failures. The separate standard r8s6d2 sector202 project exists but is not a verified local master result. The user attached the read-only run log but did not attach Windows unit-test output; no unit-test PASS is claimed.
+
+Implemented and committed on feature/master-basis-initiate-only:
+- examples/three_loop_vp05_stage2_sector202_isolated.py
+- examples/test_three_loop_vp05_stage2_sector202_isolated.py (10 mocked tests, Windows execution pending)
+- run_vp05_stage2_sector202_isolated.bat
+
+The new controller supports plan/audit (strictly read-only), idempotent protected prepare and explicit acknowledged run. Only a new exclusive output/vp05_stage2_sector202_r7s5d3_<run-id> project is created. Three canonical A/B/C targets are pinned along with jobs/configs/monitor SHA256. Scope is restricted to sector202, effective seed r7s5d3 (4 positive propagators, r=min(8,4+3)). Reuses proven Step93/no202a scope gates; preserves all old Kira/Step77/Step93 projects, including guarded 206 and 234. The WSL run checks no other Kira, RAM+swap recovery and free disk >=10 GiB, and uses the existing monitor with 90 min max, 5 sec samples, RAM warning/stop 18/22 GiB and swap warning/stop 4/8 GiB. Sampled guards can overshoot. On a guard stop or interrupted run, no automatic retry, deletion or in-place restart is allowed. Even 3/3 local retention is NOT a family closure or canonical promotion.
+
+Windows PowerShell after checking worktree for conflicts:
+
+    git pull --ff-only origin feature/master-basis-initiate-only
+    python -m unittest examples.test_three_loop_vp05_sector202_reuse_audit examples.test_three_loop_vp05_stage2_sector202_isolated -v
+    .\run_vp05_stage2_sector202_isolated.bat plan --run-id sec202a
+    .\run_vp05_stage2_sector202_isolated.bat prepare --run-id sec202a
+    .\run_vp05_stage2_sector202_isolated.bat audit --run-id sec202a
+
+Only after 20/20 local mock tests PASS, an unchanged prepared project is audited and WSL resources are acceptable, the optional explicit isolated Kira diagnostic is:
+
+    .\run_vp05_stage2_sector202_isolated.bat run --run-id sec202a --acknowledge EXECUTE_VP05_ISOLATED_SECTOR202_R7S5D3 > log_vp05_sector202_isolated_run.txt 2>&1
+    .\run_vp05_stage2_sector202_isolated.bat audit --run-id sec202a > log_vp05_sector202_isolated_audit.txt 2>&1
+
+The reported success status is VP05_SECTOR202_THREE_LOCAL_CANDIDATES_RETAINED_NOT_CLOSURE. A RAM/swap/time guard stop remains unresolved and requires review. Independent standard r8s6d2 closure, parent sectors206/234 and all cross-sector Stage-2 reduction evidence remain outstanding. No canonical registry update or promotion-ready generated.
