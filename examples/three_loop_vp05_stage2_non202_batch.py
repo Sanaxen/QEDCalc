@@ -234,50 +234,85 @@ def audit(run_id: str) -> dict:
 
 
 def prepare(run_id: str) -> dict:
+    """Idempotent, fail-closed preparation: reuse verified, never overwrite.
+
+    The original runner may already have created some or all five projects.
+    Inspect every existing run-id directory and its SHA-protected inputs before
+    creating a missing one. Refuse incomplete/tampered projects without
+    deleting, changing, or restarting them. Completed/guard-stopped projects
+    are preserved, though run() will not rerun them.
+    """
     items, _ = verified_context()
     new_items = [x for x in items if x["sector"] in NEW_SECTORS]
-    if any(project_for(run_id, x["sector"]).exists() or
-           project_for(run_id, x["sector"]).is_symlink() for x in new_items):
-        raise FileExistsError("One or more new directories exist; refuse overwrite")
-    if not OUTPUT.is_dir():
-        raise RuntimeError("Output directory unavailable")
-    source = ROOT / "scripts/vp05_stage2_monitored_kira.py"
-    if not source.is_file() or source.is_symlink():
-        raise RuntimeError("Pinned RAM/swap monitor script missing")
-    spec = build_family_spec(FAMILY)
-    if spec.baseline_seed.tag != "r8s3d0":
-        raise RuntimeError("Baseline VP05 family spec changed")
-    prepared = []
+    states_before = {x["sector"]: status_one(run_id, x) for x in new_items}
+    reusable = {"prepared", "completed_local_retained",
+                "guard_stopped_ram_stop", "guard_stopped_swap_stop",
+                "guard_stopped_time_stop"}
     for item in new_items:
-        dest = project_for(run_id, item["sector"])
-        dest.mkdir(parents=False, exist_ok=False)
-        export_kira_project(
-            spec, dest, seed=Seed(8, 5, 3), solver="masters",
-            mandatory_file=MANDATORY, preferred_masters_file=PREFERRED,
-            reduce_sectors=[item["sector"]], top_level_sectors=[item["sector"]],
-            clean=False)
-        for name in (MANDATORY, PREFERRED):
-            (dest / name).write_text("\n".join(item["targets"]) + "\n",
-                                      encoding="utf-8", newline="\n")
-        shutil.copyfile(source, dest / MONITOR)
-        manifest = {
-            "status": "VP05_NON202_ISOLATED_PREPARED", "run_id": run_id,
-            "sector": item["sector"], "boundary_seed": BOUNDARY,
-            "effective_seed": "r8s5d3", "targets": item["targets"],
-            "input_sha256": {name: sha256(dest / name) for name in FILES},
-            "standard_stage2_audit_updated": False
-        }
-        (dest / MANIFEST).write_text(
-            json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8")
-        prepared.append(str(dest))
-    states = [status_one(run_id, x) for x in new_items]
-    if any(x["state"] != "prepared" for x in states):
-        raise RuntimeError("New pilot post-preparation input audit failed")
-    return {"status": "VP05_NON202_PREPARE_PASS_NO_KIRA",
-            "projects_created": prepared,
-            "sector230_reuses_saved_project": str(project_for(run_id, 230)),
-            "kira_executed": False, "standard_projects_modified": False}
+        row = states_before[item["sector"]]
+        if row["state"] not in reusable | {"not_prepared"}:
+            raise RuntimeError(
+                f"Existing sector{item['sector']} state {row['state']} "
+                "requires manual review; no files modified")
+    missing = [x for x in new_items
+               if states_before[x["sector"]]["state"] == "not_prepared"]
+    reused = [str(project_for(run_id, x["sector"])) for x in new_items
+              if states_before[x["sector"]]["state"] != "not_prepared"]
+    created = []
+    if missing:
+        if not OUTPUT.is_dir():
+            raise RuntimeError("Output directory unavailable")
+        source = ROOT / "scripts/vp05_stage2_monitored_kira.py"
+        if not source.is_file() or source.is_symlink():
+            raise RuntimeError("Pinned RAM/swap monitor script missing")
+        spec = build_family_spec(FAMILY)
+        if spec.baseline_seed.tag != "r8s3d0":
+            raise RuntimeError("Baseline VP05 family spec changed")
+        for item in missing:
+            dest = project_for(run_id, item["sector"])
+            # Exclusive mkdir; never overwrite a race-created or linked path.
+            dest.mkdir(parents=False, exist_ok=False)
+            export_kira_project(
+                spec, dest, seed=Seed(8, 5, 3), solver="masters",
+                mandatory_file=MANDATORY, preferred_masters_file=PREFERRED,
+                reduce_sectors=[item["sector"]],
+                top_level_sectors=[item["sector"]], clean=False)
+            for name in (MANDATORY, PREFERRED):
+                (dest / name).write_text("\n".join(item["targets"]) + "\n",
+                                        encoding="utf-8", newline="\n")
+            shutil.copyfile(source, dest / MONITOR)
+            manifest = {
+                "status": "VP05_NON202_ISOLATED_PREPARED", "run_id": run_id,
+                "sector": item["sector"], "boundary_seed": BOUNDARY,
+                "effective_seed": "r8s5d3", "targets": item["targets"],
+                "input_sha256": {name: sha256(dest / name) for name in FILES},
+                "standard_stage2_audit_updated": False
+            }
+            (dest / MANIFEST).write_text(
+                json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8")
+            created.append(str(dest))
+            if status_one(run_id, item)["state"] != "prepared":
+                raise RuntimeError(
+                    f"New sector{item['sector']} failed preparation audit; "
+                    "preserve files for manual review")
+    # Verify all five again; do not misreport success if original saved
+    # projects changed while new ones were being prepared.
+    states_after = {x["sector"]: status_one(run_id, x) for x in new_items}
+    if any(states_after[x["sector"]]["state"] not in reusable
+           for x in new_items):
+        raise RuntimeError(
+            "Post-preparation audit detected changed or incomplete project; "
+            "no project is deleted")
+    return {
+        "status": "VP05_NON202_PREPARE_PASS_NO_KIRA",
+        "projects_created": created,
+        "projects_reused": reused,
+        "sector_states": {str(k): v["state"] for k, v in states_after.items()},
+        "sector230_reuses_saved_project": str(project_for(run_id, 230)),
+        "kira_executed": False, "standard_projects_modified": False,
+        "existing_projects_overwritten": False
+    }
 
 
 def wsl_resource_preflight() -> dict:

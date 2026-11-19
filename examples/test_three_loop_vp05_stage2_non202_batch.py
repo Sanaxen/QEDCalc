@@ -143,13 +143,74 @@ class Non202BatchTests(unittest.TestCase):
                 self.assertEqual(report["status"], "VP05_NON202_PREPARE_PASS_NO_KIRA")
                 self.assertEqual(len(report["projects_created"]), 5)
                 self.assertEqual((original / "do_not_touch.log").read_text(), "protected")
-                with self.assertRaises(FileExistsError):
-                    m.prepare("test01")
+                repeated = m.prepare("test01")
+                self.assertEqual(repeated["status"], "VP05_NON202_PREPARE_PASS_NO_KIRA")
+                self.assertEqual(repeated["projects_created"], [])
+                self.assertEqual(len(repeated["projects_reused"]), 5)
+                self.assertFalse(repeated["existing_projects_overwritten"])
+                self.assertEqual((original / "do_not_touch.log").read_text(), "protected")
                 first = next(x for x in selected() if x["sector"] == 126)
                 self.assertEqual(m.status_one("test01", first)["state"], "prepared")
                 (m.project_for("test01", 126) / "jobs.yaml").write_text("tampered")
                 with self.assertRaises(RuntimeError):
                     m.status_one("test01", first)
+                with self.assertRaises(RuntimeError):
+                    m.prepare("test01")
+                self.assertEqual((original / "do_not_touch.log").read_text(), "protected")
+
+    def test_prepare_resumes_partial_valid_run_without_overwrite(self):
+        with TemporaryDirectory() as td:
+            root = Path(td)
+            output = root / "output"
+            output.mkdir()
+            monitor = root / "scripts" / "vp05_stage2_monitored_kira.py"
+            monitor.parent.mkdir()
+            monitor.write_text("# protected monitor")
+            def fake_export(spec, dest, **kwargs):
+                self.assertFalse(kwargs["clean"])
+                (dest / "config").mkdir()
+                for rel in ("jobs.yaml", "config/integralfamilies.yaml",
+                            "config/kinematics.yaml",
+                            "qedcalc_master_basis_manifest.json"):
+                    (dest / rel).write_text("mock")
+            with patch.object(m, "ROOT", root), patch.object(m, "OUTPUT", output), \
+                 patch.object(m, "verified_context", return_value=(selected(), {})), \
+                 patch.object(m, "build_family_spec", return_value=SimpleNamespace(
+                     baseline_seed=m.Seed(8, 3, 0))), \
+                 patch.object(m, "export_kira_project", side_effect=fake_export) as export:
+                # Simulate a prior prepare which completed only the first project
+                # (without erasing a real project or its intermediate files).
+                with patch.object(m, "NEW_SECTORS", (126,)):
+                    initial = m.prepare("partial01")
+                self.assertEqual(len(initial["projects_created"]), 1)
+                prior_dir = m.project_for("partial01", 126)
+                prior_manifest = (prior_dir / m.MANIFEST).read_bytes()
+                prior_config = (prior_dir / "jobs.yaml").read_bytes()
+                continued = m.prepare("partial01")
+                self.assertEqual(len(continued["projects_created"]), 4)
+                self.assertEqual(continued["projects_reused"], [str(prior_dir)])
+                self.assertEqual((prior_dir / m.MANIFEST).read_bytes(), prior_manifest)
+                self.assertEqual((prior_dir / "jobs.yaml").read_bytes(), prior_config)
+                self.assertEqual(export.call_count, 5)
+                self.assertEqual(
+                    {m.status_one("partial01", x)["state"]
+                     for x in selected() if x["sector"] in m.NEW_SECTORS},
+                    {"prepared"})
+
+    def test_unrecognized_existing_directory_stops_without_creating_others(self):
+        with TemporaryDirectory() as td:
+            root = Path(td)
+            output = root / "output"
+            output.mkdir()
+            suspect = output / "vp05_non202_r8s5d3_partial01_sec126"
+            suspect.mkdir()
+            (suspect / "unsaved_notes.txt").write_text("preserve this")
+            with patch.object(m, "OUTPUT", output), \
+                 patch.object(m, "verified_context", return_value=(selected(), {})):
+                with self.assertRaises(RuntimeError):
+                    m.prepare("partial01")
+            self.assertEqual((suspect / "unsaved_notes.txt").read_text(), "preserve this")
+            self.assertEqual(list(output.iterdir()), [suspect])
 
     def test_wsl_resource_preflight_parses_kib_and_rejects_pressure(self):
         healthy = ("MemTotal: 31457280\nMemAvailable: 20971520\n"

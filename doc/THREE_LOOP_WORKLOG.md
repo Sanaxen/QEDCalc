@@ -8908,3 +8908,27 @@ The first user-side Windows `python -m unittest examples.test_three_loop_vp05_st
 ### 2026-11-19 VP05 non202 batch: fix undefined INTERVAL in live execution path
 
 User Windows `python -m unittest examples.test_three_loop_vp05_stage2_non202_batch -v` ran 11 tests: 10 passed and `test_automatic_recovery_after_guard_stop_preserves_failed_job` errored on `NameError: name 'INTERVAL' is not defined` in `examples/three_loop_vp05_stage2_non202_batch.py:361`. This was a source-code typo: the only defined interval constant is `INTERVAL_SECONDS=5`. Changed monitor CLI argument to `str(INTERVAL_SECONDS)` without altering run order, guard limits or any saved Kira/Stage-2 source. Extended the mocked six-job guard test to assert that the actual `--interval 5` option is passed to the copied monitored Kira runner for all jobs. No Kira executed in this change. User must rerun 11 Windows unit tests and confirm all PASS before `plan`, `prepare`, `run`.
+
+
+### 2026-11-19 VP05 r8s5d3 no202a `prepare` safely made idempotent
+
+The user ran `run_vp05_stage2_non202_batch.bat prepare no202a` and observed `FileExistsError: One or more new directories exist; refuse overwrite` at `examples/three_loop_vp05_stage2_non202_batch.py:241`. The previous controller rejected *any* existing project directory, even if the project had previously been prepared correctly. This exception does **not** establish that all five new sector projects are complete or invalid; inspect via the read-only `audit no202a`. Never delete existing Kira project directories as a workaround.
+
+Updated `examples/three_loop_vp05_stage2_non202_batch.py` to make `prepare` an **idempotent, fail-closed prepare/resume**:
+
+- Re-read full pinned Step93/source and earlier `first01/light01/medium01/next01` evidence through unchanged `verified_context()`; it continues to block mutation of 206/234 RAM-guard-stopped projects and reuses the original prepared sector230 only.
+- Inspect all five new run-id-scoped sector projects `126,127,229,231,237` **before creating anything**, including the pinned candidate set, JSON manifest, SHA256 hash of all input files, monitored execution status, and symlink refusal.
+- Reuse SHA-verified `prepared`, `completed_local_retained`, or preserved `guard_stopped_* ` projects without a single input rewrite. Create **only** genuinely missing project directories, using exclusive `mkdir(exist_ok=False)`; validate each newly prepared project immediately and re-audit all five before returning.
+- If any directory exists with missing/corrupt manifest, changed hash, unexpected/interrupted status or link, refuse safely **without deleting/overwriting or preparing any other sector**. A manually inspected recovery may use a new run ID, but must not erase evidence.
+- Return `projects_created`, `projects_reused`, `sector_states` and explicit `existing_projects_overwritten=false`. This is preparation only, never Kira execution and never family closure or promotion.
+- Updated existing regression test from expecting a second-prepare exception to expecting zero new projects and five preserved reused projects; added partial-prepare recovery and unexpected/orphan directory rejection tests. Total now **13 unit tests**. Source/test lexical bracket matching and undefined-INTERVAL static checks were performed, but full Windows repository unit tests remain user-side confirmation.
+
+User commands:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_stage2_non202_batch -v
+.\run_vp05_stage2_non202_batch.bat audit no202a
+.\run_vp05_stage2_non202_batch.bat prepare no202a
+.\run_vp05_stage2_non202_batch.bat audit no202a
+```
+Only after 13 PASS and all five `prepared` or verified retained/guard-stopped states pass the explicit safe execution gate, execute the existing `run_vp05_stage2_non202_batch.bat run no202a EXECUTE_VP05_NO_SECTOR202_BATCH`. No saved Kira data was modified on GitHub; user machine's exact directory states have not been directly inspected.
