@@ -8891,3 +8891,12 @@ Only if tests and preparation audit pass and the machine is otherwise idle:
 ```
 
 Next separately design a resource-bounded **read-only** source-Kira or restricted-IBP local equation rescue focusing on the sector202 subtopology for the two guarded parents206/234; no automatic retry of either blocked project is permitted. No 63-master promotion until both independent standard boundary seeds and source-context family reconciliation are reviewed.
+
+
+#### 2026-11-19 Exact sector202-inclusion partition of the 63-candidate VP05 basis
+
+The verified candidate manifest can be partitioned using the sector bit-mask relation `(sector & 202) == 202` (inclusion, not a claim of solver independence):
+
+- **19 non-sector202-containing candidate sector groups, 40 candidates**: sectors `73,78,79,101,109,116,117,118,126,127,199,201,204,205,228,229,230,231,237`. In the user reports, 13 such groups/17 candidates have already retained in exact-sector local initiate-only checks. The protected new six-sector batch targets precisely the remaining **6 groups/23 candidates** (sector230 and 126/127/229/231/237).
+- **7 sector202-containing groups, 23 candidates**: sector `202(3),203(4),206(1),207(4),234(2),238(5),239(4)`. The 206 and 234 Kira jobs were RAM-guard stopped while generating recursive sector202, but none of these 7 groups may be promoted as fully closed based on that fact or the Step93 single-target B certificate.
+- Thus if (and only if) the six new local jobs all independently retain their required candidate master lists, the local evidence will cover **19/26 sector groups and 40/63 candidates**, leaving the 7 sector202-containing groups/23 candidates for a focused restricted-IBP or compressed-source-identity solution. This is still not the global three-seed Stage-2 closure or canonical promotion; cross-sector conditions remain to audit. Even an exact top-level sector that excludes sector202 can be expensive due to other sub-sectors and symmetries; guard ceilings stay unchanged.
