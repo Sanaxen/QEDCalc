@@ -8811,3 +8811,38 @@ If all preflights pass, explicitly start the six-sector batch:
 ```
 
 Inspect both user reports, preserved per-project `console_output.log` and `monitored_metrics.jsonl` if any guard stops. Do not relaunch original monolithic Stage-2 or directly mark 63/63 complete based solely on local master list evidence; all 26 exact-sector groups and proof scope mapping to standard closure are still necessary.
+
+
+### 2026-11-19 VP05 `r8s5d3` next01 interrupted safely at sector206 RAM ceiling; continue remaining four without rerunning
+
+The user provided UTF-16LE Windows logs `log_vp05_stage2_continuation_batch_run.txt` and `log_vp05_stage2_continuation_batch_audit.txt`. Both independently confirm the following:
+
+- `VP05_CONTINUATION_BATCH_HALTED_REVIEW_REQUIRED` (intentional protective termination), `global_closure_proven=false`, `promotion_ready_created=false`, `original_projects_modified=false`.
+- **sector205 PASS**: `completed_local_retained`, 1/1 candidate, Kira exit 0, **1891.0s** elapsed, peak observed WSL RAM **19.75 GiB**, swap **0.00 GiB**; 379 metrics samples, last Kira sector205 (14/14).
+- **sector206 STOP**: `finished_needs_review`, `reason=ram_stop`, Kira returncode **-15** (SIGTERM by monitor) / wrapper returncode **125** (guard stop), elapsed **1742.7s**, WSL peak used RAM **22.11 GiB**, swap **0.00 GiB**, 349 metrics samples. Last logged Kira recursive operation **sector202 (9/13)**. No masters verified; this is **not** a mathematical instability result or successful reduction. Do not re-run in place, erase its partial database/tmp, or silently count it as a retained master.
+- **sectors79,109,234,230**: already correctly prepared in `next01`, but never executed because the previous six-sector controller intentionally stopped on 206. Their candidate counts are **2,2,2,3** (9 candidates total).
+- Combining `first01`, `light01`, `medium01`, and sector205 yields **11/26 exact-sector local checks, 13/63 retained candidate integrals** at the `r8s5d3` boundary. There are **15 sector groups and 50 candidate integrals** without local same-seed verified retention; sector206 remains separately blocked.
+
+**New protective resume controller** was added, not an edit to earlier successful source: `examples/three_loop_vp05_stage2_resume_after206.py`, `run_vp05_stage2_resume_after206.bat`, `examples/test_three_loop_vp05_stage2_resume_after206.py`.
+
+- `plan`/`audit` are read-only. They re-read original Step93 immutably pinned proof via the existing `continuation_batch.sector_input_scope()`, independently recheck all previous pinned `first01/light01/medium01` successes, candidate set, all `next01` pilot input SHA256, 205's preserved PASS, 206's exact **RAM guard-stop** record, and 4 remaining `prepared` or saved PASS states. `plan` also uses bounded read-only project forensic metadata for sector206, such as SYSTEM gzip count, last Kira sector, and presence of intermediate master artifacts; it **does not** interpret them as an exact IBP certificate.
+- `run PRESERVE_SECTOR206_RUN_REMAINING_FOUR` executes **only sectors79,109,234,230** in the already prepared `next01` isolated project dirs. It deliberately skips both 205 (saved PASS) and **206 (RAM stop, unresolved)**, never invokes `--prepare`, never cleans Kira files, and refuses to overwrite prior console logs. It serializes Kira and uses the unchanged existing WSL monitor: up to **5400s per job**, total **43200s**, sampled WSL RAM warn/stop **18/22 GiB**, swap warn/stop **4/8 GiB**, monitor interval **5s**. On any resource stop or unexpected master list it halts rather than running subsequent sectors; successful prior jobs can be skipped on a later explicit rerun of this controller. A stop is not a formal Kira output. Samples can overshoot and other memory consumers must be avoided.
+- The controller reports success only as `VP05_AFTER206_FOUR_LOCAL_PILOTS_RETAINED_206_STILL_UNRESOLVED` with the skipped-sector flag; it deliberately sets `global_63_master_closure_proven=false` and `formal_promotion_ready_created=false`. No standard Stage-2 audit, promotion-ready artifact, or registry update has been created.
+- Added **9 mocked safety regression tests** (scope pins, previous success vs exact 206 ram_stop, guard/OS acknowledgement, read-only plan, four-only execution, halt at first failure and safe reuse of previous results). Actual Windows tests and physical Kira execution of the remaining four are pending.
+
+User PowerShell:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_stage2_resume_after206 -v
+.\run_vp05_stage2_resume_after206.bat plan
+```
+
+If tests and scope/pass read-only diagnostic are acceptable:
+
+```powershell
+.\run_vp05_stage2_resume_after206.bat run PRESERVE_SECTOR206_RUN_REMAINING_FOUR > log_vp05_stage2_remaining_run.txt 2>&1
+.\run_vp05_stage2_resume_after206.bat audit > log_vp05_stage2_remaining_audit.txt
+```
+
+Send both logs for review. Sector206 is a separate still-open memory-bound obstacle. A new restricted one-target / exact-sector or source-equation rescue will need formal justification before claim of the full boundary `r8s5d3` stability. The existing 63-candidate stage remains unregistered and the original standard Stage-2 family closure outstanding.
