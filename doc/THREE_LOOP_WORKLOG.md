@@ -8539,3 +8539,16 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step93_indep
 .\run_vp05_sector202_target_b_step93_independent_proof.bat --hours 12 --workers 4 > log_step93_independent.txt
 ```
 If independent audit checkpoint already exists, instead run `--resume --hours 12 --workers 4` and append to the log. Expected **`STEP93_TARGET_B_INDEPENDENT_EXACT_REPLAY_PASS`** only after both entire exact phases complete. **Windows run has not been observed.** Final promotion remains separately gated and should not occur before the independent audit PASS.
+
+
+### 2026-11-19 VP05 sector202 Target B: Step93 independent original-IBP exact replay PASS (milestone)
+
+Inspected directly user-supplied `log_step93_independent.txt` (UTF-16LE, 40 output records). The independent read-only verifier `examples/three_loop_vp05_sector202_target_b_step93_independent_proof.py` passed BOTH exact `QQ(z,d)` verification phases:
+- Step92→93 pivot coefficient identities: **393/393 PASS**.
+- Independently reconstructed target coefficients using the 389 original unscaled IBP source-row multipliers: **537/537 PASS**.
+- Final status: **`STEP93_TARGET_B_INDEPENDENT_EXACT_REPLAY_PASS`**, `step=93`, `pivot_coefficient_keys=393`, `original_source_keys=537`, `original_ibp_multipliers=389`, `formal_state_modified=false`.
+- Exact Step93 candidate SHA256 **`b3a7793b145e937e8a6f008b7f70f6ed2c3398e52a856797b9e96f54a31b896a`**, proof SHA256 **`de84f75d921d9dc4425864195eebf8fd437336216ab91caa3b5e34856bf9fd89`**. Both match the SHA values independently inspected earlier from the full proof-review ZIP.
+- The Step93 working state reached zero remainder and the proof artifact contains 389 exact source multipliers for the verified Target B equation. The independent verifier checks the original source/checkpoint/certificate hashes, the original QEDCalc target definition and Kira weight codec, Step92 journal hash, Step93 pivot update, and original 2241-row source JSON terms with rational function exact arithmetic.
+- **Scientific scope**: within the verified VP05 sector202 original-source dataset and target definition, the Target B IBP identity is supported by an independently executed exact symbolic certificate. This is NOT proof of VP05 entire family, 63 masters, all sectors, or the 72-diagram three-loop QED result. Historical Steps61–63 provenance still deserves explicit audit/disclosure, although the final source replay directly validates the Step93 identity.
+- Formal B state is still **Step77** and has not been auto-promoted by the continuous batch or independent verifier. Preserve `working_state.json`, `working_state_proof.json`, `before_step93.json`, `batch_journal.json`, `engine.log`, and `independent_step93_verification/pivot_verified.json`, `source_verified.json`. The independent exact audit PASS is a certificate-check milestone; formal saved-state promotion/export and a separate post-promotion integrity audit should follow only after a guarded preflight and backup.
+- No further continuous batch `--resume` is appropriate after exact zero remainder/proof. Do not rewrite or re-run the proof candidate or existing checkpoint files.
