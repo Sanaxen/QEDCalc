@@ -206,6 +206,9 @@ class Non202BatchTests(unittest.TestCase):
             self.assertEqual(report["status"], "VP05_NON202_PARTIAL_WITH_GUARD_STOPS")
             self.assertEqual(len(report["records"]), 6)
             self.assertEqual(runner.call_count, 6)
+            self.assertTrue(all(
+                call.args[0][call.args[0].index("--interval") + 1] == "5"
+                for call in runner.call_args_list))
             self.assertTrue(report["sector206_234_remain_unresolved"])
 
     def test_previously_guard_stopped_jobs_never_relaunched(self):

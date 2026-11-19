@@ -358,7 +358,7 @@ def run(run_id: str, acknowledge: str, max_total_seconds: int) -> dict:
         cmd = ["wsl.exe", "--cd", str(project), "python3", MONITOR,
                "--max-seconds", str(min(MAX_SECTOR_SECONDS, int(remaining))),
                "--warn-gib", str(SWAP_WARN), "--stop-gib", str(SWAP_STOP),
-               "--interval", str(INTERVAL),
+               "--interval", str(INTERVAL_SECONDS),
                "--ram-warn-gib", str(RAM_WARN),
                "--ram-stop-gib", str(RAM_STOP)]
         print(f"START SECTOR {sector}: {project}", flush=True)
