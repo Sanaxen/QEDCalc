@@ -9024,3 +9024,31 @@ Only after 20/20 local mock tests PASS, an unchanged prepared project is audited
     .\run_vp05_stage2_sector202_isolated.bat audit --run-id sec202a > log_vp05_sector202_isolated_audit.txt 2>&1
 
 The reported success status is VP05_SECTOR202_THREE_LOCAL_CANDIDATES_RETAINED_NOT_CLOSURE. A RAM/swap/time guard stop remains unresolved and requires review. Independent standard r8s6d2 closure, parent sectors206/234 and all cross-sector Stage-2 reduction evidence remain outstanding. No canonical registry update or promotion-ready generated.
+
+
+### 2026-11-20 VP05 isolated r7s5d3 sector202 sec202a: RAM-guard stop at 1222.3s; no candidate retention proof; bounded read-only forensics added
+
+User supplied Windows UTF-16LE `log_vp05_sector202_isolated_run.txt` and `log_vp05_sector202_isolated_audit.txt`. Parsed original bytes: **both agree** that the newly created sector202-only, three-target `r7s5d3` Kira run ended with **`VP05_SECTOR202_GUARD_STOP_PRESERVED_NOT_PROOF`**. The original project `output/vp05_stage2_sector202_r7s5d3_sec202a` must remain immutable.
+
+- Monitored `Kira` elapsed **1222.3 seconds** (~20m22s), return code **-15** (SIGTERM from the guard), Windows wrapper result **125**, monitor reason `ram_stop`, `success=false`. Preflight RAM used 1.19 GiB / available 28.18 GiB, swap used 0 GiB.
+- Peak sampled WSL RAM used **22.04 GiB**, swap **0.0 GiB**, **245 samples**. Last monitor sector `202 (5 of 5)`. This is the last *reported sector progress*, **not evidence** that equation generation or elimination had completed; determine exact phase from saved `monitored_kira.log`. No final master list was verified, `candidate_retained=false`, master_source null.
+- The post-run read-only audit reports `state=guard_stopped_ram_stop` with exactly the same Kira code, elapsed time, RAM peak and monitor progress; `kira_executed=false` in that audit means *audit command only*, not that the earlier run did not occur.
+- Earlier 206 and 234 protected RAM-stopped projects remain untouched; prior 19 nonsector202 local sectors/40 master candidate inventories remain separately retained. Sector202 3/3 and global 63-master basis remain **unproven**. No mathematical instability or OOM-kill proven. Simply lifting the RAM guard or rerunning the identical `r7s5d3` experiment is prohibited; increasing swap cannot substitute for a justified smaller equation system.
+- Historical Step93 only proves pinned sector202 Target B original-source identity; no direct transfer to the new local `r7s5d3` Kira equation context, nor proof of A/C or parent sectors.
+
+Implemented **read-only, bounded** forensic tool for the *saved* sector202a project:
+- `examples/three_loop_vp05_stage2_sector202_stop_forensics.py`
+- `examples/test_three_loop_vp05_stage2_sector202_stop_forensics.py` (**11 mocked tests added**, not yet executed in user's Windows repository)
+- `run_vp05_stage2_sector202_stop_forensics.bat`
+
+The tool calls the already SHA-verified `isolated.scope()` and `isolated.status()`, refuses any status other than the preserved RAM-guard-stopped project, checks full protected target mandatory/preferred copies, requires saved monitor trace reaching 22 GiB and elapsed time consistent with the exit, caps input metrics at 4 MiB/10000 samples and logs at existing 256 KiB tail per Kira log. It reports 60-second RAM/Swap time buckets, first crossings of 18/20/22 GiB, latest saved Kira sector-progress, small file metadata and any available SYSTEM/masters data without decompressing Kira archives or reading/writing its DB. **No Kira, no preparation, no filesystem output, no changes to Step93, 202a, 206/234 or registry**. The evidence is diagnostic, not a mathematical proof.
+
+Next Windows PowerShell, after confirming no conflicting local changes:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_stage2_sector202_stop_forensics -v
+.\run_vp05_stage2_sector202_stop_forensics.bat --run-id sec202a > log_vp05_sector202_stop_forensics.txt 2>&1
+```
+
+Require 11/11 tests PASS, then examine the original read-only report. Next scientific decision should be whether the guard stop is in equation generation, preselection or solve/row reduction, and what saved source equations and coefficient context can safely be reused. Consider target-specific or restricted-equation problems for A/C only after phase/provenance audit; do not launch Kira on `sec202a` in-place, lower guard integrity, re-promote Step93 or claim whole-family closure.
