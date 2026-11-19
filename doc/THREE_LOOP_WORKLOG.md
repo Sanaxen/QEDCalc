@@ -9052,3 +9052,27 @@ python -m unittest examples.test_three_loop_vp05_stage2_sector202_stop_forensics
 ```
 
 Require 11/11 tests PASS, then examine the original read-only report. Next scientific decision should be whether the guard stop is in equation generation, preselection or solve/row reduction, and what saved source equations and coefficient context can safely be reused. Consider target-specific or restricted-equation problems for A/C only after phase/provenance audit; do not launch Kira on `sec202a` in-place, lower guard integrity, re-promote Step93 or claim whole-family closure.
+
+ 
+### 2026-11-20 VP05 sector202a saved RAM trace confirms selection-phase bottleneck hypothesis; Target A source-split read-only audit implemented
+
+User's real Windows UTF-16LE `log_vp05_sector202_stop_forensics.txt` was read. It reports `VP05_SECTOR202_RAM_STOP_FORENSICS_READ_ONLY`, independently preserving the `sec202a` 3-candidate `r7s5d3` RAM stop. Samples=245. First memory threshold 18 GiB at 885.5s, 20 GiB at 1060.6s, 22 GiB at 1220.7s. Final 22.04 GiB / swap 0 GiB, CPU reported near 100%, final Kira elapsed 1222.3s. RAM rose steadily throughout minutes 4–20 rather than plateauing. The last Kira log suffix explicitly says `Select equations recursively`, `length of mandatory list: 3`, `Algebraic reconstruction is switched off.` Monitor's last generation progress was sector202 (5/5). No `SYSTEM_VP05_full_*.gz` in saved project, no `masters`/ `masters.final`; Kira DB exists, 28672 bytes. Selection/recursive equation expansion is the **leading bottleneck hypothesis** but the exact internal live allocation phase is NOT proven merely by log tails. Neither Kira mathematical failure nor complete equation generation has been proven. **Do not relaunch** `sec202a`, alter 22 GiB guard, or increase swap as a substitute for reducing the IBP problem.
+
+Historical exact source code inspected: the original restricted sector203 provisional Kira context gave a finite-field A target coefficient candidate and an independently archived exact QQ(z,d) B target source proof. The existing modular provenance file has 2678 original system equations, target A original-row support **339**, target B modular support and original-row overlap to be inspected, with a **389-row union**. Target C is a proposed reference integral in the A/B reduction candidates; do not mislabel it as an automatically proven master. Step93 B was independently replayed over original IBP equations with **389 exact multipliers**, but no automatic implication for the new Kira envelope or Target A.
+
+Added new read-only safety-scoped report:
+- `examples/three_loop_vp05_sector202_source_split_audit.py`
+- `examples/test_three_loop_vp05_sector202_source_split_audit.py` (10 mocked offline tests added, user Windows tests not yet observed)
+- `run_vp05_sector202_source_split_audit.bat`
+
+The source-split report first requires the complete SHA-pinned prior Step93/no202a and saved `sec202a` RAM-stop forensic audit. It reads only the previously SHA-verified original modular provenance JSON and formal archived Step93 Target B proof JSON, bounds both reads to 16 MiB, refuses symlink evidence, and validates exact A/B source identities, replay flags, unique original row IDs, union count 389, A support 339 and Step93 B's 389 original exact source multipliers. It reports A-only, B-only and shared original row counts and separate exact B overlap, explicitly marking **finite-field A as not exact QQ(z,d) proof**, C reference status as open, and standard Stage-2 closure as false. No new Kira, no Fermat, no new or changed output files, no canonical registry mutation.
+
+Next Windows PowerShell:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_source_split_audit -v
+.\run_vp05_sector202_source_split_audit.bat > log_vp05_sector202_source_split_audit.txt 2>&1
+```
+
+Send the resulting log and test outcome. The next implementation decision is to reuse only the original **339 source candidate rows for Target A** and the prior modular certificate as a narrowly scoped starting point for bounded **exact** rational-function reconstruction plus unscaled original IBP replay, with independent checkpoints. It is NOT a plan to remove B or C from the mandatory candidates in an existing Kira job without mathematical proof. The separate r8s6d2 seed and 206/234 parent-sector closure are unresolved.
