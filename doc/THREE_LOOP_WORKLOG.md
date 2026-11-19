@@ -8702,3 +8702,39 @@ Only when tests/preflight pass and local resource usage is acceptable, explicitl
 ```
 
 Do not rerun the same RUN_ID; preserve logs and output. Analyze `audit first01` and runtime resource trace before scaling to any other sector. Neither the standard batch nor `canonical_family_registry.py` has been changed; `VP05_final63` remains unregistered.
+
+
+### 2026-11-19 VP05 r8s5d3 sector73 first isolated pilot: Windows Kira PASS (not global closure)
+
+User supplied Windows console `log_vp05_stage2_pilot_first01.txt` and independent read-only `log_vp05_stage2_pilot_audit_first01.txt`.
+
+- Sector73, exact candidate `VP05_full[1,0,0,1,0,0,1,0,0,0,0,0]`, original pending boundary `r8s5d3`, effective exact-sector envelope `r6s5d3`. The protected pilot project was `output/vp05_stage2_pilot_r8s5d3_sec73_first01`.
+- Kira executed and returned **0**, monitored runner status `kira_exit`, elapsed **100.1s**, Kira time **99.6s**. Equation generation **839,834 total = 670,309 zero + 169,525 independent**; table **68,823 independent coefficients**. It identified **one** master, exactly the required sector73 candidate, and ended with “No integrals to reduce, skipping this family.” No time/swap guard trip was reported.
+- Separate pilot post-audit status: `VP05_PILOT_SECTOR73_MASTER_RETAINED_PENDING_CROSS_SECTOR_REVIEW`, `candidate_retained_in_local_master_list=true`, `master_count=1`. This proves a **local Kira master selection check at that exact-sector envelope**, not original-source coefficient reduction and **not** the 63-candidate family one-axis closure. Saved monitor metrics were not included in the uploaded logs, so actual RAM/swap peaks remain to be read from `monitored_metrics.jsonl` on Windows.
+- The earlier Step93 sector202 Target B exact certificate remains immutable; no standard `promotion-ready` or family registry modification was made.
+
+Added a guarded **three-sector light-batch follow-up** for the SAME unresolved boundary seed `r8s5d3`:
+`examples/three_loop_vp05_stage2_light_batch.py`, `run_vp05_stage2_light_batch.bat`, and `examples/test_three_loop_vp05_stage2_light_batch.py`.
+
+- Only sectors **78,101,116** (target counts **1,2,1**; all exact sectors have 4 positive lines and use `r7s5d3` equivalent envelope), selected from the pinned Stage-2 63-candidate inventory. An initial successful first01 sector73 audit, the full Step93 immutable archive audit, and unchanged missing-boundary status are required before proceeding.
+- `plan ID` is strictly read-only, including returning saved first01 resource metric peaks if available; `prepare ID` creates three brand-new exclusive project directories with hashed mandatory/preferred lists and the pinned existing `sector203_monitored_kira.py`, and **does not execute Kira**. `audit ID` is read-only. `run ID EXECUTE_VP05_ISOLATED_LIGHT_BATCH` is an explicit acknowledgement, sequentially checks each project and other Kira processes, runs monitor at most **1800 seconds/sector**, swap warning at 4GiB and stop at 8GiB, 5-second sampling, and a **6000-second batch wall-clock budget**; the console output and metrics are preserved inside each isolated project. A returning run with the same ID **skips previously verified completed sectors**; an interrupted/failed sector is blocked from automatic rerun, requiring manual review/new run ID. No original Kira project, Stage-2 audit, Step77 or Step93 evidence is overwritten.
+- Stop conditions are sampled and not guaranteed hard resource bounds. The batch cannot promote the formal family basis, create a standard seed closure PASS, or alter the canonical registry; additional cross-sector proof review remains obligatory. Eight mock-based unit tests cover scope, first01 gate, input hashes, exclusive preparation, resume safety, bounded metrics, and fail-closed execution; **user-side test execution pending**.
+
+PowerShell:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_stage2_light_batch -v
+.\run_vp05_stage2_light_batch.bat plan light01
+.\run_vp05_stage2_light_batch.bat prepare light01
+.\run_vp05_stage2_light_batch.bat audit light01
+```
+
+After verifying the preflight and local memory availability, user may explicitly start:
+
+```powershell
+.\run_vp05_stage2_light_batch.bat run light01 EXECUTE_VP05_ISOLATED_LIGHT_BATCH > log_vp05_stage2_light_batch_run.txt 2>&1
+.\run_vp05_stage2_light_batch.bat audit light01 > log_vp05_stage2_light_batch_audit.txt
+```
+
+Only scale beyond these three sectors after reviewing their saved resource traces and retained candidate identities. No blanket 26-sector or monolithic `run_three_loop_master_basis_all.bat resume` yet.
