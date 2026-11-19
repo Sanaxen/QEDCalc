@@ -76,7 +76,7 @@ def expected_target():
     keys=[(codec.encode(x),139) for x in TARGETS]
     if any(tuple(codec.decode(k[0]))!=v for k,v in zip(keys,TARGETS)):
         raise RuntimeError("Target codec is not reversible")
-    return {(keys[1]):"1",(keys[3]):"-("+FORMULAS[2]+")",(4,73):"-("+FORMULAS[3]+")"}
+    return {(keys[1]):"1",(keys[2]):"-("+FORMULAS[2]+")",(4,73):"-("+FORMULAS[3]+")"}
 
 def context():
     paths=[WORK,PROOF,BEFORE,JOURNAL,CHECKPOINT,SOURCE,CERT,B_STATE]
