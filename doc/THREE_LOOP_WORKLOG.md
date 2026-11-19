@@ -9076,3 +9076,26 @@ python -m unittest examples.test_three_loop_vp05_sector202_source_split_audit -v
 ```
 
 Send the resulting log and test outcome. The next implementation decision is to reuse only the original **339 source candidate rows for Target A** and the prior modular certificate as a narrowly scoped starting point for bounded **exact** rational-function reconstruction plus unscaled original IBP replay, with independent checkpoints. It is NOT a plan to remove B or C from the mandatory candidates in an existing Kira job without mathematical proof. The separate r8s6d2 seed and 206/234 parent-sector closure are unresolved.
+
+
+### 2026-11-20 VP05 sector202 A support subset of B; read-only modular holdout implementation
+
+User's real UTF-16LE `log_vp05_sector202_source_split_audit.txt` was decoded and checked. Status: `VP05_SECTOR202_A_EXACT_SOURCE_REVIEW_REQUIRED`. Original finite-field point [1000003,17,7]: Target A original-source support 339 IDs, Target B support 389, intersection 339, A-only 0, B-only 50, union 389. Hence A support is a **strict subset** of the exact Step93 B source-ID support; B exact multipliers have 389 IDs and exactly match the modular B source-ID set. A original-source modular replay is verified only at that point. **This containment is not an exact A QQ(z,d) identity, nor proof of C master retention or any new Kira r7s5d3/standard Stage-2 boundary.** The previous `rank_extension_probe.py` already anticipated an unresolved A lead in one 389-pivot checkpoint; additional consistency tests are warranted before expensive exact calculation. Original sector202a remains preserved after RAM 22.04 GiB stop.
+
+Added on feature/master-basis-initiate-only:
+- `examples/three_loop_vp05_sector202_a_modular_holdout.py`
+- `examples/test_three_loop_vp05_sector202_a_modular_holdout.py` (12 mock tests; Windows PASS pending)
+- `run_vp05_sector202_a_modular_holdout.bat`
+
+The read-only finite-field runner uses only the **339 saved original A row IDs** from the verified split, the SHA256-pinned exported 2241 original IBP rows, original provisional sector203 Kira DB/codec (ordering 5), and historical proposed A-C-small4 rational coefficients. It accepts pinned point indices 0=[1000003,17,7] (original) and 1=[1000033,19,11], 2=[1000037,21,15] (other-prime holdouts). Evaluates source terms with existing safe modular AST evaluator, builds a sparse row echelon basis from 339 A rows, then tests the proposed A identity for zero finite-field remainder. B exact archive is reused only for evidence verification, not recomputed. Safety caps: 900 seconds for numerical elimination, 20,000 max row fill and steps, 1,200,000 saved pivot cells, 256 MiB maximum decompressed source. Each run prints a JSON summary only: PASS_NOT_EXACT_PROOF, SPAN_GAP or REVIEW_REQUIRED with the reason; no Kira/FireFly, checkpoint, result file, or promotion-ready modification.
+
+Windows PowerShell, after confirming the local worktree:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_a_modular_holdout -v
+.\run_vp05_sector202_a_modular_holdout.bat --point-index 1 > log_vp05_sector202_a_holdout_p1.txt 2>&1
+.\run_vp05_sector202_a_modular_holdout.bat --point-index 2 > log_vp05_sector202_a_holdout_p2.txt 2>&1
+```
+
+Examine both result logs and actual unit-test output. If either finite-field holdout fails or hits a cap, review the missing lead/source dependencies and coefficient candidates before building exact elimination. If both pass, the next safe phase is bounded/checkpointed **exact** QQ(z,d) Target A original-source replay, not a same-seed Kira restart. Even success is not full VP05 63-master closure; r8s6d2 and six other sector202-containing candidate groups remain open.
