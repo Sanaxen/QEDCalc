@@ -8738,3 +8738,36 @@ After verifying the preflight and local memory availability, user may explicitly
 ```
 
 Only scale beyond these three sectors after reviewing their saved resource traces and retained candidate identities. No blanket 26-sector or monolithic `run_three_loop_master_basis_all.bat resume` yet.
+
+
+### 2026-11-19 VP05 r8s5d3 `light01` completed 3/3; guarded next six-sector batch implemented
+
+User supplied the real Windows `log_vp05_stage2_light_batch_run.txt` and `log_vp05_stage2_light_batch_audit.txt` in UTF-16LE. Both reports were independently read. Status: `VP05_LIGHT_BATCH_ALL_LOCAL_PILOTS_RETAINED`; preserved monolithic projects unchanged, `global_closure_proven=false`, no `promotion-ready`. The `audit light01` confirms 3/3 completed exact-sector pilot projects and their saved Kira master lists:
+- sector78: 1/1 candidate retained; `kira_exit`, return code 0, **165.1s**; measured peak RAM **3.43 GiB**, swap **0 GiB**, 34 monitoring samples.
+- sector101: 2/2 candidates retained; `kira_exit`, return code 0, **215.1s**; RAM **5.27 GiB**, swap **0 GiB**, 44 samples.
+- sector116: 1/1 retained; `kira_exit`, return code 0, **10.0s**; RAM **1.49 GiB**, swap **0 GiB**, 3 samples.
+- Earlier `first01` sector73 monitoring recovered independently: RAM **3.11 GiB**, swap **0 GiB**, 21 samples, previously established 1/1 retained. Thus the user has saved local master selections at **4/26 sector groups** and **5/63 candidate integrals** for `r8s5d3`, not a formal whole-family closure audit or exact coefficient identities.
+
+**Next pipeline** added a fixed-scope *six-sector guarded medium batch*, with non-destructive restart logic and separate RAM + swap guards:
+- `examples/three_loop_vp05_stage2_medium_batch.py`, `run_vp05_stage2_medium_batch.bat`, `examples/test_three_loop_vp05_stage2_medium_batch.py`, `scripts/vp05_stage2_monitored_kira.py`.
+- Target sectors in execution order: **201** (1 candidate), **228** (2), **117** (1), **118** (1), **199** (1), **204** (1): **6 new sector groups and 7 masters**. Exact-sector effective seeds: `r7s5d3` for sectors201/228/204 (4 positive lines) and `r8s5d3` for 117/118/199 (5 positive lines). The order attempts smaller candidate groups before revisiting sector204, which was a pathological **recursive sector of a prior monolithic** run; exact-sector resource behavior is **unknown** and no inference of guaranteed speed is made.
+- Before preparing new runs, the controller confirms current 63-candidate/26-sector Stage-2 gap and independent Step93 archive, archived sector73 first01 PASS, and archived sector78/101/116 `light01` PASS; refuses if underlying scope, targets or saved inputs changed. No formal promotion may result.
+- Plan/audit are read-only. Prepare creates six **new exclusive** `output/vp05_stage2_r8s5d3_medium_<run-id>_sec<sector>` projects, writes only there, hashes copied job config, mandatory, preferred and monitor scripts, and refuses reusing already existing run ID directories. No original output deletion.
+- Explicit execute acknowledgement: `EXECUTE_VP05_ISOLATED_MEDIUM_BATCH`. Sequential WSL Kira via **new independent** monitor `scripts/vp05_stage2_monitored_kira.py`; original `scripts/sector203_monitored_kira.py` remains unchanged. Per-sector max **5400s (90min)**, total budget at most **43200s (12h)**; RAM warning at **18 GiB**, sampled stop at **22 GiB**; swap warning **4 GiB**, stop **8 GiB**; 5-second samples. Stops after failed resource or master retention guard, preserves independent console/metrics/log/exit per project, can resume completed sectors of same ID and refuses overwriting interrupted sectors. These are sampled limits: transient overshoots possible; requires local monitoring for high-risk sectors.
+- Added nine mocked offline regression tests including prior successful scope gate, candidate and dot envelope, exclusive prepared projects, input hash and tamper rejection, resume semantics, stopping at first failed job, and pure RAM/swap/time guard; **not yet run on the user's Windows source tree**. No Kira executed at implementation time. New diagnostic steps do not update formal Stage-2 or canonical registry.
+
+User PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_stage2_medium_batch -v
+.\run_vp05_stage2_medium_batch.bat plan medium01
+.\run_vp05_stage2_medium_batch.bat prepare medium01
+.\run_vp05_stage2_medium_batch.bat audit medium01
+```
+Then, **only after successful tests and review of the local system's current RAM/swap capacity**, explicitly execute:
+```powershell
+.\run_vp05_stage2_medium_batch.bat run medium01 EXECUTE_VP05_ISOLATED_MEDIUM_BATCH > log_vp05_stage2_medium_batch_run.txt 2>&1
+.\run_vp05_stage2_medium_batch.bat audit medium01 > log_vp05_stage2_medium_batch_audit.txt
+```
+
+Do not re-run original `run_three_loop_master_basis_all.bat` or destructive candidate sector-closure BAT, do not overwrite prior pilot dirs, and do not claim full `r8s5d3` closure until all 63 candidates at its required envelope and cross-sector contexts have been independently audited. Next: user-side test and six-sector results, then resource/coverage evaluation before expanding and reconciling with standard Stage-2.
