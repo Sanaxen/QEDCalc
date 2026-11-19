@@ -8600,3 +8600,25 @@ python -m unittest examples.test_three_loop_vp05_stage2_step93_gap_audit -v
 ```
 
 - Review the exact JSON results before choosing any additional costly run. Prior Stage-2 forensic scripts had identified `r8s6d2` and `r8s5d3` as missing whole-family closure; **current state requires confirmation from this new read-only audit**. No `run_three_loop_master_basis_all.bat run/resume` is authorized solely on the basis of Step93.
+
+
+### 2026-11-19 VP05 Stage-2: Step93→Stage-2 gap report received; exactly two boundary seeds still need evidence
+
+User ran `run_vp05_stage2_step93_gap_audit.bat` and supplied `log_vp05_stage2_step93_gap.txt` (UTF-16LE). The read-only diagnostic produced `VP05_STAGE2_BOUNDARY_GAPS_REMAIN`; formal Step93 sector202 Target B proof archive passed validation. Standard baseline `r8s3d0` has **63** candidate masters across **26** physical sectors, including **3** sector202 candidates. Target B's exponent vector `[0,1,0,1,-2,0,1,1,0,0,0,0]` appears among the 63 and among standard closure targets; Target A and C are also standard closure targets. This is a confirmed **single target exact identity**, not certification of all 63 independent candidate masters.
+
+- One-axis `r9s5d2`: standard saved boundary `stable=true`, `master_count=63`; the saved candidate sector-local closure audit also reports `audit_pass=true` and 26/26 exact sectors, 63 candidates, no missing sector.
+- One-axis `r8s6d2`: saved standard boundary `stable=false` due to missing `masters.final` / other acceptable saved master list; **no saved aggregate sector-local audit**.
+- One-axis `r8s5d3`: same missing standard master list and absent aggregate sector-local audit.
+- No `three_loop_vp05_full_promotion_ready.json`, no registry change. This is **missing verification**, not evidence that the candidate basis is mathematically unstable. The user-provided gap report itself performed no Kira computation and modified no files.
+
+Implemented **read-only per-sector evidence inventory**, independent from global promotion: `examples/three_loop_vp05_stage2_sector_inventory.py`, `run_vp05_stage2_sector_inventory.bat`, and `examples/test_three_loop_vp05_stage2_sector_inventory.py`. It requires original Step93 archive post-audit PASS and the unchanged 63-candidate/26-sector Stage-2 manifest before examining both blocked seeds. It uses existing Stage-2 `_restricted_equivalent_audit` to find exact-sector restricted audit candidates for scope review and independently inspects saved sector-local Kira project input copies and master lists to identify additional *possible* reuse. The 52 per-seed sector entries differentiate restricted-equivalent audit candidates, matching local master inventories still requiring closure audit, incomplete projects and absent evidence. None is automatically converted to standard 63-candidate boundary closure PASS. It never executes Kira, prepares/cleans a project, writes Stage-2 checkpoints, updates registry or re-promotes Step93.
+
+Windows commands after pulling the code:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_stage2_sector_inventory -v
+.\run_vp05_stage2_sector_inventory.bat > log_vp05_stage2_sector_inventory.txt
+```
+
+Implementation committed, but user-side runtime and 52-sector inventory findings are **not yet available**. Do not launch the global `run_three_loop_master_basis_all.bat run/resume` or the generic sector-closure BAT while diagnosing these saved artifacts: the latter's `--prepare` may clean projects before starting new Kira. Preserve the Step77 and Step93 proof archives and do not fabricate promotion-ready or use a mere single-target reduction to claim global closure.
