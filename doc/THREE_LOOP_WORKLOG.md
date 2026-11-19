@@ -8771,3 +8771,43 @@ Then, **only after successful tests and review of the local system's current RAM
 ```
 
 Do not re-run original `run_three_loop_master_basis_all.bat` or destructive candidate sector-closure BAT, do not overwrite prior pilot dirs, and do not claim full `r8s5d3` closure until all 63 candidates at its required envelope and cross-sector contexts have been independently audited. Next: user-side test and six-sector results, then resource/coverage evaluation before expanding and reconciling with standard Stage-2.
+
+
+### 2026-11-19 VP05 `r8s5d3` medium01 six-sector PASS; protected continuation for five-positive-line sectors
+
+User provided UTF-16LE console `log_vp05_stage2_medium_batch_run.txt` and read-only `log_vp05_stage2_medium_batch_audit.txt`. The two reports independently agree: `VP05_MEDIUM_BATCH_ALL_LOCAL_PILOTS_RETAINED` and all six saved local master inventories PASS; Kira returned 0 at each sector:
+- sector201: **1/1 retained**, elapsed **365.2s**, peak WSL RAM used **6.21 GiB**, swap **0.00 GiB**, 74 samples
+- sector228: **2/2**, **205.1s**, RAM **4.63 GiB**, swap **0.00 GiB**, 42 samples
+- sector117: **1/1**, **215.1s**, RAM **5.71 GiB**, swap **0.00 GiB**, 44 samples
+- sector118: **1/1**, **20.0s**, RAM **1.63 GiB**, swap **0.00 GiB**, 5 samples
+- sector199: **1/1**, **2101.1s**, RAM **19.13 GiB**, swap **0.00 GiB**, 421 samples
+- sector204: **1/1**, **1355.7s**, RAM **15.87 GiB**, swap **0.00 GiB**, 272 samples.
+
+Total monitored runtime approximately **4262.2s (71.0min)**. Combined with protected `first01` (sector73 1/1) and `light01` (sectors78,101,116 4/4), the user has demonstrated `r8s5d3` local initiate-only master selection retaining **12/63 standard candidate integrals across 10/26 sector groups**. **16 sectors and 51 integrals remain without this same-seed local pilot check.** No Step93 original-source proof modification, standard Stage-2 global `r8s5d3` closure, or `VP05_final63` promotion is claimed. Crucially, sector199's WSL RAM rose to **19.13GiB**, near the **22GiB** monitored stop, so the subsequent batch must NOT loosen memory/swap safety and must halt at first unsafe job.
+
+Created a new six-sector **continuation pilot batch**, `examples/three_loop_vp05_stage2_continuation_batch.py`, `run_vp05_stage2_continuation_batch.bat`, `examples/test_three_loop_vp05_stage2_continuation_batch.py`. This is a conservative clone of the real-world successful `medium01` controller, retaining the same `scripts/vp05_stage2_monitored_kira.py` RAM/swap monitor; no rewrite of original projects.
+
+- Scope **`r8s5d3` only**. Pinned next sectors **205,206,79,109,234,230**, candidate counts **1,1,2,2,2,3** (total **11**, all five-positive-line exact sectors). For d=3 all use the requested **effective `r8s5d3`**. The previously problematic sector202 and sector203, and sectors with six/seven positive lines, are deliberately excluded from this batch.
+- Requires original Step93 immutable post-audit and current 63/26 candidate manifest/Stage-2 pending seeds, prior `first01` sector73 PASS, prior `light01` 3-sector PASS (through medium controller), **and all six archived `medium01` 6-sector PASS** before planning/preparing/running. No trust in user-provided status labels without reading saved projects/master lists.
+- `plan` and `audit` are read-only. `prepare` creates six **new exclusive** `output/vp05_stage2_r8s5d3_continuation_<run-id>_sec<sector>` directories with pinned candidate-only Kira initiate-only `jobs.yaml`, preferred/mandatory exact targets, and SHA256-verified copied RAM/swap guard. Never cleans standard Kira projects or modifies saved source proof. A manifest hash mismatch or unexpected candidate scope blocks execution.
+- `run` requires exact human acknowledgement `EXECUTE_VP05_ISOLATED_CONTINUATION_BATCH`. One WSL Kira at a time, maximum **5400s/sector**, up to **43200s total**, warning/stop **RAM 18/22 GiB** and **swap 4/8 GiB**, 5s samples, protective stop at first failed/changed candidate or resource guard. Re-running same ID skips completed saved local checks; failed/interrupted projects are not overwritten. **Sampled RAM/swap limits can overshoot** between observations; not a kernel-enforced memory cgroup.
+- Nine mock regression tests cover prior proof scope/6-sector PASSES, target counts/effective boundary, no-write plan, exclusive prepare, hash integrity/tamper blocking, read-only result retention without whole-family promotion, guard decisions, required Windows explicit acknowledgement, and halt-on-first-error. Tests were added to GitHub but **have not yet been run in user's Windows environment**.
+
+PowerShell, after checking RAM and ensuring no other heavy Kira work:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_stage2_continuation_batch -v
+.\run_vp05_stage2_continuation_batch.bat plan next01
+.\run_vp05_stage2_continuation_batch.bat prepare next01
+.\run_vp05_stage2_continuation_batch.bat audit next01
+```
+
+If all preflights pass, explicitly start the six-sector batch:
+
+```powershell
+.\run_vp05_stage2_continuation_batch.bat run next01 EXECUTE_VP05_ISOLATED_CONTINUATION_BATCH > log_vp05_stage2_continuation_batch_run.txt 2>&1
+.\run_vp05_stage2_continuation_batch.bat audit next01 > log_vp05_stage2_continuation_batch_audit.txt
+```
+
+Inspect both user reports, preserved per-project `console_output.log` and `monitored_metrics.jsonl` if any guard stops. Do not relaunch original monolithic Stage-2 or directly mark 63/63 complete based solely on local master list evidence; all 26 exact-sector groups and proof scope mapping to standard closure are still necessary.
