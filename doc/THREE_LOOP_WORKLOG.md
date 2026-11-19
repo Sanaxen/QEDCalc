@@ -8552,3 +8552,22 @@ Inspected directly user-supplied `log_step93_independent.txt` (UTF-16LE, 40 outp
 - **Scientific scope**: within the verified VP05 sector202 original-source dataset and target definition, the Target B IBP identity is supported by an independently executed exact symbolic certificate. This is NOT proof of VP05 entire family, 63 masters, all sectors, or the 72-diagram three-loop QED result. Historical Steps61–63 provenance still deserves explicit audit/disclosure, although the final source replay directly validates the Step93 identity.
 - Formal B state is still **Step77** and has not been auto-promoted by the continuous batch or independent verifier. Preserve `working_state.json`, `working_state_proof.json`, `before_step93.json`, `batch_journal.json`, `engine.log`, and `independent_step93_verification/pivot_verified.json`, `source_verified.json`. The independent exact audit PASS is a certificate-check milestone; formal saved-state promotion/export and a separate post-promotion integrity audit should follow only after a guarded preflight and backup.
 - No further continuous batch `--resume` is appropriate after exact zero remainder/proof. Do not rewrite or re-run the proof candidate or existing checkpoint files.
+
+
+### 2026-11-19 VP05 sector202 Target B: versioned Step93 formal proof archive implementation (Windows run pending)
+
+- Implemented `examples/three_loop_vp05_sector202_target_b_step93_formal_promotion.py`, `run_vp05_sector202_target_b_step93_formal_promotion.bat` and offline safety tests. At this commit these are **implementation/design safeguards only**; no claim that the archive was actually created or audited on the user's Windows machine.
+- Purpose: consolidate the independently verified exact Step93 state, the engine's separate proven proof JSON, all **389** original-source rational-function multipliers, Step92 before/journal, independent audit checkpoint files (**393/393** pivot and **537/537** original-source), original compressed IBP source and pivot checkpoint/certificate into a single SHA-pinned versioned formal artifact directory.
+- **Do not run** legacy `run_vp05_sector202_target_b_step70_formal_promotion.bat --promote`: it applies only to historic Step69→70 and cannot promote Step93.
+- Safety: require Step77 read-only saved-state PASS, original formal Step77 SHA, exact Step93/proof SHA, fresh `independent.context()` original-source/target checks, and full independent phase checkpoint manifest/count linkage. Default `--check-only` writes nothing. `--promote` exclusively creates a new archive and last-written manifest; `--resume` copies only missing files in an interrupted partial archive (existing hashes must agree); `--post-audit` independently rereads both the archived bytes and protected original files. No file from Step77 or the continuous batch is overwritten; Step77 is also copied into the archive as a backup. The versioned `formal_state_step93.json` + `formal_manifest.json` is the canonical proven Target B artifact, while the historical Step77 pathname remains immutable so its old audit chain still works. The Step93 working state proof flags remain unchanged by design; proof status lives in the separate validated proof and formal manifest.
+- Explicit scope: a single exact **VP05_full sector202 Target B** identity for the pinned 2241-source-row dataset, NOT entire VP05, all 63 masters, or all 72 QED diagrams. Historical Steps61–63 provenance caveat remains disclosed; the direct original-source replay covers the final Target B identity.
+- Windows invocation after pulling the new commit:
+
+```powershell
+python -m unittest examples.test_three_loop_vp05_sector202_target_b_step93_formal_promotion -v
+.\run_vp05_sector202_target_b_step93_formal_promotion.bat --check-only
+.\run_vp05_sector202_target_b_step93_formal_promotion.bat --promote > log_step93_formal_promotion.txt
+.\run_vp05_sector202_target_b_step93_formal_promotion.bat --post-audit > log_step93_post_audit.txt
+```
+
+- A partial archive without `formal_manifest.json` can be resumed with `--resume` after checking the source of the interruption. An already complete archive should be audited with `--post-audit`, never overwritten or blindly re-promoted.
