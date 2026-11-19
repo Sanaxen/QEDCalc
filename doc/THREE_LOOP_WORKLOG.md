@@ -8650,3 +8650,21 @@ User supplied `log_vp05_stage2_sector_inventory.txt` (UTF-16LE, one JSON status 
 - The provided ZIP ends Nov18, and **does not include** newer Nov19 Step93 formal archive PASS reports; those were separately inspected and recorded.
 - **Nov19 current supported state** remains: Step93 sector202 Target B exact archive verified, standard `r9s5d2` PASS; `r8s6d2` and `r8s5d3` global closure missing; 63 candidates/26 sectors. Per-sector inventory finds on `r8s6d2` 10 usable master-list inventories + 2 restricted-equivalent audit candidates + 14 unresolved projects; on `r8s5d3` no matching same-seed verified evidence (within the scoped inventory). Resource termination is not mathematical instability.
 - **Plan unchanged:** protect Step77/Step93 and all original Kira project data; establish missing boundary evidence with non-destructive resource-guarded approaches, reconcile with standard Stage-2, generate real promotion-ready and only then update canonical family registry and proceed toward 45/45. The historical archive is the chronology source, while executable artifacts and independent audits determine scientific proof status.
+
+
+### 2026-11-19 VP05 Stage-2: protected residual Kira-project forensics implemented (Windows runtime pending)
+
+- Reviewed the user's exported 11-chat archive together with current live evidence inventories. The Stage-2 plan remains **② exceptional light-weight proof → ③ canonical 63-master closure evidence reconciliation**, not direct Step93 proof promotion.
+- Current Windows evidence (the preceding two-seed sector inventory): `r9s5d2` standard 63/63 PASS and 26/26 same-seed sector-local PASS; `r8s6d2` 10 local Kira master-list inventories (15 candidates), 2 restricted-audit matches (2 candidates), and 14 incomplete-project/unknown sectors (46 candidates), including sectors 202,203,204,205,206,207,228,229,230,231,234,237,238,239. `r8s5d3` has no matching same-seed sector-local evidence in this targeted inventory, though its original monolithic closure directory may have input artifacts.
+- Created `examples/three_loop_vp05_stage2_residual_forensics.py`, `run_vp05_stage2_residual_forensics.bat` and `examples/test_three_loop_vp05_stage2_residual_forensics.py`. The new **read-only** tool uses the existing Step93-post-audited 63-candidate two-seed inventory as a gate, then inspects only the unresolved projects and the two original monolithic candidate-closure project directories. It reports presence and SHA256 of small input files (mandatory/preferred/jobs), target-set and order comparison, Kira DB and master-file presence, bounded log-tail progress and error/resource text hints, and names/sizes of existing `tmp/VP05_full/SYSTEM_*.gz` files **without decompressing them**.
+- Note: log-tail progress, a Kira DB, a partial SYSTEM gzip, or an initiate-only master list alone **cannot** certify original-source IBP relations or 63-master family closure. The report never generates a standard seed audit, rewrites checkpoints, executes Kira, cleans or prepares a project, marks promotion-ready, or changes the canonical registry. Log text hints are not hard evidence of an OOM kill.
+- Offline tests: **7/7 PASS** under local Python with synthetic directories/logs, verifying strict read-only behavior, maximum log tail read, presence versus proof distinction, mandatory/expected target set comparison, partial gzip classification and symlink refusal. User-side Windows read of real project files is **pending**.
+- User PowerShell after fast-forward update:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_stage2_residual_forensics -v
+.\run_vp05_stage2_residual_forensics.bat > log_vp05_stage2_residual_forensics.txt
+```
+
+- Review output before planning any new run. Prioritize preservation of any 14-sector partial equation data and the first-ten passing local master lists. Never run the generic `run_three_loop_master_basis_candidate_sector_closure.bat` or the global `run_three_loop_master_basis_all.bat resume 1` on VP05 while forensic evidence may be overwritten. A genuine 63-master closure and reviewed standard promotion-ready are still outstanding.
