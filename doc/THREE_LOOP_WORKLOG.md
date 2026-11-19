@@ -8932,3 +8932,37 @@ python -m unittest examples.test_three_loop_vp05_stage2_non202_batch -v
 .\run_vp05_stage2_non202_batch.bat audit no202a
 ```
 Only after 13 PASS and all five `prepared` or verified retained/guard-stopped states pass the explicit safe execution gate, execute the existing `run_vp05_stage2_non202_batch.bat run no202a EXECUTE_VP05_NO_SECTOR202_BATCH`. No saved Kira data was modified on GitHub; user machine's exact directory states have not been directly inspected.
+
+
+### 2026-11-20 VP05 r8s5d3 no202a full six-sector local diagnostic PASS; sector202-containing frontier remains
+
+User-supplied real Windows UTF-16LE files `log_vp05_non202_batch_run.txt` and `log_vp05_non202_batch_audit.txt` were both read and parsed; independently verified all six monitor exit records match the read-only saved master audit. **Status: `VP05_NON202_ALL_LOCAL_RETAINED_206_234_OPEN`**, and `verified_local_sectors=6`, `selected_candidate_integrals=23`, all six matching saved Kira master lists, all exit code zero, no Swap consumption in collected samples. Verified per-sector:
+
+| Sector | Retained candidates | Elapsed seconds | Peak WSL RAM GiB | Peak Swap GiB |
+| --- | ---: | ---: | ---: | ---: |
+| 230 | 3/3 | 280.1 | 5.02 | 0.00 |
+| 126 | 2/2 | 225.1 | 5.03 | 0.00 |
+| 127 | 2/2 | 535.3 | 8.90 | 0.00 |
+| 229 | 6/6 | 740.4 | 10.64 | 0.00 |
+| 231 | 5/5 | 2281.2 | 21.73 | 0.00 |
+| 237 | 5/5 | 2396.3 | 21.88 | 0.00 |
+
+Totals: **6458.4 seconds (1h 47m 38.4s)** of monitored Kira runtime; six local sector pilots and all 23 candidates retained in locally saved master lists. RAM maxima for 231 and 237 reached near **22 GiB** sampled protective stop: do not relax RAM/swap guard or infer larger jobs are safe. `r8s5d3` aggregate saved local diagnostics from `first01`, `light01`, `medium01`, `next01` and `no202a` now cover **19 of 26 candidate sector groups, 40 of 63 candidate masters**. This local initiate-only retention is **not** a complete mathematical IBP reduction proof, cross-sector coefficient identity, formal one-axis Stage-2 family closure, or promotion-ready evidence.
+
+Remaining canonical 7 sector groups (all bit-mask contain sector202) and their **23 candidate integrals**:
+- sector202: 3 (4 positive lines; a focused local r8s5d3 request has effective envelope **r7s5d3**)
+- sector203: 4
+- sector206: 1 — preserved RAM stop at sector202 (9/13), peak 22.11 GiB, no verified master list
+- sector207: 4
+- sector234: 2 — preserved RAM stop at sector202 (9/10), peak 22.00 GiB, no verified master list
+- sector238: 5
+- sector239: 4
+
+**Next-proof plan, no Kira started by this note:**
+1. Preserve all 19 PASS sector project directories and the two stopped 206/234 directories. Treat their SHA-pinned monitor files, saved master lists and partial logs as immutable evidence. The 19 successful sectors must not be rerun.
+2. Before large Kira runs, inventory exact-sector202 source equations and previously reconstructed symbolic/Step93 B certificates **read-only**; identify source normalization, dot/weight envelope, and how much of the 3 candidate local master obligations those existing proofs actually imply. Step93 Target B original source proof must not be automatically promoted to sector202 all-target or parent-sector coverage.
+3. Consider a single guarded `r7s5d3` isolated exact-sector202 diagnostic if no matching complete evidence is found; max 90 minutes and WSL RAM/swap sampled stops 22/8 GiB with no overwrite, no automatic retry; observe recursively generated sub-sector list and candidate masters. Even a successful local sector202 3/3 check does not imply sector206/234 closure.
+4. For sector203,207,238,239 use capped restricted Kira/source-equation diagnostics in isolation, preferably leveraging already proven sector202 reductions only after verifying coefficient context. For blocked parent sectors206 and234, pursue common sector202 recursive-equation restriction/target splitting and reliable exact source replays; do not relaunch unchanged `next01` projects. Avoid any full-family monolithic retry.
+5. The independent **r8s6d2** standard Stage-2 boundary and whole-family cross-sector proof remain unresolved even if `r8s5d3` local initiate-only checks eventually cover all 63. No canonical registry edits or promotion are authorized by current evidence.
+
+The two user logs establish `global_stage2_closure_proven=false`, `promotion_ready_created=false`, `original_projects_overwritten=false`. This worklog update makes no executable Kira changes.
