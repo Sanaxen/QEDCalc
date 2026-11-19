@@ -8966,3 +8966,30 @@ Remaining canonical 7 sector groups (all bit-mask contain sector202) and their *
 5. The independent **r8s6d2** standard Stage-2 boundary and whole-family cross-sector proof remain unresolved even if `r8s5d3` local initiate-only checks eventually cover all 63. No canonical registry edits or promotion are authorized by current evidence.
 
 The two user logs establish `global_stage2_closure_proven=false`, `promotion_ready_created=false`, `original_projects_overwritten=false`. This worklog update makes no executable Kira changes.
+
+
+### 2026-11-20 VP05 sector202 existing Step93/IBP/source evidence reuse audit (read-only implementation, user Windows run pending)
+
+After the six-sector `no202a` success, added a dedicated **read-only, fail-closed** evidence reconciliation for the remaining `r8s5d3` sector202-containing seven groups (23 candidates), without restarting Kira or editing protected result trees:
+
+- `examples/three_loop_vp05_sector202_reuse_audit.py`
+- `examples/test_three_loop_vp05_sector202_reuse_audit.py` (10 mocked/offline regression tests; **not yet run on the user's Windows repository**)
+- `run_vp05_sector202_reuse_audit.bat`
+
+The audit reuses existing `no202.audit("no202a")`, which independently reopens previous Step93 formal archive / Stage-2 scope, prior sector batch evidence, all six `no202a` saved master inventories, and pinned 206/234 guarded stops. It reads the canonical 63-candidate manifest, validates exact physical sector202 target tuples A/B/C and binary sector inclusion, requires **19 non202 groups / 40 candidate masters** and the exact remaining sector202-containing groups `202:3,203:4,206:1,207:4,234:2,238:5,239:4`. It refuses changed, incomplete or unexpected evidence, rather than claiming a PASS.
+
+Further proof protections:
+- Requires saved Step93 `formal_manifest.json` SHA256 `1021d9deb7d06811d2986e38e52f54db55a6770e2bb3faa6e86f0ab0e6e9c1a1` and the existing independently checked Step93 source proof chain. It **streams SHA256 of the three original inputs** against the accepted archive's own pinned hash map: exact original 2241-row source `.json.gz`, 389-row support checkpoint, and source provenance certificate. A/B/C are all candidate targets, but **only B** has this archived exact Target B identity; neither A/C nor all-sector/parent/standard-seed closure is derived.
+- Audits 206 and 234 original `next01` manifests/mandatory/preferred SHA-linked inputs and exact RAM guard-stop provenance (SIGTERM -15, not a Kira proof). It inspects their saved resources and SYSTEM file counts and bounded tail of progress logs via the existing `project_profile` helper; no master retention is assumed from partial data, and no stopped project is restarted or overwritten.
+- Shows existing `r8s6d2` sector202 project inventory separately, and labels the `r8s5d3` sector202 focused candidate test's **effective r7s5d3** envelope (four positive propagators). Importantly, the historical restricted Step93 `QQ(z,d)` source identity has **not** been proven equivalent to the new isolated `r7s5d3` Kira equation/codec context. Thus there is **no automatic shortcut**, no global one-axis boundary PASS and no canonical family promotion.
+- No outputs or audit-state files are written by this new script. No Kira or FireFly is started. No original sector202, 206/234, Step77, Step93 or Stage-2 checkpoint is rewritten.
+
+**Next user-side Windows PowerShell** (after checking that `git status` has no conflicting uncommitted source changes):
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_reuse_audit -v
+.\run_vp05_sector202_reuse_audit.bat > log_vp05_sector202_reuse_audit.txt 2>&1
+```
+
+Review both the unit-test results and the **final** `VP05_SECTOR202_REUSE_READ_ONLY_AUDIT` JSON from the console log. If any fail-closed error arises, do not prepare or execute new Kira jobs before resolving the evidence discrepancy. The upcoming decision is whether existing A/C evidence covers the exact new equation/weight envelope; only if it does not, design a **new isolated, non-overwriting** sector202 `r7s5d3` diagnostic with 90-minute, RAM 22 GiB and swap 8 GiB sampled stops. Independently address the `r8s6d2` seed and cross-sector closure. **No formal promotion authorized.**
