@@ -8582,3 +8582,21 @@ python -m unittest examples.test_three_loop_vp05_sector202_target_b_step93_forma
 - **Disposition:** the original Step77 formal prefix remains immutable, and Step93 is now the versioned *formally archived* and independently audited sector202 Target B exact identity. The previous worklog section labeled `Windows run pending` was accurate at implementation time but is superseded by these observed PASS logs. Do **not** rerun `--promote`, legacy Step70 promotions, or the continuous batch's `--resume`; use `--post-audit` read-only when integrity needs to be checked again.
 - **Scientific scope:** only this pinned VP05_full sector202 Target B original-source IBP identity is proven. It is **not** the completion of VP05's 63-master/family reduction, Target A, remaining sectors or 72-diagram three-loop QED. Historical Steps61–63 provenance caveat remains separately documented; final direct original-source replay supports this Target B result.
 - Next: protect and incorporate the versioned Target B archive into the VP05 basis/family integration plan; separately establish and audit any other target needed for sector202 before claiming sector closure. Preserve the existing evidence rather than starting fresh reduction.
+
+
+### 2026-11-19 VP05 Stage-2: Step93 exact Target B archive vs canonical 63-master gap audit implemented (runtime pending)
+
+- Follow the original planned six-stage workflow: (1) standard Stage-2 baseline/boundary/union, (2) VP05 exceptional sector-local/truncated/exact-IBP rescue, (3) reconcile certified exceptional results against mandatory Stage-2 candidate/closure targets, (4) obtain genuine standard `promotion-ready`, (5) review and register in `three_loop/canonical_family_registry.py`, (6) continue to next family.
+- Step93's **sector202 Target B** proof archive already passed Windows formal-promotion and post-audit, but it establishes only one exact identity. It is **not** a substitute for three one-axis closure seeds or an automatic Stage-2 `promotion-ready` result. The historical Step77 and Step93 certificates must remain immutable.
+- New strictly read-only tool: `examples/three_loop_vp05_stage2_step93_gap_audit.py`, `run_vp05_stage2_step93_gap_audit.bat`, and `examples/test_three_loop_vp05_stage2_step93_gap_audit.py`. It runs Step93's full saved-artifact post-audit and checks the user's previously reported formal manifest SHA256 `1021d9deb7d06811d2986e38e52f54db55a6770e2bb3faa6e86f0ab0e6e9c1a1`, then examines the saved standard `r8s3d0` / 63-candidate / `r8s5d2` envelope manifest and closure audit for the three required seeds `r9s5d2`, `r8s6d2`, `r8s5d3`. It compares the proven physical Target B exponent tuple with the candidate list and closure target list, reports which seeds remain unconfirmed, and separately summarizes the saved sector-local closure audit on each seed, including failed sectors. It never equates a local Target B identity or unlinked sector-local PASS with whole-family closure.
+- This audit does **not** execute Kira, modify any source/audit/checkpoint/proof file, generate a `promotion-ready` JSON, or change the canonical registry. Any future acceptance of saved exceptional evidence for standard Stage-2 remains a separately proven, reviewed mapping; no fabricated seed audit or blanket promotion.
+- Offline unit tests cover Target B exponent/sector202, missing closure despite exact proof, non-substitutability of sector-local audits, three-seed standard detection, and read-only behavior. Tests were added but have **not yet been executed against the user's Windows dataset**.
+- Next user-side PowerShell (after pulling the committed implementation):
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_stage2_step93_gap_audit -v
+.\run_vp05_stage2_step93_gap_audit.bat > log_vp05_stage2_step93_gap.txt
+```
+
+- Review the exact JSON results before choosing any additional costly run. Prior Stage-2 forensic scripts had identified `r8s6d2` and `r8s5d3` as missing whole-family closure; **current state requires confirmation from this new read-only audit**. No `run_three_loop_master_basis_all.bat run/resume` is authorized solely on the basis of Step93.
