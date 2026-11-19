@@ -8851,3 +8851,43 @@ Send both logs for review. Sector206 is a separate still-open memory-bound obsta
 #### 2026-11-19 Safety correction to `resume_after206`: audits must survive later guard stops
 
 - The initial resume controller verified 205 PASS/206 RAM stop and failed closed on any unfinished remaining sector. Corrected the boundary between **read-only inspection** and **execution**: `plan`/`audit` now **report** `finished_needs_review` or `interrupted_manual_review` saved states without requiring a new Kira run, so a later guard stop still produces useful diagnostic output. `run` explicitly refuses to start any remaining sector if an interrupted/failed project needs review. This protection is tested in the mocked regression suite. The stopped sector206 is never restarted, deleted, or marked PASS.
+
+
+### 2026-11-19 VP05 `r8s5d3` post-206 `next01` continuation: sectors79/109 PASS; sector234 RAM-stop
+
+User uploaded `log_vp05_stage2_remaining_run.txt` and `log_vp05_stage2_remaining_audit.txt` (UTF-16LE) after running the `PRESERVE_SECTOR206_RUN_REMAINING_FOUR` controller. Actual measured outcomes:
+
+- **sector79: 2/2 candidates retained**, Kira return code 0, monitored **365.2s**, peak WSL RAM **5.59 GiB**, swap **0 GiB**, 74 samples; last Kira sector79 (10/10).
+- **sector109: 2/2 retained**, return code 0, **275.2s**, RAM **4.73 GiB**, swap **0 GiB**, 56 samples; last sector109 (8/8).
+- **sector234: RAM guard stop, NOT master proof**, wrapper code 125, monitored Kira SIGTERM -15, `reason=ram_stop`, elapsed **1302.3s**, RAM **22.00 GiB** and swap **0 GiB**, 261 samples; last recursive Kira generation **sector202 (9 of 10)**. Original isolated project at `output/vp05_stage2_r8s5d3_continuation_next01_sec234` is preserved; no verified master file for this target set.
+- **sector230: still prepared, never executed** because safety controller halted at 234. Earlier **sector206** remains RAM-stopped at **22.11 GiB**, last recursive sector202 (9 of 13), with no verified master file; original projects protected.
+- This raises the real `r8s5d3` *local-initiate-only retained candidates* from 11 sectors/13 integrals to **13/26 sector groups, 17/63 integrals**. The other 13 groups (46 integral candidates) remain to be examined or blocked. Full standard 63-master basis closure and promotion-ready are **not** established.
+
+**Structural clue, not formal causality proof:** for binary sector identifiers, `206 & 234 = 202`, so exact sector202 is common to both local top levels, and both RAM-stopped with recursive generation last reporting sector202. This strongly motivates a restricted/source-equation treatment of the common sector202 region but does not show that sector202 alone caused all RAM growth, nor that Step93's single Target B certificate is a substitute for the entire family closure. Under direct bitwise subsector inclusion, sector230 and sectors126/127/229/231/237 **do not contain sector202**, so they can be evaluated independently without directly including that same sector202 subtree; Kira can still behave heavily under other subtopologies or symmetry transformations.
+
+**New guarded and resumable sector202-free batch (no overwrite of saved projects):**
+
+- `examples/three_loop_vp05_stage2_non202_batch.py`, `examples/test_three_loop_vp05_stage2_non202_batch.py`, `run_vp05_stage2_non202_batch.bat`.
+- Pin and re-audit immutable Step93 archive, canonical 63-master/26-sector inventory, all saved initial `first01/light01/medium01` successes, preserved `next01` sectors205/79/109 PASSES, and exact sector206/234 RAM stop records (SIGTERM -15), via existing `resume_after206` and `continuation_batch` reader functions. Refuse if any underlying source or status changes unexpectedly.
+- Targets in protected order: **sector230 (3 candidates, ALREADY PREPARED in next01, never regenerate), sector126 (2), 127 (2), 229 (6), 231 (5), 237 (5)**. Total **6 local sectors, 23 candidate integrals**, all tested at exact `r8s5d3` boundary. The five additional sectors receive *new exclusive* `output/vp05_non202_r8s5d3_<run-id>_sec<sector>` directories and pin `jobs.yaml`, mandatory/preferred input copies, monitor and manifest SHA256. Do not clean, delete or rewrite the original 206/234, 230, 205, or original monolithic Kira project.
+- `plan RUN_ID` / `audit RUN_ID` are read-only. `prepare RUN_ID` builds only the five new isolated projects, no Kira executed. `run RUN_ID EXECUTE_VP05_NO_SECTOR202_BATCH` requires explicit opt-in; serial Kira via existing copied `vp05_stage2_monitored_kira.py`, max **5400s/sector, 43200s/batch** with sampled **WSL RAM warn/stop 18/22 GiB; swap warn/stop 4/8 GiB; sampling 5s**. Hard minimum **10 GiB free disk** and fresh per-sector WSL `/proc/meminfo` read-only gate (at least 8 GiB MemAvailable, WSL memory used below 18 GiB, swap used below 4 GiB); refuses to begin if any other Kira process detected.
+- A sector that stops by a *verified monitored* RAM or swap guard is **preserved, skipped on resume, and never labelled PASS**. Controller may proceed to the next independently prepared sector only if process and memory preflight recover. Unexpected exit, integrity/mathematical candidate mismatch, or unrecovered RAM/swap pressure halts the batch; read-only `audit` remains available. A previous saved success is reused, not rerun. Monitor stops are sampled, not hard RAM enforcement; transient overshoot is possible.
+- The report always leaves `sector206_234_remain_unresolved=true`, `global_stage2_closure_proven=false`, `promotion_ready_created=false`. Do not conflate 6-sector success with standard closure.
+- Added **11 mocked safety tests** for bitmap selection, pinned evidence, guard stop provenance, original-directory reuse, no-write audit, exclusive preparation and SHA256 protection, resource preflight, execution opt-in, safe continuation after guarded stop and no reruns. **Not yet executed on the user's Windows machine; execution must wait for green tests**.
+
+PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_stage2_non202_batch -v
+.\run_vp05_stage2_non202_batch.bat plan no202a
+.\run_vp05_stage2_non202_batch.bat prepare no202a
+.\run_vp05_stage2_non202_batch.bat audit no202a
+```
+
+Only if tests and preparation audit pass and the machine is otherwise idle:
+```powershell
+.\run_vp05_stage2_non202_batch.bat run no202a EXECUTE_VP05_NO_SECTOR202_BATCH > log_vp05_non202_batch_run.txt 2>&1
+.\run_vp05_stage2_non202_batch.bat audit no202a > log_vp05_non202_batch_audit.txt
+```
+
+Next separately design a resource-bounded **read-only** source-Kira or restricted-IBP local equation rescue focusing on the sector202 subtopology for the two guarded parents206/234; no automatic retry of either blocked project is permitted. No 63-master promotion until both independent standard boundary seeds and source-context family reconciliation are reviewed.
