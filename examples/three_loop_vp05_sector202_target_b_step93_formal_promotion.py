@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import os
+import uuid
 from pathlib import Path
 
 from examples.three_loop_vp05_sector202_target_b_step77_read_only_audit import inspect as inspect77
@@ -109,6 +110,37 @@ def preflight():
             "scope": "VP05_full sector202 Target B identity for pinned original IBP data only"}
 
 
+def write_bytes_once(dest: Path, raw: bytes, expected: str, resume: bool):
+    """Publish a complete snapshot by atomic rename, never a partial final file.
+
+    A crash can leave a uniquely named staging file, but --resume will safely
+    start another copy. Existing published snapshots are never overwritten.
+    """
+    if dest.exists():
+        if not resume or digest_file(dest) != expected:
+            raise FileExistsError("Existing evidence differs: " + str(dest))
+        return
+    if digest_bytes(raw) != expected:
+        raise RuntimeError("Generated evidence SHA mismatch")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    stage = dest.with_name(dest.name + "." + uuid.uuid4().hex + ".staging")
+    try:
+        with stage.open("xb") as stream:
+            stream.write(raw)
+            stream.flush()
+            os.fsync(stream.fileno())
+        if digest_file(stage) != expected:
+            raise RuntimeError("Staged snapshot SHA mismatch: " + str(stage))
+        if dest.exists():
+            raise FileExistsError("Another promotion already published: " + str(dest))
+        os.replace(stage, dest)
+        if digest_file(dest) != expected:
+            raise RuntimeError("Published snapshot SHA mismatch: " + str(dest))
+    finally:
+        if stage.exists():
+            stage.unlink()
+
+
 def copy_exact(source: Path, dest: Path, expected: str, resume: bool):
     if dest.exists():
         if not resume or digest_file(dest) != expected:
@@ -117,28 +149,7 @@ def copy_exact(source: Path, dest: Path, expected: str, resume: bool):
     raw = source.read_bytes()
     if digest_bytes(raw) != expected:
         raise RuntimeError("Evidence changed while copying: " + str(source))
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    with dest.open("xb") as stream:
-        stream.write(raw)
-        stream.flush()
-        os.fsync(stream.fileno())
-    if digest_file(dest) != expected:
-        raise RuntimeError("Snapshot verification failed: " + str(dest))
-
-
-def write_bytes_once(dest: Path, raw: bytes, expected: str, resume: bool):
-    if dest.exists():
-        if not resume or digest_file(dest) != expected:
-            raise FileExistsError("Existing evidence differs: " + str(dest))
-        return
-    if digest_bytes(raw) != expected:
-        raise RuntimeError("Generated evidence SHA mismatch")
-    with dest.open("xb") as stream:
-        stream.write(raw)
-        stream.flush()
-        os.fsync(stream.fileno())
-    if digest_file(dest) != expected:
-        raise RuntimeError("Generated evidence not durably copied")
+    write_bytes_once(dest, raw, expected, resume)
 
 
 def promote(resume=False):
