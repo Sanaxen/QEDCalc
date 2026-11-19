@@ -214,7 +214,7 @@ class Non202BatchTests(unittest.TestCase):
              patch.object(m, "status_one", side_effect=[
                  {"state": "guard_stopped_ram_stop", "sector": 230},
                  *[{"state": "completed_local_retained", "sector": x}
-                   for x in m.SECTORS[1:]]), \
+                   for x in m.SECTORS[1:]]]), \
              patch.object(m.subprocess, "run") as runner:
             report = m.run("test01", m.ACK, 43200)
         self.assertEqual(report["records"][0]["action"], "guard_stop_preserved_no_rerun")
