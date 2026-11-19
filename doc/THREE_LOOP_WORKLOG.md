@@ -8622,3 +8622,18 @@ python -m unittest examples.test_three_loop_vp05_stage2_sector_inventory -v
 ```
 
 Implementation committed, but user-side runtime and 52-sector inventory findings are **not yet available**. Do not launch the global `run_three_loop_master_basis_all.bat run/resume` or the generic sector-closure BAT while diagnosing these saved artifacts: the latter's `--prepare` may clean projects before starting new Kira. Preserve the Step77 and Step93 proof archives and do not fabricate promotion-ready or use a mere single-target reduction to claim global closure.
+
+
+### 2026-11-19 VP05 two-seed sector evidence inventory: Windows report received, historical memory/swap blocker clarified
+
+User supplied `log_vp05_stage2_sector_inventory.txt` (UTF-16LE, one JSON status line), yielding `VP05_STAGE2_TWO_SEED_SECTOR_EVIDENCE_INVENTORY_ONLY`. Step93 Target B independently saved exact proof remained verified, candidate basis has 63 members in 26 sectors, and standard `r9s5d2` boundary remains a saved PASS. **The other two boundary seeds have not been certified**.
+
+- `r8s6d2`: **10/26** sector projects have matching mandatory/preferred input copies and saved initiate-only master lists, with **15** standard candidate masters and zero missing in those inventories (sectors **73, 78, 79, 101, 109, 116, 117, 118, 126, 127**). These are **not automatically exact closure audit PASS**.
+- `r8s6d2`: **2/26** sectors **199, 201** have matching restricted-equivalent FireFly audit candidates; 2 candidate masters. They require scope review and are not automatic global closure.
+- `r8s6d2`: **14/26** sectors **202, 203, 204, 205, 206, 207, 228, 229, 230, 231, 234, 237, 238, 239** have prepared project directories but lack a matching accepted saved master result in this inventory; 46 candidate masters. Sector202 has 3 candidate integrals and separately proven Target B identity, which cannot substitute for whole-sector master retention.
+- `r8s5d3`: **26/26** sectors have no matching verified sector-local project/evidence within the script's search rules; 63 candidate masters. This does not rule out unrelated or differently named evidence but no such same-seed proof was established.
+- Inventory is **read-only**, did not execute Kira or modify formal Stage-2/Step93 evidence; no promotion-ready and no canonical family registry update.
+
+**Chronology clarification for future sessions:** Early full VP05 Stage-2 and candidate closure Kira runs including `r9s5d2` had unfinished/expensive phases. The reduced 63-target `r9s5d2` **later passed** (2026-10-08, 63/63), and its preferred-masters sector-local validation subsequently passed (2026-10-09, 26/26 sectors; swap ~6.97GB peak). The continuing memory/swap bottleneck is predominantly the different `r8s6d2` boundary: monolithic closure reached sector204 without a master list and high swap (~130GB); a later sector-local run passed ten projects before stalling at its 11th, sector197 recursive generation, RAM ~29.2/30GB and swap ~94.6GB rising (2026-10-09). The `r8s5d3` original input project has no evidence of actual Kira execution in the Oct22 forensic inventory. Do not conflate old `r9s5d2` incomplete runs with its later demonstrated 63/63 PASS, nor treat missing results in `r8s6d2/r8s5d3` as mathematical instability.
+
+**Next:** Preserve all original projects and proof archives. Investigate the 14 existing `r8s6d2` projects for remaining reversible evidence, rank the resource-heavy sectors, then design a non-destructive, resource-guarded minimal proof strategy for the missing boundary obligations, with explicit evidence scope mapping before any promotion-ready generation. Do **not** call the destructive generic sector-closure BAT or monolithic Stage-2 resume on VP05 without safety review.
