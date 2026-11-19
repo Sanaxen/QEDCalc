@@ -8668,3 +8668,37 @@ python -m unittest examples.test_three_loop_vp05_stage2_residual_forensics -v
 ```
 
 - Review output before planning any new run. Prioritize preservation of any 14-sector partial equation data and the first-ten passing local master lists. Never run the generic `run_three_loop_master_basis_candidate_sector_closure.bat` or the global `run_three_loop_master_basis_all.bat resume 1` on VP05 while forensic evidence may be overwritten. A genuine 63-master closure and reviewed standard promotion-ready are still outstanding.
+
+
+### 2026-11-19 VP05 residual Kira forensic results: no archived sector-local equation data in unfinished 14; isolated r8s5d3 sector73 pilot added
+
+User supplied `log_vp05_stage2_residual_forensics.txt` (UTF-16LE). Status `VP05_STAGE2_RESIDUAL_PROJECT_FORENSICS_READ_ONLY`, Step93 Target B archive independently verified, whole-family closure false.
+
+- `r8s6d2` **14 unresolved sector-local projects** (202,203,204,205,206,207,228,229,230,231,234,237,238,239) have **matching mandatory+preferred target inputs**, but **zero** `results/kira.db`, `results/VP05_full/masters`, `masters.final`, `tmp/VP05_full/SYSTEM_*.gz`, results/tmp/sectormappings directories, and Kira log files. These 14 contain input preparation only; no salvageable serialized equation/masters output in these paths. 46 masters are involved. The ten other sector-local master inventories (15 candidates) and restricted-equivalent sectors199/201 (2 candidates) remain separately available for further equivalence auditing; they have NOT been certified as a new whole-family PASS here.
+- Original monolithic `r8s6d2` candidate-closure project retains `results/kira.db` (28,672 bytes), `tmp/` and `sectormappings/`, **no** `masters`, `masters.final`, or `SYSTEM_*.gz`. Its Kira console log ends at **sector 204 (28 of 91)**, no `Total time:` completion marker and no explicit OOM error. Mandatory 63-target set matches the refined candidate list (order differs; ordering itself is not a proof or mismatch). Preserve the original untouched for forensic provenance.
+- `r8s5d3` **all 26** sector-local directories absent (63 candidates); original monolithic closure project contains inputs only (63 mandatory targets, with set match) and **no Kira DB, log or runtime output**. The user-side scan did not identify same-seed reduction evidence. No mathematical instability is inferred.
+- Consequently, repeated forensic scans of those 14 same paths will not reconstruct reduction equations; further work must be a new **separate, strictly resource-guarded** small-sector calculation, or further trusted external saved-reduction evidence if found elsewhere. Never clean original outputs.
+
+Implemented `examples/three_loop_vp05_stage2_small_pilot.py`, `run_vp05_stage2_small_pilot.bat`, `examples/test_three_loop_vp05_stage2_small_pilot.py`. Default `plan RUN_ID` revalidates the Stage-2 63-candidate scope and Step93 proof **read only** and selects exact sector73 of the previously unrun `r8s5d3` seed: one target `VP05_full[1,0,0,1,0,0,1,0,0,0,0,0]`. For three positive propagators and `d=3`, effective `r=min(8,3+3)=6`, giving a smaller exact-sector probe `r6s5d3` (same `s=5,d=3` under exact-sector restriction).
+
+- `prepare RUN_ID` creates an **exclusive new** `output/vp05_stage2_pilot_r8s5d3_sec73_RUN_ID` directory; constructs an initiate-only preferred-master Kira job and exact single-target mandatory/preferred files with `top_level_sectors=[73]`. It copies the existing saved monitor implementation, records SHA256 for immutable inputs and refuses any existing target directory or invalid run ID. This action prepares but **does not execute Kira**, alter original Stage-2 projects or source proof.
+- `check RUN_ID` checks expected SHA256, target lists, lack of pre-existing runtime files and manifest scope; `audit RUN_ID` checks the monitor's saved exit and local initiate-only master list. Neither declares canonical family closure. A local sector73 candidate-retained outcome is a *single-sector validation for future Stage-2 equivalence review*, not `promotion-ready`.
+- `run RUN_ID EXECUTE_ISOLATED_R8S5D3_SECTOR73` is **explicit opt-in only**: it first calls `check`, then runs the existing WSL Kira monitor inside the exclusive pilot directory, with **30min max, 4GiB swap warning, 8GiB swap stop, 5s sampling**, then read-only `audit`. This is a *guarded pilot*, not unattended batch for 26 sectors. The 5s monitor cannot guarantee zero overshoot; user should avoid other heavy jobs and watch RAM/SSD.
+- Seven regression tests cover scope/gap gating, run IDs, plan no-write, exclusive preparation and protection of original projects, preflight rejection on rerun, and the fact that even local success does not promote 63-master basis. These tests are committed but **not yet run on user's Windows environment**.
+
+User commands after `git pull --ff-only origin feature/master-basis-initiate-only` (PowerShell):
+
+```powershell
+python -m unittest examples.test_three_loop_vp05_stage2_small_pilot -v
+.\run_vp05_stage2_small_pilot.bat plan first01
+.\run_vp05_stage2_small_pilot.bat prepare first01
+.\run_vp05_stage2_small_pilot.bat check first01
+```
+
+Only when tests/preflight pass and local resource usage is acceptable, explicitly start the isolated bounded run with:
+
+```powershell
+.\run_vp05_stage2_small_pilot.bat run first01 EXECUTE_ISOLATED_R8S5D3_SECTOR73
+```
+
+Do not rerun the same RUN_ID; preserve logs and output. Analyze `audit first01` and runtime resource trace before scaling to any other sector. Neither the standard batch nor `canonical_family_registry.py` has been changed; `VP05_final63` remains unregistered.
