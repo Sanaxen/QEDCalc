@@ -8846,3 +8846,8 @@ If tests and scope/pass read-only diagnostic are acceptable:
 ```
 
 Send both logs for review. Sector206 is a separate still-open memory-bound obstacle. A new restricted one-target / exact-sector or source-equation rescue will need formal justification before claim of the full boundary `r8s5d3` stability. The existing 63-candidate stage remains unregistered and the original standard Stage-2 family closure outstanding.
+
+
+#### 2026-11-19 Safety correction to `resume_after206`: audits must survive later guard stops
+
+- The initial resume controller verified 205 PASS/206 RAM stop and failed closed on any unfinished remaining sector. Corrected the boundary between **read-only inspection** and **execution**: `plan`/`audit` now **report** `finished_needs_review` or `interrupted_manual_review` saved states without requiring a new Kira run, so a later guard stop still produces useful diagnostic output. `run` explicitly refuses to start any remaining sector if an interrupted/failed project needs review. This protection is tested in the mocked regression suite. The stopped sector206 is never restarted, deleted, or marked PASS.

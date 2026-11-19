@@ -55,12 +55,14 @@ def verified_scope() -> tuple[list[dict], list[dict]]:
         or monitor.get("success") is not False
         or monitor.get("kira_returncode") != -15):
         raise RuntimeError("Expected preserved sector206 RAM guard stop not verified")
+    # Read-only audit must remain possible after an interrupted run. It may
+    # report an unfinished sector, but execution must reject it separately.
     for sector in REMAINING:
         if by_sector[sector]["state"] not in (
-                "prepared", "completed_local_retained"):
+                "prepared", "completed_local_retained",
+                "interrupted_manual_review", "finished_needs_review"):
             raise RuntimeError(
-                f"Sector{sector} missing, already interrupted, or changed; "
-                "refusing to execute/overwrite")
+                f"Sector{sector} project absent or changed; manual review required")
     return selected, rows
 
 
@@ -121,6 +123,13 @@ def execute(*, acknowledge: str, max_total_seconds: int = 43200) -> dict:
     selected, current = verified_scope()
     by_sector = {row["sector"]: row for row in current}
     by_target = {item["sector"]: item for item in selected}
+    # Never automatically restart an interrupted Kira project. plan/audit
+    # remain readable, but execution is fail-closed for these states.
+    if any(by_sector[sector]["state"] not in (
+            "prepared", "completed_local_retained") for sector in REMAINING):
+        raise RuntimeError(
+            "An unfinished local project requires manual review; "
+            "refusing automatic restart of any remaining sector")
     started = time.monotonic()
     completed = []
     for sector in REMAINING:

@@ -45,13 +45,17 @@ class VP05ResumeAfter206Tests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 m.verified_scope()
 
-    def test_deny_accidental_restart_of_blocked_or_interrupted_pilot(self):
+    def test_interrupted_job_audit_remains_readable_but_run_is_blocked(self):
         altered = states()
         altered[2]["state"] = "interrupted_manual_review"
         with patch.object(m.base, "sector_input_scope", return_value=selected()), \
              patch.object(m.base, "status_one", side_effect=altered):
+            selected_rows, saved = m.verified_scope()
+        self.assertEqual(saved[2]["state"], "interrupted_manual_review")
+        with patch.object(m, "os", SimpleNamespace(name="nt")), \
+             patch.object(m, "verified_scope", return_value=(selected_rows, saved)):
             with self.assertRaises(RuntimeError):
-                m.verified_scope()
+                m.execute(acknowledge=m.ACK)
 
     def test_deny_missing_original_sector205_pass(self):
         altered = states()
