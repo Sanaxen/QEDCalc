@@ -188,7 +188,6 @@ def evaluate(*, point: tuple[int, int, int], ids: list[int], rows: dict,
             cap = code
             break
         if new:
-            cells += len(pivots[min(set(pivots) - set(list(pivots)[:-1]))]) if False else 0
             # Total cells are recomputed to avoid a hidden assumption about
             # pivot dictionary key iteration order across codec versions.
             cells = sum(len(row) for row in pivots.values())
