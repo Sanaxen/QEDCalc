@@ -95,6 +95,50 @@ class ExactArithmeticProbeTests(unittest.TestCase):
                 probe.checkpoint_support_inventory(
                     path, max_chars=240, expected_sha256="f" * 64)
 
+    def test_mixed_100_to_50_saved_checkpoint_equivalence(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "mixed.json"
+            pivots = []
+            for i in range(200):
+                support = 110 if i == 199 else (60 if i == 198 else 1)
+                pivots.append({"lead": [i, 139],
+                               "trace": [[k, "(z+d+1)/(d+2)" if k % 3 else "z+1"]
+                                         for k in range(support)]})
+            state = {"version": 1, "status": "EXACT_SOURCE_CHECKPOINT_NOT_TARGET_PROOF",
+                     "config": {"target": "A"}, "processed": 200,
+                     "dependent": 0, "pivots": pivots,
+                     "source_pivots_exact_replay_verified": True,
+                     "exact_target_reduction_proven": False}
+            path.write_text(json.dumps(state), encoding="utf-8")
+            original = path.read_bytes()
+            sha = hashlib.sha256(original).hexdigest()
+            case, checked, processed = probe.sampled_mixed_support_case(
+                path, source_terms=100, dest_terms=50,
+                max_chars=240, expected_sha256=sha)
+            self.assertEqual(checked, sha)
+            self.assertEqual(processed, 200)
+            self.assertEqual(len(case[2]), 100)
+            self.assertEqual(len(case[1]), 50)
+            self.assertTrue(probe.bench_case(case)["exact_pass"])
+            self.assertEqual(original, path.read_bytes())
+
+    def test_mixed_case_refuses_insufficient_second_trace(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "mixed.json"
+            pivots = [{"lead": [i, 139],
+                       "trace": [[k, "z+1"] for k in range(
+                           110 if i == 199 else 1)]} for i in range(200)]
+            path.write_text(json.dumps({
+                "version": 1, "status": "EXACT_SOURCE_CHECKPOINT_NOT_TARGET_PROOF",
+                "config": {"target": "A"}, "processed": 200,
+                "dependent": 0, "pivots": pivots,
+                "source_pivots_exact_replay_verified": True,
+                "exact_target_reduction_proven": False,
+            }), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "distinct destination"):
+                probe.sampled_mixed_support_case(
+                    path, source_terms=100, dest_terms=50)
+
     def test_non_target_checkpoint_refused(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "existing.json"
