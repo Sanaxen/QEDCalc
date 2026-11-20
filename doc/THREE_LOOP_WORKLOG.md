@@ -147,3 +147,26 @@ Detailed timing in this log:
 Decision: **do not change the proven algorithm in place or run another long computation for timing.** First design and verify a separate exact-equivalent sparse rational-function subtraction implementation, with random QQ(z,d) coefficient identities, original-IBP replay and compare against current SymPy `sp.cancel`; benchmark on **saved representative late exact coefficients** or an isolated copy, before opt-in execution. Retain the existing default, all per-row atomic saves, full exact replay and RAM/timeout policies. Do not claim a speedup without a real benchmark. No Kira/FireFly. Test log for Windows tests has not been attached.
 
 All results are still source-pivot proof progress, **not** a final exact target A identity, C master retention or VP05 63-master closure.
+
+
+### 2026-11-20 VP05 Target A 296/339: isolated exact QQ(z,d) subtraction probe and tests, no production switch
+
+User requested continuation of the measured performance optimization. We **did not change** the exact source engine's SymPy `subtract`, exact source provenance replay, pivot ordering, controller time/RAM limits, saved 296/339 checkpoint, protected Step93 B, or Kira/FireFly projects.
+
+Added `examples/three_loop_vp05_exact_arithmetic_probe.py`: read-only candidate implementing exact sparse subtraction in the rational fraction field `QQ(z,d)` using `sympy.polys.fields.field`, converting FracElement values to/from SymPy expressions only as part of the benchmark. It measures the **existing per-key `sp.cancel` implementation** against a separate field candidate and checks all output keys and coefficients using an independent `sp.cancel` difference equal to zero. It reports per-case full conversion-inclusive seconds, speed ratios, and whether exact equivalence passed; no automatic promotion, no modular-only proof and no production engine mutation.
+
+The probe includes 3 compact synthetic test cases, plus a bounded selection of actual saved original-source provenance coefficients from the isolated Target A source checkpoint, refusing B/wrong scope/mismatched SHA256, with limits `--cases 1..5`, `--max-terms 1..12` and `--max-chars 16..240` for a safe first trial. This **tests only small sampled arithmetic operations**; it does not benchmark the full 100+ support updates nor guarantee production speedup. The saved file must be uploaded/available locally on the user's Windows machine; scripts are designed to read its existing canonical location.
+
+Added `examples/test_three_loop_vp05_exact_arithmetic_probe.py` with 5 offline tests: zero cancellation, the 3 analytic mixed sparse cases, **32 deterministic rational-function QQ(z,d) cases**, in-memory input nonmutation, saved SHA mismatch rejection and wrong-target checkpoint refusal. A private local prototype running the same 32 deterministic rational-function cases yielded **PASS**. Local 3 tiny case timings were ~0.13x (slower for trivial zero), ~3.3x and ~3.9x relative to `sp.cancel`; these are not user's Windows timings and must not be presented as established end-to-end acceleration. Windows run of committed test file **not yet observed**; no claim of Windows PASS.
+
+On user's existing Windows repository, first:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_exact_arithmetic_probe -v
+python -m examples.three_loop_vp05_exact_arithmetic_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json --expected-sha256 90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297 --cases 2 --max-terms 4 --max-chars 240 > log_vp05_exact_arithmetic_probe.txt 2>&1
+```
+
+The SHA256 pin is from the user's **most recently audited 296/339** checkpoint. If it mismatches because source work advanced, inspect and re-audit rather than bypassing the pin. If it says insufficient sampled provenance entries, log that result and adjust only the bounded *sampling* options, not the input or proof. Do not run the full Target A source elimination concurrently with this probe. Original source checkpoint exactness and Target A final identity remain distinct.
+
+The user's latest saved results remain **296/339 processed, rank296, dependent0, 43 rows remaining**. The experimental field arithmetic remains opt-in and isolated until real bounded Windows benchmark and exact comparisons justify a controlled integration; do not promise or claim speed gain for full symbolic source replay.
