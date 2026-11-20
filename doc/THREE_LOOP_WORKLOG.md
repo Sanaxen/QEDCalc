@@ -405,3 +405,18 @@ python -m unittest examples.test_three_loop_vp05_exact_real_multistep_probe -v
 python -m examples.three_loop_vp05_exact_real_multistep_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json --max-steps 4 > log_vp05_exact_real_multistep_probe_4.txt 2>&1
 ```
 Inspect the actual output before further expansion. The 4-step run may stop early on no matching saved lead; this is expected, not a proof failure. Guard all original protected files, and never run source-completion Kira or overwrite the pinned checkpoint as part of the pilot.
+
+
+### 2026-11-21 VP05 A real IBP multistep 4/4 exact replay PASS; very small steps favor SymPy
+
+User uploaded Windows UTF-16LE `log_vp05_exact_real_multistep_probe_4.txt`. Parsed `VP05_REAL_ORIGINAL_IBP_MULTISTEP_FIELD_PROBE` result `REAL_ORIGINAL_IBP_MULTISTEP_EXACT_PASS_NOT_TARGET_PROOF`: original exported source ID **2348**, requested/completed **4/4** *real stored-pivot* exact elimination steps, `stopped_because=max_steps`, next lead **[43448963563520,73]**. Every step has **strict exact integral-row equality, strict exact provenance equality and independent original exported IBP equation replay verified**. Pivots and support: step1 pivot [43447889166336,73], pivot trace support1, output trace2, output columns4; step2 pivot [43448963039234,73], pivot trace support3, output trace5, columns8; step3 pivot [43448963301378,73], pivot trace support6, output trace7, columns7; step4 pivot [43448963432448,73], pivot trace support4, output trace10, columns10. This is a real observed prefix of the original source pivot path, **not yet the complete original 2348 row**.
+
+Actual timing over four very small steps: `total_baseline_s=0.003723` vs `total_field_conversion_plus_update_s=0.004334`, hence field route is **1.164× slower** here due to conversion overhead. Per-step baseline (s) [0.000012,0.001249,0.002429,0.000033], field internal updates [0.000168,0.000345,0.000665,0.000449]. This is consistent with large 128×128 synthetic-sequence benchmarks being favorable yet tiny actual pivots not favorable. Do **not** claim universal 13× improvement or immediate switch of production engine: crossover/support threshold and actual source-row pivot coefficients require separate evaluation. Pinned original A checkpoint SHA **90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297**, processed 296/339; no saved checkpoint or production engine modification, Target A not proven and no Kira.
+
+Next safe diagnostic **already supported by committed read-only probe** is to extend this same real original 2348 row from 4 to **at most 8** pivot steps, while retaining full per-step symbolic equality + original-IBP replay, same checksum pin, no writes, and monitoring memory/time. This collects larger support crossover evidence but may still be small. If 8 steps remain tiny, do not continue endlessly with synthetic tiny measurements; develop a bounded read-only audit against the known heavy 2347 exact-path trace / previously saved records, or an opt-in copied scratch state with stringent equivalence and rollback guards. The existing standalone diagnostic has no internal timeout. Windows command after repository updates:
+
+```powershell
+python -m examples.three_loop_vp05_exact_real_multistep_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json --max-steps 8 > log_vp05_exact_real_multistep_probe_8.txt 2>&1
+```
+
+The target-level exact identity, master C retention, and VP05 63-master closure remain open. Do not mutate the 296-source saved checkpoint based on this pilot.
