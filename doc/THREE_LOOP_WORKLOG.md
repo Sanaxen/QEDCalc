@@ -240,3 +240,21 @@ python -m examples.three_loop_vp05_exact_arithmetic_probe --checkpoint .\output\
 ```
 
 If the mixed sample cannot be selected, report limitations instead of changing the checkpoint or pretending it passed. This single case may be more expensive than prior tests, but no full exact-source/Kira job is started. Do not claim benchmark speedups automatically carry over to entire source-row proof; retain exact original-IBP replays.
+
+
+### 2026-11-20 VP05 A Windows mixed provenance 100-source × 50-destination exact comparison PASS
+
+User uploaded original UTF-16LE Windows `log_vp05_exact_arithmetic_probe_mixed100x50.txt`; its single JSON result was decoded from the actual attachment and verified:
+- Status `EXACT_EQUIVALENCE_PASS_PROBE_ONLY`; case `mixed_saved_source_166595340009474_139_100_to_50`.
+- Two **distinct saved original-source pivot provenance** sets, 100 source terms and 50 destination terms; exact output 130 nonzero terms, exact-symbolic equality `exact_pass=true`.
+- Baseline per-key SymPy `sp.cancel` subtraction **0.855611 s** versus isolated `QQ(z,d)` fraction-field subtraction including SymPy round-trip **0.307200 s**, measured ratio **2.7852x**.
+- SHA256-pinned original exact source checkpoint: `90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297`, position **296/339**, no source or engine mutation, Target A exact proof false, no Kira.
+- Together with smaller 4/12/50-term exact-equivalent comparisons this is promising evidence for a separately testable field arithmetic backend. However **the pairing and multiplier are synthetic**; this is not a verbatim replay of the slow original ID 2347 step 41/42, nor a measured production-engine speedup, and does not establish Target A exact identity or 63-master closure. Only this isolated microbenchmark is confirmed PASS; the most recently updated unittest runner's Windows output was not provided.
+
+Next **read-only** step: inventory larger expression coefficients before selecting a stronger test and designing an opt-in guarded field-backend pilot. Probe inventory at `--max-chars 600` using the same pinned checkpoint; compare distribution to prior 240-character inventory (11 pivots with ≥50 entries, 1 with ≥100, max 111). Do not blindly raise production expression/support/swap caps or overwrite immutable evidence.
+
+```powershell
+python -m examples.three_loop_vp05_exact_arithmetic_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json --expected-sha256 90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297 --inventory-only --max-chars 600 > log_vp05_exact_arithmetic_inventory_600.txt 2>&1
+```
+
+Once characterized, a production candidate should be strictly **opt-in**, first tested against exact `sp.cancel` and original-source IBP symbolic replay on isolated samples, preserve the old default, source and all Step93 artifacts, use limited run scope and per-row atomic checkpoints. Avoid promoting an arithmetic-only equivalence probe to mathematical Target A proof.
