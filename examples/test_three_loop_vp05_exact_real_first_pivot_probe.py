@@ -69,7 +69,15 @@ class RealFirstPivotPilotTests(unittest.TestCase):
             original = folder / "original.json"
             original.write_text("{}", encoding="utf-8")
             checkpoint = folder / "checkpoint.json"
-            checkpoint.symlink_to(original)
+            try:
+                checkpoint.symlink_to(original)
+            except OSError as exc:
+                # Windows without Developer Mode / SeCreateSymbolicLinkPrivilege:
+                # inability to create a test fixture is not a security failure.
+                # Do not mask other OS errors that may indicate a real problem.
+                if getattr(exc, "winerror", None) == 1314:
+                    self.skipTest("Windows symlink creation privilege unavailable (WinError 1314)")
+                raise
             source = folder / "source.json.gz"
             source.write_bytes(b"x")
             cert = folder / "certificate.json"
