@@ -123,7 +123,7 @@ def command(checkpoint: Path, *, resume: bool, rows: int) -> list[str]:
         sys.executable, "-m", "examples.three_loop_vp05_sector202_exact_support_checkpoint",
         "--input", str(exact.SOURCE), "--certificate", str(exact.CERT),
         "--checkpoint", str(checkpoint), "--target", "A",
-        "--rows-per-run", str(rows), "--checkpoint-every-row",
+        "--rows-per-run", str(rows), "--checkpoint-every-row", "--trace-source-timing",
         "--max-columns", str(PARAMS["max_columns"]),
         "--max-source-support", str(PARAMS["max_source_support"]),
         "--max-expression-chars", str(PARAMS["max_expression_chars"]),
