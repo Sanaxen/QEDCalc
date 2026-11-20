@@ -309,3 +309,21 @@ python -m examples.three_loop_vp05_exact_sequential_probe --checkpoint .\output\
 ```
 
 The standalone pilot has no automatic wall-clock kill; monitor process/time/memory, and stop if abnormal. Review internal output including `one_time_field_conversion_s`, `total_baseline_update_s`, `total_field_update_plus_conversion_s`, per-round `exact_pass` and `verification_s`. Do not claim final Target A QQ(z,d) reduction proof, new-sector master C retention, or global 63-master closure based on sampled arithmetic alone. Production source remains **296/339**, 43 unprocessed source rows, until a separately run and audited exact source continuation.
+
+
+### 2026-11-20 VP05 Target A 50-term two-update persistent QQ(z,d) Windows test PASS
+
+User uploaded Windows UTF-16LE `log_vp05_exact_sequential_probe_50x2.txt`. Actual single `VP05_EXACT_SEQUENTIAL_PROBE` JSON record was decoded and independently parsed:
+- Overall **`EXACT_SEQUENCE_PASS_PROBE_ONLY`**, 2 requested and 2 completed rounds, **both `exact_pass=true`** against full strict SymPy `sp.cancel` difference after every update.
+- First 50-term update: baseline SymPy `sp.cancel` **3.428604s**, persistent fraction-field update **0.099640s**, output 60 nonzero terms, strict equality verification **0.210665s**.
+- Second 50-term update: baseline **10.232445s**, persistent fraction-field update **0.228318s**, output 65 nonzero terms, strict equality verification **0.588806s**.
+- One-time conversion into QQ(z,d) field representation **0.577416s**. Baseline update subtotal **13.661049s**. Field conversion plus both update subtotals **0.905374s**, ratio **15.0888×**. Including the two standalone strict comparisons (0.799471s) gives **1.704845s** and **8.0131×** ratio against the baseline subtotal, for this particular benchmark. End-to-end reported wall **15.367071s** because it executes **both paths and verification**, not because optimized-only took 15.367 seconds. Distinguish benchmark overhead from candidate runtime.
+- SHA256-pinned original A checkpoint **`90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297`**, processed **296/339**, `checkpoint_modified=false`, `production_engine_modified=false`, `target_A_proven=false`, `kira_executed=false`, `real_original_ibp_path_replayed=false`. **43 source rows remain**. These are synthetically sequenced genuine saved provenance traces, not actual IBP elimination multipliers/path, not a full-stage speed claim.
+
+Next cautious **read-only** scaling experiment on the same three eligible saved ≥128-entry traces, but only **one update** with 128 terms before attempting two larger updates; requires still-exact per-update independent equality and pinned input. Existing standalone probe's `--terms 128 --rounds 1 --max-chars 600` supports this without repository changes. It has no built-in timeout; monitor its runtime/memory; do not assume bound solely because round count is 1. E.g.:
+
+```powershell
+python -m examples.three_loop_vp05_exact_sequential_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json --expected-sha256 90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297 --terms 128 --max-chars 600 --rounds 1 > log_vp05_exact_sequential_probe_128x1.txt 2>&1
+```
+
+Only after successfully comparing a more realistic elimination path and independent QQ(z,d) original-IBP replay should opt-in production integration be considered; never mutate existing 296-row saved state or Step93 B archive based on microbenchmarks alone.
