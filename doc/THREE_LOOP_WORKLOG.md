@@ -9151,3 +9151,21 @@ Next: resume the **same** `a339a` saved checkpoint with a single bounded 20-batc
 ```
 
 The engine validates every prior saved exact pivot against original unscaled source rows on resume. A timeout or cap must preserve checkpoint and logs and halt progress; do not lift limits or rerun stopped Kira `sec202a`. After 339/339 source rows are eventually processed, a **separate exact Target A identity and original-row replay** is required to count A as proven.
+
+
+### 2026-11-20 VP05 Target A exact-source continuation 10→110/339 PASS (20 batches)
+
+User supplied two real Windows UTF-16LE logs `log_vp05_sector202_a_exact_batch_next.txt` and `log_vp05_sector202_a_exact_audit_next.txt`. Independent decoded checks confirm:
+- Run `a339a`, same protected `vp05_sector202_A_339_exact_a339a_v1.json` checkpoint; controller status `VP05_A_339_EXACT_SOURCE_PARTIAL_PRESERVED_NOT_PROOF`, read-only audit `VP05_A_EXACT_SOURCE_CHECKPOINT_AUDIT_NOT_TARGET_PROOF`.
+- **20/20 batches**, five rows per batch, covering 10→110; all subprocess `exit_code=0`, `timed_out=false`. Sum recorded subprocess elapsed times **57.8 seconds**, first batch 2.1s, last batch 3.5s. Saved rank **110**, dependent **0**, processed **110/339**.
+- Both reports independently match checkpoint SHA256 `eb0ca2931da2fec27aa150a56a52296391b45f9a9fd2dd913da5a644dddb71db`; original input and certificate SHA256 pins still equal their Step93 archived values, no Kira and no mutation of original source/Step93 proof. The actual individual internal batch logs were not separately attached; outer execution + post-audit checked only the saved checkpoint and hashes.
+- **229 source rows remain**. This is a verified progress snapshot of an original-source exact pivot basis, not Target A's zero symbolic remainder proof, not new r7s5d3 sector202 local master retention, and not global VP05 63-master boundary closure. No Windows unit-test output supplied.
+
+Next safest continuation is another bounded 20-batch / five-row invocation from exactly the saved `a339a` checkpoint (110→210 maximum), with fresh, nonoverwriting outer stdout/audit paths:
+
+```powershell
+.\run_vp05_sector202_a_exact_batch.bat run --run-id a339a --batches 20 --rows-per-batch 5 --timeout-seconds 900 --acknowledge EXECUTE_VP05_A_339_EXACT_SOURCE_BATCH > log_vp05_sector202_a_exact_batch_210.txt 2>&1
+.\run_vp05_sector202_a_exact_batch.bat audit --run-id a339a > log_vp05_sector202_a_exact_audit_210.txt 2>&1
+```
+
+Preserve the checkpoint and all per-batch logs. If there is a cap/time stop or missing progress, inspect it before any new invocation; do not change previous source hashes, project directories, or RAM guards. After complete 339 source rows, next stage is the independent exact target-A zero remainder and unscaled original-IBP replay.
