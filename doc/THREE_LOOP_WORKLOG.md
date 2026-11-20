@@ -258,3 +258,20 @@ python -m examples.three_loop_vp05_exact_arithmetic_probe --checkpoint .\output\
 ```
 
 Once characterized, a production candidate should be strictly **opt-in**, first tested against exact `sp.cancel` and original-source IBP symbolic replay on isolated samples, preserve the old default, source and all Step93 artifacts, use limited run scope and per-row atomic checkpoints. Avoid promoting an arithmetic-only equivalence probe to mathematical Target A proof.
+
+
+### 2026-11-20 VP05 Target A read-only arithmetic inventory with 600-character bound: 3 pivots ≥128 support
+
+User uploaded actual Windows UTF-16LE `log_vp05_exact_arithmetic_inventory_600.txt`, parsed as `VP05_EXACT_ARITHMETIC_INVENTORY`:
+- status `READ_ONLY_SAVED_PROVENANCE_INVENTORY_NOT_PROOF`, max coefficient string length **600**.
+- Checkpoint SHA256 `90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297`, processed **296/339**, no checkpoint or production engine mutation and `target_A_proven=false`.
+- Qualifying entries: max support **136**; **18** saved pivots have ≥50 coefficient strings of ≤600 chars; **3** have ≥100 and **3** have ≥128.
+- Compare 240-char earlier read-only audit: max support111, 11 pivots≥50, 1≥100, 0≥128. Therefore two distinct saved pivot traces now qualify for a symmetric 100-by-100 or 128-by-128 arithmetic microbenchmark; this does not imply the arithmetic is fast, and large rational expressions may cause time/space blowup.
+
+Next *bounded* diagnostic should begin with **one 100×100 case** and max expression string length 600, rather than untested 128×128. Existing read-only probe takes `--cases 1 --max-terms 100 --max-chars 600` and the exact SHA pin; it does not mutate the production source engine. Do not attempt source-family proof continuation or new Kira simultaneously. On a timeout or failure, retain existing data and inspect the log; do not weaken exact `sp.cancel` equality or claim an extrapolated full-run speedup.
+
+```powershell
+python -m examples.three_loop_vp05_exact_arithmetic_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json --expected-sha256 90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297 --cases 1 --max-terms 100 --max-chars 600 > log_vp05_exact_arithmetic_probe_100terms_600.txt 2>&1
+```
+
+For explicit wall-clock safety, use PowerShell `Start-Process -PassThru` and `Wait-Process -Timeout` with a guard if this run is performed during normal unattended use; the existing standalone probe itself has **no internal timeout**. Avoid claiming the above command is automatically bounded in elapsed time. This still measures only synthetically paired genuine saved coefficients rather than original expensive 2347 elimination and does not prove final Target A identity or full 63-master basis.
