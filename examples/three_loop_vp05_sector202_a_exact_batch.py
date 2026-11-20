@@ -30,8 +30,8 @@ ROOT = exact.ROOT
 DIR = exact.BASE
 FILENAME = "vp05_sector202_A_339_exact_v1_checkpoint.json"
 MAX_BATCHES = 20
-MAX_ROWS = 5
-MAX_TIMEOUT = 900
+MAX_ROWS = 20
+MAX_TIMEOUT = 3600
 PARAMS = {"max_columns": 256, "max_source_support": 400,
           "max_expression_chars": 7500}
 EXPECTED_TOTAL = 339
@@ -123,7 +123,7 @@ def command(checkpoint: Path, *, resume: bool, rows: int) -> list[str]:
         sys.executable, "-m", "examples.three_loop_vp05_sector202_exact_support_checkpoint",
         "--input", str(exact.SOURCE), "--certificate", str(exact.CERT),
         "--checkpoint", str(checkpoint), "--target", "A",
-        "--rows-per-run", str(rows),
+        "--rows-per-run", str(rows), "--checkpoint-every-row",
         "--max-columns", str(PARAMS["max_columns"]),
         "--max-source-support", str(PARAMS["max_source_support"]),
         "--max-expression-chars", str(PARAMS["max_expression_chars"]),
@@ -175,11 +175,12 @@ def run(run_id: str, *, acknowledge: str, batches: int,
                 code = proc.returncode
             except subprocess.TimeoutExpired:
                 code, terminated = None, True
-        # Atomic batch checkpoint is either the previous fully validated version
-        # or new complete batch. For new checkpoints engine validates source
-        # pivots on every resume using original IBP rows.
+        # Engine now checkpoint-commits EACH completed original source row.
+        # On a time stop, persisted rows can advance by fewer than requested;
+        # the next explicit run resumes from the latest durable position.
+        # Every process still audits all saved source pivots once on resume.
         state = checkpoint_state(checkpoint)
-        if state["processed"] < step or (before is not None and
+        if state["processed"] < step or state["processed"] > step + rows or (before is not None and
                                         state["processed"] == step and
                                         state["checkpoint_sha256"] != before):
             raise RuntimeError("Saved checkpoint changed without committed source-row progress")
@@ -194,7 +195,7 @@ def run(run_id: str, *, acknowledge: str, batches: int,
                        "VP05_A_339_EXACT_SOURCE_PARTIAL_PRESERVED_NOT_PROOF"),
             "run_id": run_id, "checkpoint_state": state, "batches": done,
             "source_rows": EXPECTED_TOTAL, "exact_A_target_proven": False,
-            "no_kira_executed": True,
+            "no_kira_executed": True, "checkpoint_per_completed_source_row": True,
             "original_sources_modified": False, "step93_B_proof_modified": False,
             "standard_seed_closure_proven": False}
 
