@@ -9183,3 +9183,21 @@ Decision: continue the same SHA-pinned checkpoint cautiously with another capped
 .\run_vp05_sector202_a_exact_batch.bat run --run-id a339a --batches 20 --rows-per-batch 5 --timeout-seconds 900 --acknowledge EXECUTE_VP05_A_339_EXACT_SOURCE_BATCH > log_vp05_sector202_a_exact_batch_310.txt 2>&1
 .\run_vp05_sector202_a_exact_batch.bat audit --run-id a339a > log_vp05_sector202_a_exact_audit_310.txt 2>&1
 ```
+
+
+### 2026-11-20 VP05 Target A exact source 210→285/339: timeout at next 5-row batch, checkpoint preserved
+
+Real user Windows logs `log_vp05_sector202_a_exact_batch_310.txt` and `log_vp05_sector202_a_exact_audit_310.txt` independently confirm the saved `a339a` checkpoint: processed **285/339**, rank **285**, dependent **0**, SHA256 `28039649dc863dd16121b560a5ae4a327c87d19a78cb5a7c681aa438e682fac8`. Original source/certificate SHA256 pinned and unchanged. No Kira, no change to Step93.
+
+The 210→285 interval completed **15** 5-row subprocess batches with exit code=0, no timeout. Later batches grew sharply: 270→275 **443.4s**, 275→280 **543.2s**, 280→285 **738.4s**. The next 285→290 batch timed out at **901.7s** with **zero new source rows committed**, correctly stopping subsequent batches and keeping the previous atomic checkpoint intact. Post-audit agrees. The 285-batch individual internal log `vp05_sector202_A_339_exact_a339a_logs/batch_from_285_attempt_01.log` was **not attached**, so do not speculate that row 286 itself is expensive; existing 285-pivot replay on resume may consume much of the time.
+
+**Next action:** Inspect the preserved internal `batch_from_285_attempt_01.log` plus `batch_from_280_attempt_01.log` for progress lines, saved row IDs, cap diagnostics or expression swell **before** any other long run. Stay within existing RAM/CPU and exact-source protections. If a continuation is appropriate after forensic inspection, narrow `--rows-per-batch` from 5 to **1** and `--batches` to **1**, keep 900s timeout initially, same `a339a` checkpoint and explicit acknowledgement. A restart may hit expensive exact checkpoint replay; do not automatically increase timeout without evidence. **54 rows remain; Target A exact target identity is not yet proven.** The original source checkpoint code saves at invocation boundary, not each row; 5-row timeout can lose progress inside that batch.
+
+To gather the relevant internal logs from PowerShell:
+
+```powershell
+Get-Content .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_logs\batch_from_285_attempt_01.log -Tail 100
+Get-Content .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_logs\batch_from_280_attempt_01.log -Tail 100
+```
+
+Do not erase/mutate any evidence, rerun protected Kira, or claim Stage-2 closure. Detailed next action should use these log tails or file attachments to distinguish slow resume provenance replay from new pivot expansion.
