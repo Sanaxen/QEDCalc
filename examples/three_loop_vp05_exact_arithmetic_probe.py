@@ -108,6 +108,54 @@ def sampled_cases_from_checkpoint(path, *, max_terms=6, max_chars=160,
 
 
 
+
+def sampled_mixed_support_case(path, *, source_terms=100, dest_terms=50,
+                               max_chars=240, expected_sha256=None):
+    """Read-only, SHA-pinned unequal-support case from two distinct saved pivots.
+
+    Benchmarks source/destination exact arithmetic only; not the original
+    elimination path or actual multiplier from a timed source row.
+    """
+    raw = path.read_bytes()
+    sha = hashlib.sha256(raw).hexdigest()
+    if expected_sha256 and sha != expected_sha256:
+        raise ValueError("Checkpoint SHA256 mismatch: refusing unpinned input")
+    state = json.loads(raw)
+    if (state.get("version") != 1 or
+        state.get("status") != "EXACT_SOURCE_CHECKPOINT_NOT_TARGET_PROOF" or
+        state.get("config", {}).get("target") != "A" or
+        state.get("source_pivots_exact_replay_verified") is not True or
+        state.get("exact_target_reduction_proven") is not False or
+        state.get("processed", 0) < 200 or
+        len(state.get("pivots", [])) !=
+            state.get("processed") - state.get("dependent", -1)):
+        raise ValueError("Not a valid fully-accounted saved A exact source checkpoint")
+    eligible = []
+    for index, entry in enumerate(state["pivots"]):
+        values = [(int(k), v) for k, v in entry["trace"]
+                  if len(v) <= max_chars]
+        eligible.append((index, values, entry["lead"]))
+    sources = [(i, values, lead) for i, values, lead in eligible
+               if len(values) >= source_terms]
+    if not sources:
+        raise ValueError("Insufficient source provenance support for mixed sample")
+    src_index, src_values, src_lead = sources[-1]
+    destinations = [(i, values, lead) for i, values, lead in eligible
+                    if i != src_index and len(values) >= dest_terms]
+    if not destinations:
+        raise ValueError("Insufficient distinct destination provenance support")
+    dst_index, dst_values, _ = destinations[-1]
+    def parse(entries):
+        return {k: sp.sympify(v, locals={"z": Z, "d": D}) for k, v in entries}
+    case = (
+        "mixed_saved_source_%s_%d_to_%d" %
+        ("_".join(map(str, src_lead)), source_terms, dest_terms),
+        parse(dst_values[:dest_terms]), parse(src_values[:source_terms]),
+        (Z + D + 1) / (Z - D + 2))
+    return case, sha, state["processed"]
+
+
+
 def checkpoint_support_inventory(path, *, max_chars, expected_sha256=None):
     """Read-only count of candidate source support; never parse coefficients."""
     raw = path.read_bytes()
@@ -159,6 +207,8 @@ def main():
     parser.add_argument("--max-chars", type=int, default=160)
     parser.add_argument("--cases", type=int, default=2)
     parser.add_argument("--inventory-only", action="store_true", help="Read-only support count, no symbolic arithmetic")
+    parser.add_argument("--mixed-source-terms", type=int, help="Use a distinct saved pivot with at least N source coefficients")
+    parser.add_argument("--mixed-dest-terms", type=int, default=50)
     args = parser.parse_args()
     if not (1 <= args.cases <= 5 and 1 <= args.max_terms <= 128
             and 16 <= args.max_chars <= 600):
@@ -172,10 +222,19 @@ def main():
             checkpoint_support_inventory(args.checkpoint, max_chars=args.max_chars,
                                          expected_sha256=args.expected_sha256)), flush=True)
         return
-    selected = basic_cases()
+    if args.mixed_source_terms is not None and (not args.checkpoint or not args.expected_sha256 or
+        not 1 <= args.mixed_source_terms <= 128 or not 1 <= args.mixed_dest_terms <= 128):
+        parser.error("Mixed support requires SHA-pinned checkpoint and term caps <=128")
+    selected = [] if args.mixed_source_terms is not None else basic_cases()
     sha = None
     processed = None
-    if args.checkpoint:
+    if args.mixed_source_terms is not None:
+        mixed, sha, processed = sampled_mixed_support_case(
+            args.checkpoint, source_terms=args.mixed_source_terms,
+            dest_terms=args.mixed_dest_terms, max_chars=args.max_chars,
+            expected_sha256=args.expected_sha256)
+        selected.append(mixed)
+    elif args.checkpoint:
         real, sha, processed = sampled_cases_from_checkpoint(
             args.checkpoint, max_terms=args.max_terms,
             max_chars=args.max_chars, cases=args.cases,
