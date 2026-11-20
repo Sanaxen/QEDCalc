@@ -62,6 +62,7 @@ def compare_sequence(traces, *, multipliers=None):
     if len(multipliers) != len(traces) - 1:
         raise ValueError("Multiplier count mismatch")
     sym_state = dict(traces[0])
+    conversion_clock = time.monotonic()
     field_state = {key: probe.FIELD.from_expr(value)
                    for key, value in traces[0].items()}
     field_sources = [
@@ -69,6 +70,7 @@ def compare_sequence(traces, *, multipliers=None):
         for trace in traces[1:]
     ]
     field_multipliers = [probe.FIELD.from_expr(value) for value in multipliers]
+    conversion_s = time.monotonic() - conversion_clock
     results = []
     for number, (source, m, field_source, field_m) in enumerate(
             zip(traces[1:], multipliers, field_sources, field_multipliers), 1):
@@ -98,9 +100,9 @@ def compare_sequence(traces, *, multipliers=None):
         })
         if not passed:
             break
-    # One-time conversion overhead is included below in end-to-end timing
-    # separately by callers; timing records distinguish updates and verification.
-    return results
+    # Expose conversion cost separately, so field-only update times are not
+    # mistaken for true end-to-end production performance.
+    return results, conversion_s
 
 
 def main():
@@ -118,13 +120,16 @@ def main():
         args.checkpoint, expected_sha256=args.expected_sha256,
         terms=args.terms, max_chars=args.max_chars, rounds=args.rounds)
     t = time.monotonic()
-    outcome = compare_sequence(traces)
+    outcome, conversion_s = compare_sequence(traces)
     total_s = round(time.monotonic()-t, 6)
     passed = len(outcome) == args.rounds and all(r["exact_pass"] for r in outcome)
     print("VP05_EXACT_SEQUENTIAL_PROBE " + json.dumps({
         "status": "EXACT_SEQUENCE_PASS_PROBE_ONLY" if passed
                   else "EXACT_SEQUENCE_MISMATCH",
         "rounds": outcome, "wall_s": total_s,
+        "one_time_field_conversion_s": round(conversion_s, 6),
+        "total_baseline_update_s": round(sum(r["baseline_s"] for r in outcome), 6),
+        "total_field_update_plus_conversion_s": round(conversion_s + sum(r["field_update_s"] for r in outcome), 6),
         "requested_rounds": args.rounds, "terms": args.terms,
         "checkpoint_sha256": sha, "checkpoint_processed": processed,
         "checkpoint_modified": False, "production_engine_modified": False,
