@@ -156,9 +156,14 @@ def run(run_id: str, *, acknowledge: str, batches: int,
             break
         # Never overwrite a saved job log; every source checkpoint is hashed.
         step = state["processed"]
-        stdout = logdir / ("batch_from_%03d.log" % step)
-        if stdout.exists() or stdout.is_symlink():
-            raise RuntimeError("Prior batch exists at this exact checkpoint; manual review: " + str(stdout))
+        # A previous manual invocation may have failed/timed out at this
+        # checkpoint. Allocate a fresh immutable log for the explicit retry,
+        # never overwrite or silently re-execute within the same invocation.
+        attempts = [logdir / ("batch_from_%03d_attempt_%02d.log" % (step, n))
+                    for n in range(1, 12)]
+        stdout = next((p for p in attempts if not p.exists() and not p.is_symlink()), None)
+        if stdout is None:
+            raise RuntimeError("Eleven attempts already recorded at this checkpoint; manual review")
         args = command(checkpoint, resume=state["processed"] != 0, rows=rows)
         before = state["checkpoint_sha256"]
         t = time.monotonic()
