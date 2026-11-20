@@ -187,3 +187,26 @@ python -m examples.three_loop_vp05_exact_arithmetic_probe --checkpoint .\output\
 ```
 
 If there are too few qualifying saved samples, this is a bounded selection limitation rather than a mathematical failure. Do not bypass checkpoint SHA pin. If exact-equivalent 12-term tests succeed with reasonable timings, design/benchmark a broader 100+ support sample and potentially reusable field context before introducing any opt-in exact engine change.
+
+
+### 2026-11-20 VP05 Target A saved-provenance arithmetic probe: 12-term Windows exact PASS and safe 100+ support inventory
+
+User uploaded UTF-16LE `log_vp05_exact_arithmetic_probe_12terms.txt`, decoded and parsed. Result `EXACT_EQUIVALENCE_PASS_PROBE_ONLY` for all 5 cases, including two **real saved 12-term provenance** comparisons against unchanged checkpoint SHA256 `90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297` (**296/339**, rank296, dependent0 from prior audit):
+- Saved provenance case 0: original `sp.cancel` **0.036483s**, isolated exact QQ(z,d) candidate **0.008604s**, ratio **4.2403x**; 12 source terms, 12 destination terms, 13 output terms, `exact_pass=true`.
+- Saved provenance case 1: original **0.020817s**, candidate **0.007406s**, ratio **2.8109x**; 12 source terms, 12 destination terms, 23 output terms, `exact_pass=true`.
+- Synthetic rational-overlap **5.3149x**, nontrivial **4.2857x**, trivial zero cancellation slower (0.2412x). All strictly equal via symbolic `sp.cancel` difference, not finite-field checks.
+- The probe itself reports checkpoint and production engine unmodified, Target A not proven, no Kira. This is a 12-term microbenchmark, **not** a proof of 100+ support full update speed or final Target A identity.
+
+Implemented guarded experimental-only changes, **no production engine or checkpoint mutation**:
+- `examples/three_loop_vp05_exact_arithmetic_probe.py` extends `--max-terms` to **128**, bounds coefficient string length to at most **600**, and filters candidate traces by string length **before** parsing SymPy expressions. Adds `--inventory-only` to read the pinned checkpoint and report max qualifying support and counts with ≥50, ≥100, ≥128 coefficients. Inventory performs **no coefficient conversion or subtraction**, no saved data writes. Existing symbolic exact comparison and output policy remain.
+- `examples/test_three_loop_vp05_exact_arithmetic_probe.py` now includes **7 offline tests**, adding mock 100-term support count/immutability and SHA mismatch. Windows PASS **not yet supplied**; do not claim it.
+- Start with read-only inventory at coefficient limit 240 chars, using pinned checkpoint SHA, to establish whether 100-term test cases even exist. Only after that, if at least **two** qualifying saved pivot traces exist, run **one** 100-term exact comparison with one case. Avoid unconstrained 128-term benchmark or increasing char caps until evidence warrants. The inventory counts qualifying pivots but not which pair is selected; if no pair, record the limitation.
+
+Suggested Windows PowerShell:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_exact_arithmetic_probe -v
+python -m examples.three_loop_vp05_exact_arithmetic_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json --expected-sha256 90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297 --inventory-only --max-chars 240 > log_vp05_exact_arithmetic_inventory.txt 2>&1
+```
+
+Stop after inventory for review; do not initiate the 100-term benchmark until qualifying support/count and Windows tests are checked. If inventory has sufficient samples, plan isolated read-only `--cases 1 --max-terms 100 --max-chars 240`, bounded by an external controller timeout if expression complexity grows. Preserve original protected input and any critical source proof. No master-basis closure or Target A proof claimed.
