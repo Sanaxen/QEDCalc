@@ -275,3 +275,18 @@ python -m examples.three_loop_vp05_exact_arithmetic_probe --checkpoint .\output\
 ```
 
 For explicit wall-clock safety, use PowerShell `Start-Process -PassThru` and `Wait-Process -Timeout` with a guard if this run is performed during normal unattended use; the existing standalone probe itself has **no internal timeout**. Avoid claiming the above command is automatically bounded in elapsed time. This still measures only synthetically paired genuine saved coefficients rather than original expensive 2347 elimination and does not prove final Target A identity or full 63-master basis.
+
+
+### 2026-11-20 VP05 A exact arithmetic: real Windows 100×100 saved provenance PASS (4.12x microbenchmark)
+
+User uploaded real Windows UTF-16LE `log_vp05_exact_arithmetic_probe_100terms_600.txt`, decoded from the file bytes. The `VP05_EXACT_ARITHMETIC_PROBE` result reports `EXACT_EQUIVALENCE_PASS_PROBE_ONLY` and all exact comparisons pass. Main saved provenance case `saved_provenance_166595340009474_139_00` selected two genuine stored coefficient sets with **100 source terms and 100 destination terms**, producing **103 nonzero result terms**, with expression string cap 600. Existing per-term `sp.cancel` baseline **4.343657 s**, candidate `QQ(z,d)` rational-field conversion and subtraction **1.053755 s**, measured **4.1221× faster** for this synthetic pairing; symbolic exact equivalence `exact_pass=true`.
+
+The synthetic controls also pass: rational_overlap speed ratio 4.9064x, rational_nontrivial 4.3789x; trivial zero-cancel slower, 0.2833x. Original source checkpoint is still **296/339**, SHA256 **`90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297`**, `checkpoint_modified=false`, `production_engine_modified=false`, `target_A_proven=false`, `kira_executed=false`. No claim of measured full elimination-speed improvement, completed A identity, C master retention or VP05 63-master closure. 43 original source rows remain.
+
+Candidate field arithmetic now passes real small 4-term, 12-term, 50-term, mixed 100×50 and 100×100 provenance microbenchmarks. The 600-char inventory found **three distinct saved pivots with ≥128 eligible provenance entries**, so an additional **single 128×128** exact read-only comparison can be attempted cautiously using the existing guarded data scope. Keep full exact equality check, pinned source SHA, and original engine unchanged; do not extrapolate 4.12x to actual 200-second symbolic steps.
+
+```powershell
+python -m examples.three_loop_vp05_exact_arithmetic_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json --expected-sha256 90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297 --cases 1 --max-terms 128 --max-chars 600 > log_vp05_exact_arithmetic_probe_128terms_600.txt 2>&1
+```
+
+Standalone script has **no internal wall-clock limit**; keep the process monitored or use a separately bounded subprocess. After this arithmetic-only benchmark, design **opt-in and isolated exact source-row pilot** with same original-source IBP replay and saved checkpoint protection, comparing to original SymPy version on an independently verified small source subset. Never introduce candidate arithmetic directly into the already saved `a339a` run without a documented equivalence and rollback protocol.
