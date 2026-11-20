@@ -56,6 +56,27 @@ def verify(row,trace,rows,z,d):
  actual=replay(trace,rows,z,d)
  if set(actual)!=set(row) or any(sp.cancel(actual[k]-row[k])!=0 for k in row):
   raise AssertionError("Exact pivot/source provenance mismatch")
+
+def save_exact_source_checkpoint(args, config, processed, ids, dependent, basis):
+ payload={"version":1,"status":"EXACT_SOURCE_CHECKPOINT_NOT_TARGET_PROOF",
+  "config":config,"processed":processed,"total":len(ids),"dependent":dependent,
+  "pivots":[{"lead":list(k),"row":encode_terms(row),"trace":[[i,str(v)] for i,v in sorted(trace.items())]}
+            for k,(row,trace) in sorted(basis.items())],
+  "source_pivots_exact_replay_verified":True,"exact_target_reduction_proven":False}
+ args.checkpoint.parent.mkdir(parents=True,exist_ok=True)
+ temp=args.checkpoint.with_name(args.checkpoint.name+".tmp")
+ with temp.open("x",encoding="utf-8") as fh:
+  json.dump(payload,fh,ensure_ascii=True,separators=(",",":"))
+  fh.flush();os.fsync(fh.fileno())
+ try:
+  os.replace(temp,args.checkpoint)
+ except BaseException:
+  raise
+ print("VP05_SECTOR202_EXACT_SUPPORT_CHECKPOINT "+json.dumps({
+  "status":payload["status"],"processed":processed,"total":len(ids),
+  "rank":len(basis),"dependent":dependent,"complete_source_pass":processed==len(ids),
+  "checkpoint":str(args.checkpoint),"exact_target_reduction_proven":False},ensure_ascii=True),flush=True)
+
 def main():
  ap=argparse.ArgumentParser()
  ap.add_argument("--input",type=Path,default=SOURCE)
@@ -63,6 +84,7 @@ def main():
  ap.add_argument("--checkpoint",type=Path,default=CHECKPOINT)
  ap.add_argument("--fork-from",type=Path,help="One-time immutable source checkpoint for a fresh enlarged-cap checkpoint path")
  ap.add_argument("--rows-per-run",type=int,default=20)
+ ap.add_argument("--checkpoint-every-row",action="store_true",help="Commit every independently replay-verified original source row; retain the same existing checkpoint schema")
  ap.add_argument("--max-columns",type=int,default=100)
  ap.add_argument("--max-intermediate-columns",type=int,default=None,help="Optional larger cap only during intermediate exact elimination; persisted pivots remain bounded by --max-columns")
  ap.add_argument("--max-source-support",type=int,default=100)
@@ -539,23 +561,12 @@ def main():
    dependent+=1
   processed=position+1
   print("VP05_SECTOR202_EXACT_SUPPORT_PROGRESS "+json.dumps({"processed":processed,"total":len(ids),"rank":len(basis),"dependent":dependent,"last_original_id":rid}),flush=True)
+  if args.checkpoint_every_row and not args.diagnose_next:
+   save_exact_source_checkpoint(args,config,processed,ids,dependent,basis)
  if args.diagnose_next:
   if args.trace_fill:save_fill(ids[limit-1],"FILL_TRACE_NEXT_ROW_WITHIN_CAPS")
   print("VP05_SECTOR202_EXACT_SUPPORT_DIAGNOSTIC "+json.dumps({"status":"NEXT_SOURCE_ROW_WITHIN_CAPS","saved_processed":limit-1,"tested_original_id":ids[limit-1] if limit else None,"checkpoint_modified":False,"exact_target_reduction_proven":False}),flush=True)
   return
- payload={"version":1,"status":"EXACT_SOURCE_CHECKPOINT_NOT_TARGET_PROOF",
-  "config":config,"processed":processed,"total":len(ids),"dependent":dependent,
-  "pivots":[{"lead":list(k),"row":encode_terms(row),"trace":[[i,str(v)] for i,v in sorted(trace.items())]}
-            for k,(row,trace) in sorted(basis.items())],
-  "source_pivots_exact_replay_verified":True,"exact_target_reduction_proven":False}
- args.checkpoint.parent.mkdir(parents=True,exist_ok=True)
- temp=args.checkpoint.with_name(args.checkpoint.name+".tmp")
- with temp.open("w",encoding="utf-8") as fh:
-  json.dump(payload,fh,ensure_ascii=True,separators=(",",":"))
-  fh.flush();os.fsync(fh.fileno())
- os.replace(temp,args.checkpoint)
- print("VP05_SECTOR202_EXACT_SUPPORT_CHECKPOINT "+json.dumps({
-  "status":payload["status"],"processed":processed,"total":len(ids),
-  "rank":len(basis),"dependent":dependent,"complete_source_pass":processed==len(ids),
-  "checkpoint":str(args.checkpoint),"exact_target_reduction_proven":False},ensure_ascii=True),flush=True)
+ if not args.checkpoint_every_row:
+  save_exact_source_checkpoint(args,config,processed,ids,dependent,basis)
 if __name__=="__main__":main()
