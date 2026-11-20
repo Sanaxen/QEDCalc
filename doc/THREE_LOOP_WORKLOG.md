@@ -170,3 +170,20 @@ python -m examples.three_loop_vp05_exact_arithmetic_probe --checkpoint .\output\
 The SHA256 pin is from the user's **most recently audited 296/339** checkpoint. If it mismatches because source work advanced, inspect and re-audit rather than bypassing the pin. If it says insufficient sampled provenance entries, log that result and adjust only the bounded *sampling* options, not the input or proof. Do not run the full Target A source elimination concurrently with this probe. Original source checkpoint exactness and Target A final identity remain distinct.
 
 The user's latest saved results remain **296/339 processed, rank296, dependent0, 43 rows remaining**. The experimental field arithmetic remains opt-in and isolated until real bounded Windows benchmark and exact comparisons justify a controlled integration; do not promise or claim speed gain for full symbolic source replay.
+
+
+### 2026-11-20 VP05 A saved checkpoint exact arithmetic probe: Windows small-sample equivalence PASS, production untouched
+
+User uploaded actual Windows UTF-16LE `log_vp05_exact_arithmetic_probe.txt`; parsed one `VP05_EXACT_ARITHMETIC_PROBE` record:
+- Status **`EXACT_EQUIVALENCE_PASS_PROBE_ONLY`**; every comparison `exact_pass=true`. Checkpoint `a339a` SHA256 pinned **`90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297`**, saved processed **296/339**. `checkpoint_modified=false`, `production_engine_modified=false`, `target_A_proven=false`, `kira_executed=false`.
+- Synthetic zero-cancel: baseline **0.000078s**, QQ(z,d) candidate **0.000325s**, baseline/candidate ratio **0.2392** (candidate *slower*). Synthetic rational overlap: **0.008284s vs 0.001600s** (**5.1789x**). Nontrivial rational: **0.007671s vs 0.001821s** (**4.213x**).
+- Two **real saved-provenance samples of 4 source terms each** (8 output terms) completed exact comparison. First: **0.005211s vs 0.001768s** (**2.9471x**); second: **0.005506s vs 0.002058s** (**2.6758x**). These numbers include per-case SymPy-to-field conversion and back, but are milliseconds and do **not** benchmark the 100+ provenance support or full late source-row elimination/replay. The field approach is promising on compact rational samples, but **no full-run speedup was established**. The 5-file offline unittest output was not attached; do not claim Windows unit-test pass.
+- The actual 296/339 checkpoint is intact, rank 296 and dependent0 from previous audit; **43 source rows remain**. Mathematical Target A exact rational-function reduction, independent unscaled original-source replay for A, sector202 C master retention and VP05 63-master closure remain unproven.
+
+Next safe action: run the **already installed** read-only arithmetic benchmark with 12 terms (vs previous 4), 240 chars, two bounded saved original-source samples. Do not change production engine or checkpoint. Reuse the same pinned SHA256 and do not run Kira or the 1-hour exact source batch concurrently:
+
+```powershell
+python -m examples.three_loop_vp05_exact_arithmetic_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json --expected-sha256 90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297 --cases 2 --max-terms 12 --max-chars 240 > log_vp05_exact_arithmetic_probe_12terms.txt 2>&1
+```
+
+If there are too few qualifying saved samples, this is a bounded selection limitation rather than a mathematical failure. Do not bypass checkpoint SHA pin. If exact-equivalent 12-term tests succeed with reasonable timings, design/benchmark a broader 100+ support sample and potentially reusable field context before introducing any opt-in exact engine change.
