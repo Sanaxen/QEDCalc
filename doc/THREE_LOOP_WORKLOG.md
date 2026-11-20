@@ -9201,3 +9201,17 @@ Get-Content .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact
 ```
 
 Do not erase/mutate any evidence, rerun protected Kira, or claim Stage-2 closure. Detailed next action should use these log tails or file attachments to distinguish slow resume provenance replay from new pivot expansion.
+
+
+### 2026-11-20 VP05 Target A exact source 285→290 timeout forensic: internal rows 286–288 computed, not checkpointed
+
+User supplied Windows console transcript `log(20261120-034846).txt`, containing read-only tails of saved internal batch logs. `batch_from_280_attempt_01.log` shows `VP05_SECTOR202_EXACT_SUPPORT_PROGRESS` for positions 281–285 (original IDs 2331–2335), then `VP05_SECTOR202_EXACT_SUPPORT_CHECKPOINT` confirming `processed=285`, `rank=285`, `complete_source_pass=false`. `batch_from_285_attempt_01.log` shows `PROGRESS` at **286** (original row ID 2337), **287** (2338), **288** (2339), all with matching rank and zero dependents; it contains **no committed checkpoint marker** before the outer 900s timeout.
+
+Interpretation: on the timed-out five-row invocation, at least 3 of 5 source rows completed in the subprocess before process termination; the engine saves only after all rows in an invocation, so **these 3 rows are not saved** and durable state correctly remains 285/339. It is incorrect to attribute the whole 900s to replay of the 285 saved rows. The exact location of the later stall (e.g. original source row 2340, or save/verification overhead) is not proven by log alone. Saved 285 SHA `28039649dc863dd16121b560a5ae4a327c87d19a78cb5a7c681aa438e682fac8` remains verified by previous independent audit. No evidence for exact Target A proof, sector202 local master retention or global 63-master closure.
+
+Next action: resume same run ID `a339a` using **one row per subprocess checkpoint** to avoid losing three successfully computed rows during time cap. Old controller supports `--rows-per-batch 1`, per-batch timeout 900 seconds, and explicit reattempt from 285 allocates a *new* immutable `batch_from_285_attempt_02.log`, keeping previous timeout log intact. Start with at most **10** one-row batches (max 285→295). Keep input hashes and checkpoint unaltered and stop on any timeout/error. The next time-consuming row must be diagnosed by its internal log if the single-row unit also reaches the timeout.
+
+```powershell
+.\run_vp05_sector202_a_exact_batch.bat run --run-id a339a --batches 10 --rows-per-batch 1 --timeout-seconds 900 --acknowledge EXECUTE_VP05_A_339_EXACT_SOURCE_BATCH > log_vp05_sector202_a_exact_single_next.txt 2>&1
+.\run_vp05_sector202_a_exact_batch.bat audit --run-id a339a > log_vp05_sector202_a_exact_single_audit.txt 2>&1
+```
