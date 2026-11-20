@@ -9132,3 +9132,22 @@ python -m unittest examples.test_three_loop_vp05_sector202_a_exact_batch -v
 ```
 
 Do not run unless the new tests pass on Windows. On error or cap preserve the checkpoint and logs. No need to launch new Kira (especially the RAM-stopped `sec202a` project). Further progress on the family depends on exact A proof and independently verified retained candidates/closure across 202-containing sectors and the r8s6d2 standard boundary.
+
+
+### 2026-11-20 VP05 Target A protected exact-source initial two batches PASS: 10/339 saved
+
+User provided `log_vp05_sector202_a_exact_batch.txt` and `log_vp05_sector202_a_exact_audit.txt` (both UTF-16LE Windows logs). The logs independently agree:
+- Execution status `VP05_A_339_EXACT_SOURCE_PARTIAL_PRESERVED_NOT_PROOF`, run ID `a339a`, isolated checkpoint `output/three_loop_integral_family_audit/vp05_sector202_A_339_exact_a339a_v1.json`.
+- Two newly committed invocation-level exact batches, 0→5 rows in **2.0s** and 5→10 rows in **2.1s**, both subprocess exit code **0**, no timeout. Each invocation used the previous exact checkpoint engine with target `A` and 5-row bounded units.
+- The **read-only post-audit** confirmed `partial_source_checkpoint`, processed **10/339**, rank **10**, dependent **0**, checkpoint SHA256 `021894799f7dc0788bbf4029d1f36de98e91b171bdb4252c13bd9aeba8eccba6`. Original source/certificate pinned hashes still match `f0dd7f338ead97e455306bc49c4ce475fe8a8bee3e5a866f6fa17de1e9ad0163` and `512114a669d3fb8761d89bfe11a51cc8ec146d46739a36b61e869edcddb583eb`.
+- Two batch logs preserved at `vp05_sector202_A_339_exact_a339a_logs/batch_from_000_attempt_01.log` and `.../batch_from_005_attempt_01.log`. Both `no_kira_executed=true`; Step93 B archive and original IBP sources not modified.
+- **Scientific state:** exact original IBP *source pivots* for these 10 rows saved; this is **not** exact Target A zero-remainder proof, not C master retention, not r8s5d3/r8s6d2 or 63-master closure. No Windows unit-test log supplied; do not assert tests PASS.
+
+Next: resume the **same** `a339a` saved checkpoint with a single bounded 20-batch invocation (at most 100 additional source rows, 5 each, 900s per batch), inspect post-run audit, and stop on any safety cap or error:
+
+```powershell
+.\run_vp05_sector202_a_exact_batch.bat run --run-id a339a --batches 20 --rows-per-batch 5 --timeout-seconds 900 --acknowledge EXECUTE_VP05_A_339_EXACT_SOURCE_BATCH > log_vp05_sector202_a_exact_batch_next.txt 2>&1
+.\run_vp05_sector202_a_exact_batch.bat audit --run-id a339a > log_vp05_sector202_a_exact_audit_next.txt 2>&1
+```
+
+The engine validates every prior saved exact pivot against original unscaled source rows on resume. A timeout or cap must preserve checkpoint and logs and halt progress; do not lift limits or rerun stopped Kira `sec202a`. After 339/339 source rows are eventually processed, a **separate exact Target A identity and original-row replay** is required to count A as proven.
