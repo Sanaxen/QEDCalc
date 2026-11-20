@@ -62,6 +62,39 @@ class ExactArithmeticProbeTests(unittest.TestCase):
                     path, expected_sha256="0" * 64)
             self.assertEqual(path.read_text(), "{}")
 
+    def test_inventory_counts_only_short_entries(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "existing.json"
+            rows = [
+                {"lead": [i, 139], "trace": [
+                    [k, "z+d" if k < 100 else "(z+d)**999999"] for k in range(110)]
+                } for i in range(200)]
+            state = {
+                "version": 1,
+                "status": "EXACT_SOURCE_CHECKPOINT_NOT_TARGET_PROOF",
+                "config": {"target": "A"},
+                "processed": 200, "dependent": 0, "pivots": rows,
+                "source_pivots_exact_replay_verified": True,
+                "exact_target_reduction_proven": False,
+            }
+            path.write_text(json.dumps(state), encoding="utf-8")
+            checksum = hashlib.sha256(path.read_bytes()).hexdigest()
+            before = path.read_bytes()
+            inventory = probe.checkpoint_support_inventory(
+                path, max_chars=5, expected_sha256=checksum)
+            self.assertEqual(inventory["max_support"], 100)
+            self.assertEqual(inventory["pivots_with_100_entries"], 200)
+            self.assertEqual(inventory["pivots_with_128_entries"], 0)
+            self.assertEqual(before, path.read_bytes())
+
+    def test_inventory_hash_mismatch_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "existing.json"
+            path.write_text("{}", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "SHA256 mismatch"):
+                probe.checkpoint_support_inventory(
+                    path, max_chars=240, expected_sha256="f" * 64)
+
     def test_non_target_checkpoint_refused(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "existing.json"
