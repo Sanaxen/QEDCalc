@@ -5,7 +5,7 @@ checkpoint load replays every saved pivot against literal exported IBP rows.
 No A/B exact target proof is claimed by eliminating source rows alone.
 """
 from __future__ import annotations
-import argparse,gzip,hashlib,json,os
+import argparse,gzip,hashlib,json,os,time
 from pathlib import Path
 import sympy as sp
 from examples.three_loop_sector203_weight_audit import ROOT
@@ -85,6 +85,7 @@ def main():
  ap.add_argument("--fork-from",type=Path,help="One-time immutable source checkpoint for a fresh enlarged-cap checkpoint path")
  ap.add_argument("--rows-per-run",type=int,default=20)
  ap.add_argument("--checkpoint-every-row",action="store_true",help="Commit every independently replay-verified original source row; retain the same existing checkpoint schema")
+ ap.add_argument("--trace-source-timing",action="store_true",help="Print read-only resume audit, source row, and checkpoint timing diagnostics")
  ap.add_argument("--max-columns",type=int,default=100)
  ap.add_argument("--max-intermediate-columns",type=int,default=None,help="Optional larger cap only during intermediate exact elimination; persisted pivots remain bounded by --max-columns")
  ap.add_argument("--max-source-support",type=int,default=100)
@@ -171,6 +172,7 @@ def main():
    "destination":str(args.checkpoint),"processed":fork_processed,
    "new_caps":{key:config[key] for key in caps},"original_unchanged":True}),flush=True)
  z,d=sp.symbols("z d")
+ resume_clock=time.monotonic()
  basis={};processed=0;dependent=0
  if args.resume:
   saved=json.loads(args.checkpoint.read_text(encoding="utf-8"))
@@ -194,6 +196,8 @@ def main():
   if len(basis)+dependent!=processed:raise RuntimeError("Checkpoint rank accounting mismatch")
  elif args.checkpoint.exists():
   raise RuntimeError("Checkpoint exists: supply --resume, or use a new --checkpoint path")
+ if args.trace_source_timing:
+  print("VP05_SECTOR202_EXACT_TIMING "+json.dumps({"phase":"resume_validation_complete","resume_elapsed_s":round(time.monotonic()-resume_clock,2),"saved_processed":processed,"saved_rank":len(basis)}),flush=True)
  if args.fixed_path_audit:
   if not args.resume or not args.diagnose_next:raise RuntimeError("--fixed-path-audit requires --resume --diagnose-next")
   if processed>=len(ids):raise RuntimeError("No remaining source row")
@@ -499,7 +503,12 @@ def main():
   print("VP05_SECTOR202_FILL_TRACE "+json.dumps({"status":status,"next_original_id":rid,"step_count":len(fill_steps),"max_columns_observed":report["max_columns_observed"],"output":str(args.fill_output),"checkpoint_modified":False}),flush=True)
  limit=min(len(ids),processed+(1 if args.diagnose_next else args.rows_per_run))
  for position in range(processed,limit):
+  row_clock=time.monotonic()
+  last_trace_clock=row_clock
+  elimination_count=0
   rid=ids[position];cur={}
+  if args.trace_source_timing:
+   print("VP05_SECTOR202_EXACT_TIMING "+json.dumps({"phase":"source_row_begin","processed_before":processed,"original_id":rid}),flush=True)
   for term in rows[rid]["terms"]:
    key=tuple(term["key"])
    val=sp.cancel(cur.get(key,sp.S.Zero)+expr(term["coefficient"],z,d))
@@ -519,6 +528,11 @@ def main():
     novel_columns=len(basis_keys-previous_keys)
    subtract(cur,brow,factor)
    subtract(trace,btrace,factor)
+   elimination_count+=1
+   if args.trace_source_timing and elimination_count%10==0:
+    now=time.monotonic()
+    print("VP05_SECTOR202_EXACT_TIMING "+json.dumps({"phase":"elimination_progress","original_id":rid,"steps":elimination_count,"step_chunk_s":round(now-last_trace_clock,2),"row_elapsed_s":round(now-row_clock,2),"columns":len(cur),"support":len(trace)}),flush=True)
+    last_trace_clock=now
    if args.factor_elimination:
     before_row=max((len(str(v)) for v in cur.values()),default=0)
     before_trace=max((len(str(v)) for v in trace.values()),default=0)
@@ -560,9 +574,14 @@ def main():
    verify({},trace,rows,z,d)
    dependent+=1
   processed=position+1
+  if args.trace_source_timing:
+   print("VP05_SECTOR202_EXACT_TIMING "+json.dumps({"phase":"source_row_exact_verified","original_id":rid,"processed":processed,"elimination_steps":elimination_count,"row_calculation_s":round(time.monotonic()-row_clock,2)}),flush=True)
   print("VP05_SECTOR202_EXACT_SUPPORT_PROGRESS "+json.dumps({"processed":processed,"total":len(ids),"rank":len(basis),"dependent":dependent,"last_original_id":rid}),flush=True)
   if args.checkpoint_every_row and not args.diagnose_next:
+   checkpoint_clock=time.monotonic()
    save_exact_source_checkpoint(args,config,processed,ids,dependent,basis)
+   if args.trace_source_timing:
+    print("VP05_SECTOR202_EXACT_TIMING "+json.dumps({"phase":"source_row_checkpoint_durable","original_id":rid,"processed":processed,"checkpoint_elapsed_s":round(time.monotonic()-checkpoint_clock,2),"row_total_s":round(time.monotonic()-row_clock,2)}),flush=True)
  if args.diagnose_next:
   if args.trace_fill:save_fill(ids[limit-1],"FILL_TRACE_NEXT_ROW_WITHIN_CAPS")
   print("VP05_SECTOR202_EXACT_SUPPORT_DIAGNOSTIC "+json.dumps({"status":"NEXT_SOURCE_ROW_WITHIN_CAPS","saved_processed":limit-1,"tested_original_id":ids[limit-1] if limit else None,"checkpoint_modified":False,"exact_target_reduction_proven":False}),flush=True)
