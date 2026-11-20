@@ -327,3 +327,20 @@ python -m examples.three_loop_vp05_exact_sequential_probe --checkpoint .\output\
 ```
 
 Only after successfully comparing a more realistic elimination path and independent QQ(z,d) original-IBP replay should opt-in production integration be considered; never mutate existing 296-row saved state or Step93 B archive based on microbenchmarks alone.
+
+
+### 2026-11-20 VP05 A 128-term one-update persistent QQ(z,d) Windows PASS; input remains protected
+
+User uploaded actual Windows UTF-16LE `log_vp05_exact_sequential_probe_128x1.txt` (decoded from attachment). The result `VP05_EXACT_SEQUENTIAL_PROBE` reported `status=EXACT_SEQUENCE_PASS_PROBE_ONLY`, one completed 128-source-term update resulting in **133** output terms, with **`exact_pass=true`** against a full independent symbolic SymPy `sp.cancel` comparison.
+
+Timing: prior SymPy update **5.157762s**; persistent QQ(z,d) field update **0.224192s**, one-time conversion of chosen saved traces and multiplier **0.689511s**, field update plus conversion **0.913703s**, ratio **5.6449x** for this synthetic update. Independent full exact equality verification cost **0.394282s**; including conversion, field update and independent comparison **1.307985s**, ratio **3.9433x** versus baseline update alone. Reported `wall_s=6.466641s` measures both competing paths and verification in the same diagnostic invocation, **not** optimized-only wall time.
+
+Pinned original Target A checkpoint SHA256 **`90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297`**, processed **296/339**, checkpoint/production engine unchanged, no Kira, Target A not proven, **`real_original_ibp_path_replayed=false`**. This validates exact arithmetic of an independently sampled 128-term stored provenance update, *not* original Kira/IBP elimination sequence, not a full speedup claim, not Stage-2/63-master closure. There are **43 source rows left** in the saved 339 source-row pivot task.
+
+The existing read-only persistent QQ(z,d) sequence probe supports 2 updates with 128-term distinct saved provenance from three eligible pivots (600-character coefficient limit inventory: 3 qualify at >=128); the second update might trigger expression swell. The next bounded exploratory step is **128 terms, 2 sequential updates**, only after Windows tests succeed and with user monitoring of CPU/RAM/time. This remains no-write and does not execute protected Kira or exact source continuation:
+
+```powershell
+python -m examples.three_loop_vp05_exact_sequential_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json --expected-sha256 90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297 --terms 128 --max-chars 600 --rounds 2 > log_vp05_exact_sequential_probe_128x2.txt 2>&1
+```
+
+No built-in wall-clock timeout exists in this diagnostic; use an external timeout guard or manual monitoring, and preserve file input. After confirming multiple larger updates, the remaining crucial engineering stage is an isolated **real exact IBP source-row pivot-path replay** using the saved immutable input and identical pivot order, comparing both original and QQ(z,d) engines against exact source relations, before any opt-in production integration. Do not treat synthetic saved-pivot pairings as real IBP pivots.
