@@ -210,3 +210,16 @@ python -m examples.three_loop_vp05_exact_arithmetic_probe --checkpoint .\output\
 ```
 
 Stop after inventory for review; do not initiate the 100-term benchmark until qualifying support/count and Windows tests are checked. If inventory has sufficient samples, plan isolated read-only `--cases 1 --max-terms 100 --max-chars 240`, bounded by an external controller timeout if expression complexity grows. Preserve original protected input and any critical source proof. No master-basis closure or Target A proof claimed.
+
+
+### 2026-11-20 VP05 A read-only saved provenance inventory: only one 100-term qualifying trace
+
+User uploaded `log_vp05_exact_arithmetic_inventory.txt` with actual Windows result `VP05_EXACT_ARITHMETIC_INVENTORY` status `READ_ONLY_SAVED_PROVENANCE_INVENTORY_NOT_PROOF`. SHA256 of isolated Target A checkpoint matches `90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297`; processed **296/339**. With **max coefficient expression string length=240**, eligible-pivot counts are: **11** pivots with ≥50 provenance entries, **1** pivot with ≥100 entries, **0** pivots with ≥128 entries, and max eligible support **111**. Checkpoint/production engine remain unmodified; Target A not proved.
+
+Current `sampled_cases_from_checkpoint` uses two **distinct qualifying** pivot provenance rows per full comparison, so merely selecting `--max-terms 100` with these data would raise an **insufficient qualifying samples** error. Do NOT pretend 100-term comparison is already possible. Next choose **50-term** bounded true provenance comparison using two eligible saved pivots, one case, exact QQ(z,d) candidate compared against existing per-key `sp.cancel`, and checkpoint hash guard. This does not perform new Kira or run long exact source checkpoint continuation.
+
+```powershell
+python -m examples.three_loop_vp05_exact_arithmetic_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json --expected-sha256 90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297 --cases 1 --max-terms 50 --max-chars 240 > log_vp05_exact_arithmetic_probe_50terms.txt 2>&1
+```
+
+If 50 terms still show accurate full sparse symbolics and a useful speedup, next develop a bounded mixed-size source/destination benchmark (one 100+ trace paired with an eligible smaller trace) and/or direct coefficient-series benchmarking on the real saved 100+ trace, making source/destination size explicit. Never convert benchmark-only result to Target A exact proof or final 63-master closure; 43 original source rows remain and original source rowspace proof does not itself establish Target A.
