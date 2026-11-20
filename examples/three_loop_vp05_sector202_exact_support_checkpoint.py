@@ -526,8 +526,15 @@ def main():
     before_columns=len(cur)
     pivot_support=len(brow)
     novel_columns=len(basis_keys-previous_keys)
+   profile_step=args.trace_source_timing and elimination_count>=30
+   if profile_step:
+    profile_t0=time.monotonic()
    subtract(cur,brow,factor)
+   if profile_step:
+    profile_t1=time.monotonic()
    subtract(trace,btrace,factor)
+   if profile_step:
+    profile_t2=time.monotonic()
    elimination_count+=1
    if args.trace_source_timing and elimination_count%10==0:
     now=time.monotonic()
@@ -550,6 +557,15 @@ def main():
    if args.trace_fill and (len(cur)>args.max_intermediate_columns or len(trace)>args.max_source_support or max([len(str(v)) for v in list(cur.values())+list(trace.values())] or [0])>args.max_intermediate_expression_chars):
     save_fill(rid,"FILL_TRACE_SAFETY_CAP_REACHED_NOT_PROOF")
    check(cur,trace,"elimination",rid,lead)
+   if profile_step:
+    print("VP05_SECTOR202_EXACT_STEP_PROFILE "+json.dumps({
+     "original_id":rid,"step":elimination_count,
+     "row_subtract_s":round(profile_t1-profile_t0,3),
+     "source_subtract_s":round(profile_t2-profile_t1,3),
+     "post_subtract_checks_s":round(time.monotonic()-profile_t2,3),
+     "columns":len(cur),"support":len(trace),
+     "pivot_columns":len(brow),"pivot_support":len(btrace),
+     "row_elapsed_s":round(time.monotonic()-row_clock,2)}),flush=True)
   if args.trace_source_timing:
    print("VP05_SECTOR202_EXACT_TIMING "+json.dumps({"phase":"row_elimination_complete","original_id":rid,"steps":elimination_count,"elapsed_s":round(time.monotonic()-row_clock,2),"columns":len(cur),"support":len(trace)}),flush=True)
   if cur:
