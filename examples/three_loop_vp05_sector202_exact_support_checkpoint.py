@@ -550,8 +550,11 @@ def main():
    if args.trace_fill and (len(cur)>args.max_intermediate_columns or len(trace)>args.max_source_support or max([len(str(v)) for v in list(cur.values())+list(trace.values())] or [0])>args.max_intermediate_expression_chars):
     save_fill(rid,"FILL_TRACE_SAFETY_CAP_REACHED_NOT_PROOF")
    check(cur,trace,"elimination",rid,lead)
+  if args.trace_source_timing:
+   print("VP05_SECTOR202_EXACT_TIMING "+json.dumps({"phase":"row_elimination_complete","original_id":rid,"steps":elimination_count,"elapsed_s":round(time.monotonic()-row_clock,2),"columns":len(cur),"support":len(trace)}),flush=True)
   if cur:
    lead=min(cur);factor=cur[lead]
+   normalization_clock=time.monotonic()
    cur={k:sp.cancel(v/factor) for k,v in cur.items()}
    trace={k:sp.cancel(v/factor) for k,v in trace.items()}
    if args.factor_normalization:
@@ -568,10 +571,18 @@ def main():
     trace={k:(compact_exact_alternatives(v) if len(str(v))>=args.max_expression_chars-200 else v) for k,v in trace.items()}
     print("VP05_SECTOR202_EXACT_COMPACT_NORMALIZATION "+json.dumps({"original_id":rid,"row_chars_before":before_row,"trace_chars_before":before_trace,"row_chars_after":max((len(str(v)) for v in cur.values()),default=0),"trace_chars_after":max((len(str(v)) for v in trace.values()),default=0)}),flush=True)
    check(cur,trace,"normalization",rid,lead)
+   if args.trace_source_timing:
+    print("VP05_SECTOR202_EXACT_TIMING "+json.dumps({"phase":"row_normalization_complete","original_id":rid,"normalization_s":round(time.monotonic()-normalization_clock,2),"row_elapsed_s":round(time.monotonic()-row_clock,2),"columns":len(cur),"support":len(trace)}),flush=True)
+   replay_clock=time.monotonic()
    verify(cur,trace,rows,z,d)
+   if args.trace_source_timing:
+    print("VP05_SECTOR202_EXACT_TIMING "+json.dumps({"phase":"row_original_ibp_replay_complete","original_id":rid,"replay_s":round(time.monotonic()-replay_clock,2),"row_elapsed_s":round(time.monotonic()-row_clock,2)}),flush=True)
    basis[lead]=(cur,trace)
   else:
+   replay_clock=time.monotonic()
    verify({},trace,rows,z,d)
+   if args.trace_source_timing:
+    print("VP05_SECTOR202_EXACT_TIMING "+json.dumps({"phase":"dependent_row_ibp_replay_complete","original_id":rid,"replay_s":round(time.monotonic()-replay_clock,2)}),flush=True)
    dependent+=1
   processed=position+1
   if args.trace_source_timing:
