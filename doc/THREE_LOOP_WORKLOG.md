@@ -388,3 +388,20 @@ python -m examples.three_loop_vp05_exact_real_first_pivot_probe --checkpoint .\o
 ```
 
 The protected A checkpoint remains at 296/339 (SHA256 `90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297`), original exported source & provenance certificate are unchanged. This test is read-only but has no internal wall-clock timeout; do not confuse a skipped symlink fixture with the actual integrity check on production inputs.
+
+
+### 2026-11-21 VP05 real original-source first pivot PASS; independent actual-order multi-pivot replay introduced
+
+User uploaded `log_vp05_exact_real_first_pivot_probe(1).txt` and real Windows output `VP05_REAL_FIRST_PIVOT_FIELD_PROBE` reports `REAL_ORIGINAL_IBP_FIRST_PIVOT_EXACT_PASS_NOT_TARGET_PROOF`. Exported real IBP source original ID **2348**, pivot **[43447889166336,73]**, 4 source integral columns, 2 stored pivot columns, pivot original-source trace support 1, output 4 columns and trace support 2. Full exact symbolic `strict_exact_row_equal=true`, `strict_exact_trace_equal=true`, original exported IBP replay independently `original_ibp_source_replay_verified=true`. This is a real initial pivot rather than synthetic saved-trace pairing, but it is tiny: existing SymPy row+trace 0.000012s; field input conversion 0.000515s, field update 0.000132s, back-conversion 0.000073s, source replay and equality verification 0.001179s; no speed benefit at this first step. User's original A checkpoint SHA `90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297` remains 296/339, unchanged. No production engine change, target proof or Kira.
+
+To evaluate more than this trivial first step, implemented **`examples/three_loop_vp05_exact_real_multistep_probe.py`** as a separate *read-only* actual-order diagnostic. It reuses the strict SHA-pinned checkpoint, exported source and certificate validation. Selects next real original source row ID2348, follows successive `min(row)` exact stored pivot leads in the saved basis (not synthetic multipliers), and keeps field row and trace as persistent `QQ(z,d)` fraction elements. Independently updates baseline via per-key SymPy `sp.cancel`. After **each genuine step**: checks full exact row and trace parity and replays the original exported IBP equations via the original engine's `verify`. Records per-step pivot, support, baseline vs field times, conversion and verification; cap 1..8 steps, default4. Stops on zero or no saved lead; never normalizes/adds a new pivot or saves checkpoint, never runs Kira. No built-in wall-clock timeout; monitor RAM/time. Output `VP05_REAL_ORIGINAL_IBP_MULTISTEP_FIELD_PROBE`, status `REAL_ORIGINAL_IBP_MULTISTEP_EXACT_PASS_NOT_TARGET_PROOF`. A complete exact source 339-row reduction, Target A proof, sector C and 63-master closure remain unresolved. 
+
+Added `examples/test_three_loop_vp05_exact_real_multistep_probe.py` with four offline tests: two genuine shaped source-replay steps with exact parity, stopping on missing pivot, provenance tampering rejection, step-count guard. Windows tests **not yet observed**.
+
+User Windows commands:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_exact_real_multistep_probe -v
+python -m examples.three_loop_vp05_exact_real_multistep_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json --max-steps 4 > log_vp05_exact_real_multistep_probe_4.txt 2>&1
+```
+Inspect the actual output before further expansion. The 4-step run may stop early on no matching saved lead; this is expected, not a proof failure. Guard all original protected files, and never run source-completion Kira or overwrite the pinned checkpoint as part of the pilot.
