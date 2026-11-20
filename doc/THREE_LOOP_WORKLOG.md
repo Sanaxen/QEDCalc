@@ -9099,3 +9099,36 @@ python -m unittest examples.test_three_loop_vp05_sector202_a_modular_holdout -v
 ```
 
 Examine both result logs and actual unit-test output. If either finite-field holdout fails or hits a cap, review the missing lead/source dependencies and coefficient candidates before building exact elimination. If both pass, the next safe phase is bounded/checkpointed **exact** QQ(z,d) Target A original-source replay, not a same-seed Kira restart. Even success is not full VP05 63-master closure; r8s6d2 and six other sector202-containing candidate groups remain open.
+
+
+### 2026-11-20 VP05 Target A two cross-prime original-source modular holdouts PASS; guarded exact-A 339-row batch implemented
+
+User-provided Windows logs `log_vp05_sector202_a_holdout_p1.txt` and `log_vp05_sector202_a_holdout_p2.txt` were fully read. Both independently report `A_MODULAR_HOLDOUT_SAVED_SOURCE_SPAN_PASS_NOT_EXACT_PROOF`, not a QQ(z,d) proof:
+
+| point | (prime,z,d) | original A support | rank | stored pivot cells | elimination steps | A remainder | cap |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| p1 | (1000033,19,11) | 339/339 | 339 | 7260 | 5088 | 0 | none |
+| p2 | (1000037,21,15) | 339/339 | 339 | 7260 | 5088 | 0 | none |
+
+This follows the original p0=(1000003,17,7) finite-field replay: the **same 339 original-source rows** span the proposed A-C-small4 linear relation at three evaluation points over three distinct primes, and A support is strictly a subset of the 389-row exact B source-row support. Thus the modular data support proceeding to exact A calculation; however the two extra checks are not an exact symbolic IBP identity, nor proof of C as independent master or r7s5d3/new standard boundary retention. All input and stopped Kira projects remain untouched.
+
+Implemented protected exact-source work, deliberately reusing the already existing `examples/three_loop_vp05_sector202_exact_support_checkpoint.py` rather than creating a second independent symbolic algebra engine. This old engine supports `--target A`, an explicitly separate `--checkpoint`, bounded `--rows-per-run`, exact SymPy elimination and exact *per-pivot* original-IBP replay, with atomic checkpoint writes **per completed invocation, not per individual row**. The new controller:
+- `examples/three_loop_vp05_sector202_a_exact_batch.py` (plan/audit/run)
+- `examples/test_three_loop_vp05_sector202_a_exact_batch.py` (14 mock tests added, Windows execution unconfirmed)
+- `run_vp05_sector202_a_exact_batch.bat`
+
+The controller performs the full SHA-bound prior Step93 + original source split audit, checks exact pinned original gzip/source certificate hashes, requires A=339, A-only=0, B exact archive validated, and creates only a new Target-A-dedicated `output/three_loop_integral_family_audit/vp05_sector202_A_339_exact_a339a_v1.json` checkpoint. It blocks symlinks, wrong config/source hashes, unexpected proof flags, invalid counts, orphan `.tmp` interrupted state, and never touches the previous 389-row union checkpoint, B proof, Kira DB, stopped `sec202a/206/234`, canonical registry or promotions. `plan`/`audit` are read-only. `run` requires exact acknowledgement `EXECUTE_VP05_A_339_EXACT_SOURCE_BATCH` and Windows OS, caps batches at 20, source rows at 5 per batch, per-batch wall time at 900 seconds, and stores immutable uniquely numbered logs. Explicit repeated user invocation resumes fully validated previously saved source rows; a failure or timeout stops the current batch sequence instead of silently rerunning. The underlying source engine checkpoint is atomic **per batch**; on timeout, at most one small batch is uncommitted, and a left-behind temporary file requires inspection before resume.
+
+**This completes only the controller implementation, not execution of the 339-row exact symbolic elimination and certainly not the exact Target A proof.** Completion of all 339 source pivots is only a source-basis checkpoint; a later exact Target A zero remainder and *independent original unscaled IBP replay* remain required.
+
+Windows commands to validate and run a small, reviewable initial exact-A batch:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_sector202_a_exact_batch -v
+.\run_vp05_sector202_a_exact_batch.bat plan --run-id a339a
+.\run_vp05_sector202_a_exact_batch.bat run --run-id a339a --batches 2 --rows-per-batch 5 --timeout-seconds 900 --acknowledge EXECUTE_VP05_A_339_EXACT_SOURCE_BATCH > log_vp05_sector202_a_exact_batch.txt 2>&1
+.\run_vp05_sector202_a_exact_batch.bat audit --run-id a339a > log_vp05_sector202_a_exact_audit.txt 2>&1
+```
+
+Do not run unless the new tests pass on Windows. On error or cap preserve the checkpoint and logs. No need to launch new Kira (especially the RAM-stopped `sec202a` project). Further progress on the family depends on exact A proof and independently verified retained candidates/closure across 202-containing sectors and the r8s6d2 standard boundary.
