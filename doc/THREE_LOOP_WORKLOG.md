@@ -9169,3 +9169,17 @@ Next safest continuation is another bounded 20-batch / five-row invocation from 
 ```
 
 Preserve the checkpoint and all per-batch logs. If there is a cap/time stop or missing progress, inspect it before any new invocation; do not change previous source hashes, project directories, or RAM guards. After complete 339 source rows, next stage is the independent exact target-A zero remainder and unscaled original-IBP replay.
+
+
+### 2026-11-20 VP05 sector202 Target A exact source batch 110→210/339: 20 PASS, time growth observed
+
+Windows UTF-16LE logs `log_vp05_sector202_a_exact_batch_210.txt` and `log_vp05_sector202_a_exact_audit_210.txt` were read and JSON records compared. Both agree on the same protected `a339a` state: **210/339 source rows processed**, 210 exact pivots, 0 dependent, SHA256 `bad831576574163d3d6f92e8b4b6341317b5778bfdc24840e35d2aa14002ff7c`; status remains `VP05_A_339_EXACT_SOURCE_PARTIAL_PRESERVED_NOT_PROOF` / read-only checkpoint audit. Source/certificate hashes still pinned to Step93 input originals. No Kira, no changes to Step93 proof.
+
+All 20 additional five-row batches 110→210 exited 0 without a timeout. Recorded batch elapsed times totaled **448.3 s** (~7m28s). First batch 3.8s; last batch 45.1s, the highest of these 20. Exact work is noticeably heavier at higher row counts (earlier 10→110 batches totaled 57.8s); do **not** assume linear extrapolation for the remaining 129 rows. No resource metrics are included in these summary logs, so do not infer specific peak RAM.
+
+Decision: continue the same SHA-pinned checkpoint cautiously with another capped series of 20 five-row batches, reaching at most **310/339**. Each subprocess has a 900s timeout, and the controller breaks on failure, timeout, or missing progress. Preserve all historical logs and the exact checkpoint; do not start Kira, edit source hashes or overwrite Step93. Do not claim A exact target proof even if 339 source pivots are eventually built; a separate exact remainder and original unscaled IBP replay are required.
+
+```powershell
+.\run_vp05_sector202_a_exact_batch.bat run --run-id a339a --batches 20 --rows-per-batch 5 --timeout-seconds 900 --acknowledge EXECUTE_VP05_A_339_EXACT_SOURCE_BATCH > log_vp05_sector202_a_exact_batch_310.txt 2>&1
+.\run_vp05_sector202_a_exact_batch.bat audit --run-id a339a > log_vp05_sector202_a_exact_audit_310.txt 2>&1
+```
