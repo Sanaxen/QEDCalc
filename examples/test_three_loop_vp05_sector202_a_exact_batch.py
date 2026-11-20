@@ -112,7 +112,16 @@ class ExactABatchTests(unittest.TestCase):
         self.assertEqual(args[args.index("--target")+1], "A")
         self.assertEqual(args[args.index("--checkpoint")+1], str(p))
         self.assertIn("--resume", args)
+        self.assertIn("--checkpoint-every-row", args)
         self.assertEqual(args[args.index("--rows-per-run")+1], "5")
+
+    def test_run_rolling_limits_are_bounded(self):
+        self.assertEqual(m.MAX_ROWS, 20)
+        self.assertEqual(m.MAX_TIMEOUT, 3600)
+        with self.assertRaisesRegex(ValueError, "safety"):
+            m.run("test", acknowledge=m.ACK, batches=1, rows=21, timeout=3600)
+        with self.assertRaisesRegex(ValueError, "safety"):
+            m.run("test", acknowledge=m.ACK, batches=1, rows=20, timeout=3601)
 
     def test_missing_ack_refuses_all_mutation(self):
         with self.assertRaisesRegex(ValueError, "acknowledgement"):
