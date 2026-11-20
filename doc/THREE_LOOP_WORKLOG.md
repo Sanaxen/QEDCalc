@@ -223,3 +223,20 @@ python -m examples.three_loop_vp05_exact_arithmetic_probe --checkpoint .\output\
 ```
 
 If 50 terms still show accurate full sparse symbolics and a useful speedup, next develop a bounded mixed-size source/destination benchmark (one 100+ trace paired with an eligible smaller trace) and/or direct coefficient-series benchmarking on the real saved 100+ trace, making source/destination size explicit. Never convert benchmark-only result to Target A exact proof or final 63-master closure; 43 original source rows remain and original source rowspace proof does not itself establish Target A.
+
+
+### 2026-11-20 VP05 A 50-term Windows exact field microbenchmark PASS; mixed-support 100→50 candidate added
+
+The user uploaded `log_vp05_exact_arithmetic_probe_50terms.txt`. Its actual decoded Windows run reports `EXACT_EQUIVALENCE_PASS_PROBE_ONLY`, checkpoint SHA256 `90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297`, processed **296/339**, and no saved data or production engine mutation. The genuine saved provenance 50-term case named `saved_provenance_166595340533761_139_00` had **50 source terms**, **50 destination terms**, **80 result terms**: baseline full per-coefficient SymPy `sp.cancel` subtraction **0.510826s**, exact QQ(z,d) field candidate including conversions **0.178561s**, ratio **2.8608x**, independent exact symbolic equality PASS. Three synthetic cases also passed, but trivial zero cancellation remains slower under field conversion. These are sampled arithmetic microbenchmarks, NOT observed full source-row elimination timings or final proof. Production checkpoint is untouched, 43 source rows remain.
+
+The previous read-only inventory showed with coefficient strings ≤240 characters: 11 pivots qualify at ≥50 support, but **only one** at ≥100 support. Hence the old symmetric sample selection cannot test 100-vs-100. Added a new **opt-in, SHA-pinned, bounded, read-only unequal-support** sample method `sampled_mixed_support_case` to `examples/three_loop_vp05_exact_arithmetic_probe.py`. It selects one eligible >=100 source pivot and a **different** >=50 destination pivot and performs one exact symbolic subtraction with the same independent full coefficient-equality verifier. The 100/50 arithmetic is still synthetic pairing of **genuine checkpoint coefficients**, not a reproduction of the original 41/42 expensive elimination multiplier or pivot path. Original production `subtract`, Kira, saved 296 checkpoint, Stage 93 and worklog provenance are unchanged. Added two offline unit tests (total **9** in probe test module) to verify 100/50 exact equality, immutable checkpoint, SHA validation and refusal when no distinct destination exists. Windows PASS of updated tests and 100/50 benchmark **not yet supplied**.
+
+Next bounded Windows run (after pulling and tests):
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_exact_arithmetic_probe -v
+python -m examples.three_loop_vp05_exact_arithmetic_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json --expected-sha256 90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297 --mixed-source-terms 100 --mixed-dest-terms 50 --max-chars 240 > log_vp05_exact_arithmetic_probe_mixed100x50.txt 2>&1
+```
+
+If the mixed sample cannot be selected, report limitations instead of changing the checkpoint or pretending it passed. This single case may be more expensive than prior tests, but no full exact-source/Kira job is started. Do not claim benchmark speedups automatically carry over to entire source-row proof; retain exact original-IBP replays.
