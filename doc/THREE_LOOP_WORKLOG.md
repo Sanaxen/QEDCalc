@@ -366,3 +366,25 @@ python -m unittest examples.test_three_loop_vp05_exact_real_first_pivot_probe -v
 python -m examples.three_loop_vp05_exact_real_first_pivot_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json > log_vp05_exact_real_first_pivot_probe.txt 2>&1
 ```
 User should monitor RAM/time (no internal wall-clock timeout); if the pilot rejects an unmatched original leading pivot or fails exact replay, **do not** alter source hashes or saved checkpoint to force progress. Review and diagnose first. The first real pivot is a limited but meaningful advancement over the prior synthetic replay; further actual elimination steps, exact full-source replay, independently justified Target A zero remainder, sector C and VP05 63-master closure remain open.
+
+
+### 2026-11-21 VP05 real-first-pivot pilot unittest Windows WinError 1314 — privileged symlink fixture only
+
+Windows user ran `python -m unittest examples.test_three_loop_vp05_exact_real_first_pivot_probe -v`. **Four tests ran; only `test_symlink_is_refused` errored** before guard execution. The exact traceback is `checkpoint.symlink_to(original)` -> `OSError: [WinError 1314] クライアントは要求された特権を保有していません。` (missing symbolic-link creation privilege in Windows / Developer Mode). This is **not** an IBP or QED arithmetic error. The real first-pivot probe script has not yet been demonstrated to run successfully; no first-pivot equality, original-IBP replay, or Target A proof is claimed.
+
+Changed **only the unittest fixture setup** in `examples/test_three_loop_vp05_exact_real_first_pivot_probe.py`: wrap `checkpoint.symlink_to(original)` with `try/except OSError`; use `self.skipTest` **only when `exc.winerror == 1314`**, and re-raise other OS errors. On systems able to create symlinks, the test continues and must verify the production pilot rejects a linked protected file. The real pilot's symlink guard and SHA-pinned source/checkpoint/certificate checks are **not weakened or changed**. This avoids requiring elevated PowerShell to run ordinary offline tests. The observed latest Windows suite result was 1 error, not a PASS; retest required.
+
+Windows steps from repository root:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_exact_real_first_pivot_probe -v
+```
+
+Expected in this nonprivileged setup: **4 tests, 3 OK, 1 skipped**, overall `OK (skipped=1)`; if instead any error appears, inspect output. When tests are clean, run the **read-only real first original-IBP pivot comparison**:
+
+```powershell
+python -m examples.three_loop_vp05_exact_real_first_pivot_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json > log_vp05_exact_real_first_pivot_probe.txt 2>&1
+```
+
+The protected A checkpoint remains at 296/339 (SHA256 `90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297`), original exported source & provenance certificate are unchanged. This test is read-only but has no internal wall-clock timeout; do not confuse a skipped symlink fixture with the actual integrity check on production inputs.
