@@ -290,3 +290,22 @@ python -m examples.three_loop_vp05_exact_arithmetic_probe --checkpoint .\output\
 ```
 
 Standalone script has **no internal wall-clock limit**; keep the process monitored or use a separately bounded subprocess. After this arithmetic-only benchmark, design **opt-in and isolated exact source-row pilot** with same original-source IBP replay and saved checkpoint protection, comparing to original SymPy version on an independently verified small source subset. Never introduce candidate arithmetic directly into the already saved `a339a` run without a documented equivalence and rollback protocol.
+
+
+### 2026-11-20 VP05 A exact rational-field 128×128 Windows PASS; bounded persistent-field sequence pilot introduced
+
+User uploaded real UTF-16LE `log_vp05_exact_arithmetic_probe_128terms_600.txt` and the output was decoded directly. Status `EXACT_EQUIVALENCE_PASS_PROBE_ONLY`. Genuine stored original-source provenance coefficient pairing `saved_provenance_166595340009474_139_00`: **128 source entries**, **128 destination entries**, **133 nonzero output entries**, full exact equality `exact_pass=true`. SymPy per-key `sp.cancel` baseline **5.174119s**, isolated exact fraction-field candidate including conversion **1.292855s**, observed ratio **4.0021x** for this synthetic pairing. All synthetic small controls passed exact comparison; trivial zero cancel remained slower (`0.3235x`). Checkpoint SHA256 pinned at `90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297`, saved processed **296/339**, no production engine or checkpoint mutation, no new Kira, `target_A_proven=false`.
+
+After passing 4-, 12-, 50-, mixed 100×50, 100×100, and now 128×128 arithmetic benchmarks, the next unresolved question is the **reuse of QQ(z,d) internal representation across several consecutive provenance updates**. Added independent, opt-in, read-only `examples/three_loop_vp05_exact_sequential_probe.py`. It samples `rounds+1` *distinct* SHA-pinned saved pivot source traces, bounded by coefficient size and term count, benchmarks repeated unchanged SymPy `sp.cancel` updates against a persistent field-state candidate, and performs **complete `sp.cancel` symbolic equality checks after each update**. It separately accounts for one-time conversion to the field and reports per-round coefficient calculation time and full exact comparison time, avoiding optimistic field-only timing. It never executes source-row Kira, never changes production arithmetic or saved checkpoint, and explicitly outputs `real_original_ibp_path_replayed=false`. The samples and update multipliers are synthetic, not the observed original 2347 elimination pivot path; this is **not** a proof of the original full IBP family or a production performance claim.
+
+Added 5 offline tests in `examples/test_three_loop_vp05_exact_sequential_probe.py` for two exact updates, cancellation/reintroduction, malformed multiplier rejection, saved-state SHA pin/selection/immutability, and refusal on insufficient qualifying pivot traces. **Windows tests of this new module have not yet been observed**; do not claim PASS in user's environment.
+
+Next bounded experimental run, initially **50 terms and two sequential updates**, because 600-character inventory has 18 distinct qualifying traces at >=50 entries. This should be evaluated before attempting 128 terms and >1 update, which may trigger field expression swell. On user's Windows repository:
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_exact_arithmetic_probe examples.test_three_loop_vp05_exact_sequential_probe -v
+python -m examples.three_loop_vp05_exact_sequential_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json --expected-sha256 90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297 --terms 50 --max-chars 600 --rounds 2 > log_vp05_exact_sequential_probe_50x2.txt 2>&1
+```
+
+The standalone pilot has no automatic wall-clock kill; monitor process/time/memory, and stop if abnormal. Review internal output including `one_time_field_conversion_s`, `total_baseline_update_s`, `total_field_update_plus_conversion_s`, per-round `exact_pass` and `verification_s`. Do not claim final Target A QQ(z,d) reduction proof, new-sector master C retention, or global 63-master closure based on sampled arithmetic alone. Production source remains **296/339**, 43 unprocessed source rows, until a separately run and audited exact source continuation.
