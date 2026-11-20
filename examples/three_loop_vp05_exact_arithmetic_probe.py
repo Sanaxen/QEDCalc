@@ -84,11 +84,15 @@ def sampled_cases_from_checkpoint(path, *, max_terms=6, max_chars=160,
         raise ValueError("Not a valid fully-accounted saved A exact source checkpoint")
     pivots = []
     for entry in reversed(state["pivots"]):
-        filtered = [(int(original_id), sp.sympify(value, locals={"z": Z, "d": D}))
-                    for original_id, value in entry["trace"]
-                    if len(value) <= max_chars]
-        if len(filtered) >= max_terms:
-            pivots.append((tuple(entry["lead"]), dict(filtered[:max_terms])))
+        # Filter by source character length BEFORE parsing: avoid converting
+        # thousands of unused coefficients from the large exact checkpoint.
+        entries = [(int(original_id), value)
+                   for original_id, value in entry["trace"]
+                   if len(value) <= max_chars]
+        if len(entries) >= max_terms:
+            filtered = [(key, sp.sympify(value, locals={"z": Z, "d": D}))
+                        for key, value in entries[:max_terms]]
+            pivots.append((tuple(entry["lead"]), dict(filtered)))
         if len(pivots) >= max(6, cases * 3):
             break
     if len(pivots) < 2:
@@ -102,6 +106,36 @@ def sampled_cases_from_checkpoint(path, *, max_terms=6, max_chars=160,
             dest, source, (Z + D + 1) / (Z - D + 2)))
     return selected, sha, state["processed"]
 
+
+
+def checkpoint_support_inventory(path, *, max_chars, expected_sha256=None):
+    """Read-only count of candidate source support; never parse coefficients."""
+    raw = path.read_bytes()
+    sha = hashlib.sha256(raw).hexdigest()
+    if expected_sha256 and sha != expected_sha256:
+        raise ValueError("Checkpoint SHA256 mismatch: refusing unpinned input")
+    state = json.loads(raw)
+    if (state.get("version") != 1 or
+        state.get("config", {}).get("target") != "A" or
+        state.get("status") != "EXACT_SOURCE_CHECKPOINT_NOT_TARGET_PROOF" or
+        state.get("exact_target_reduction_proven") is not False or
+        state.get("source_pivots_exact_replay_verified") is not True or
+        state.get("processed", 0) < 200 or
+        len(state.get("pivots", [])) !=
+            state.get("processed") - state.get("dependent", -1)):
+        raise ValueError("Not a valid fully-accounted saved A exact source checkpoint")
+    qualified = [
+        sum(len(value) <= max_chars for _, value in entry["trace"])
+        for entry in state["pivots"]
+    ]
+    return {"status": "READ_ONLY_SAVED_PROVENANCE_INVENTORY_NOT_PROOF",
+            "checkpoint_sha256": sha, "checkpoint_processed": state["processed"],
+            "max_chars": max_chars, "max_support": max(qualified, default=0),
+            "pivots_with_50_entries": sum(n >= 50 for n in qualified),
+            "pivots_with_100_entries": sum(n >= 100 for n in qualified),
+            "pivots_with_128_entries": sum(n >= 128 for n in qualified),
+            "checkpoint_modified": False, "production_engine_modified": False,
+            "target_A_proven": False}
 
 def basic_cases():
     return [
@@ -124,12 +158,20 @@ def main():
     parser.add_argument("--max-terms", type=int, default=6)
     parser.add_argument("--max-chars", type=int, default=160)
     parser.add_argument("--cases", type=int, default=2)
+    parser.add_argument("--inventory-only", action="store_true", help="Read-only support count, no symbolic arithmetic")
     args = parser.parse_args()
-    if not (1 <= args.cases <= 5 and 1 <= args.max_terms <= 12
-            and 16 <= args.max_chars <= 240):
+    if not (1 <= args.cases <= 5 and 1 <= args.max_terms <= 128
+            and 16 <= args.max_chars <= 600):
         parser.error("Bounded sample parameters required")
     if args.expected_sha256 and not args.checkpoint:
         parser.error("--expected-sha256 requires --checkpoint")
+    if args.inventory_only:
+        if not args.checkpoint or not args.expected_sha256:
+            parser.error("--inventory-only requires a checkpoint and expected SHA256")
+        print("VP05_EXACT_ARITHMETIC_INVENTORY " + json.dumps(
+            checkpoint_support_inventory(args.checkpoint, max_chars=args.max_chars,
+                                         expected_sha256=args.expected_sha256)), flush=True)
+        return
     selected = basic_cases()
     sha = None
     processed = None
