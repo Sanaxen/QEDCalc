@@ -113,6 +113,7 @@ class ExactABatchTests(unittest.TestCase):
         self.assertEqual(args[args.index("--checkpoint")+1], str(p))
         self.assertIn("--resume", args)
         self.assertIn("--checkpoint-every-row", args)
+        self.assertIn("--trace-source-timing", args)
         self.assertEqual(args[args.index("--rows-per-run")+1], "5")
 
     def test_run_rolling_limits_are_bounded(self):
