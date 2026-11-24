@@ -420,3 +420,18 @@ python -m examples.three_loop_vp05_exact_real_multistep_probe --checkpoint .\out
 ```
 
 The target-level exact identity, master C retention, and VP05 63-master closure remain open. Do not mutate the 296-source saved checkpoint based on this pilot.
+
+
+### 2026-11-25 VP05 A actual IBP eight-step parity PASS; expand next read-only comparison to 64 steps
+
+Actual attached Windows `log_vp05_exact_real_multistep_probe_8.txt` decoded and JSON inspected. Status `REAL_ORIGINAL_IBP_MULTISTEP_EXACT_PASS_NOT_TARGET_PROOF`, real original source ID2348, completed 8/8, next lead [45081051267072,137]. All 8 strict symbolic row/trace comparisons and literal original IBP replay verified. Output columns per step 4,8,7,10,8,9,31,33; trace support 2,5,7,10,10,11,12,14. Baseline updates 0.023314s, field updates with conversion and back-conversion 0.010831s, ratio 2.152525x. Per-step exact equality and original-source replay verification sum 0.114701s, excluded from arithmetic timing; additionally consumed saved-pivot replay and input parsing are not included. This is real pivot prefix, not full source row or full-run speed evidence. Original A 296/339 checkpoint unchanged with SHA256 90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297; no production engine modification, Target A proof, or Kira.
+
+Instead of more tiny increments, extended isolated real multistep probe to **64 maximum steps** (same next source row only), with flushed `VP05_REAL_PIVOT_BEGIN` and `VP05_REAL_PIVOT_VERIFIED` diagnostics so interrupted runs retain verified prefix evidence in stdout. No checkpoints written or resume within row; restarting recomputes prefix. Corrected terminal classification to report no_saved_pivot even when actual path ends exactly at cap; updated test and added extended-cap path-end test. Commits 381f01a and 1b2cf2a. Updated Windows tests not yet executed/confirmed. No internal wall-clock or memory limit; use external process timeout and monitor memory. Avoid concurrent production runs. The previous source ID2347 needed 52 steps, but ID2348 may differ; 64 is a diagnostic cap, not an assumed actual length. If row reaches new leading pivot, this is unnormalized row result only, not durable source completion. 
+
+Windows:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_exact_real_multistep_probe -v
+python -m examples.three_loop_vp05_exact_real_multistep_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json --max-steps 64 > log_vp05_exact_real_multistep_probe_64.txt 2>&1
+```
+Do not claim source position advanced or proof until separately normalized, replayed, and safely saved/audited. Next assess actual heavy path, then design opt-in isolated source continuation with per-row durable checkpoints rather than repetitive tiny synthetic runs.
