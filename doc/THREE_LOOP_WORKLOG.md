@@ -435,3 +435,17 @@ python -m unittest examples.test_three_loop_vp05_exact_real_multistep_probe -v
 python -m examples.three_loop_vp05_exact_real_multistep_probe --checkpoint .\output\three_loop_integral_family_audit\vp05_sector202_A_339_exact_a339a_v1.json --max-steps 64 > log_vp05_exact_real_multistep_probe_64.txt 2>&1
 ```
 Do not claim source position advanced or proof until separately normalized, replayed, and safely saved/audited. Next assess actual heavy path, then design opt-in isolated source continuation with per-row durable checkpoints rather than repetitive tiny synthetic runs.
+
+
+### 2026-11-25 VP05 A real 64-step exact parity PASS; isolated resumable field continuation
+
+User supplied log_vp05_exact_real_multistep_probe_64.txt. Parsed complete attached JSON: ID2348 64/64 strict row, trace and literal original IBP replay PASS; stopped at cap, next lead [166578161057792,139]. Peak 99 integral columns / 57 trace entries. SymPy update 3.188116s, persistent field including conversion/back conversion 0.573420s, ratio 5.559827x; independent comparison/replay 13.048857s excluded, as are saved-pivot verification and input load. Not full row completion or overall speedup. Protected A seed remains 296/339 SHA 90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297; 43 rows remaining.
+
+Implemented opt-in --experimental-field in exact support checkpoint engine, restricted to dedicated A fieldpilot filename in BASE, resume, per-row checkpoint, incompatible factoring/diagnostic modes refused. Default SymPy unchanged. Persistent field state holds row and provenance through actual pivot updates, returns SymPy views for existing expression caps, and requires eliminated lead to disappear. Existing normalization, independent original-IBP verify, resume replay and atomic per-row save remain unchanged. Combined row+trace timing recorded under row_subtract_s (source_subtract_s zero in field mode). Added examples/three_loop_vp05_a_field_pilot.py and run_vp05_a_field_pilot.bat: validates original source/certificate through existing preflight, pins a339a seed, exclusively copies it into fieldpilot scratch checkpoint, resumes scratch only, limits subprocess to 12h, checks durable progress and protected seed afterwards. Do not run concurrently; no cross-process lock or RAM guard is implemented, and abrupt termination during temp-file write may require manual review of .tmp rather than automatic deletion. Scratch output is not formally promoted. Added offline persistent two-update parity test; updated Windows tests not yet run here. Implementation commits 09703bb, d342867, accfe3d8, e42913a.
+
+After pull, run:
+```powershell
+python -m unittest examples.test_three_loop_vp05_a_field_pilot examples.test_three_loop_vp05_exact_real_multistep_probe -v
+.\run_vp05_a_field_pilot.bat --rows 43 --timeout-seconds 43200
+```
+Monitor RAM/swap and stop if needed. On ordinary timeout or interruption, re-run same batch to resume from verified durable row, unless .tmp or audit failure requires review. Existing checkpoint validation replays all saved pivots at startup. The scratch result must be independently audited before any promotion. Even 339/339 does not prove Target A reduction, C master retention or VP05 closure.
