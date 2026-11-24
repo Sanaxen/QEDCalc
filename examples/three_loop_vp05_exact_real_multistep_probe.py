@@ -19,9 +19,9 @@ from examples import three_loop_vp05_exact_real_first_pivot_probe as first
 from examples import three_loop_vp05_sector202_exact_support_checkpoint as engine
 
 
-def advance_exact_path(saved, rows, ids, *, max_steps=4):
-    if not 1 <= max_steps <= 8:
-        raise ValueError("Only 1..8 exact original-IBP pivot steps permitted")
+def advance_exact_path(saved, rows, ids, *, max_steps=4, progress=False):
+    if not 1 <= max_steps <= 64:
+        raise ValueError("Only 1..64 exact original-IBP pivot steps permitted")
     rid = ids[saved["processed"]]
     z, d = ar.Z, ar.D
     initial = {}
@@ -55,6 +55,8 @@ def advance_exact_path(saved, rows, ids, *, max_steps=4):
             break
         if lead in used:
             raise AssertionError("Exact pivot repeated without eliminating lead")
+        if progress:
+            print("VP05_REAL_PIVOT_BEGIN " + json.dumps({"step": step, "pivot": list(lead)}), flush=True)
         entry = pivot_lookup[lead]
         brow = engine.decode_terms(entry["row"], z, d)
         btrace = {int(k): engine.expr(v, z, d) for k, v in entry["trace"]}
@@ -116,6 +118,8 @@ def advance_exact_path(saved, rows, ids, *, max_steps=4):
             "original_ibp_replay_verified": True,
             "verification_s": round(verification_s, 6),
         })
+        if progress:
+            print("VP05_REAL_PIVOT_VERIFIED " + json.dumps(rounds[-1]), flush=True)
         reference_row, reference_trace = updated_row, updated_trace
         used.append(lead)
     return {
@@ -126,7 +130,7 @@ def advance_exact_path(saved, rows, ids, *, max_steps=4):
         "next_lead": list(min(reference_row)) if reference_row else None,
         "stopped_because": (
             "zero_remainder" if not reference_row else
-            "no_saved_pivot" if len(rounds) < max_steps else
+            "no_saved_pivot" if min(reference_row) not in pivot_lookup else
             "max_steps"
         ),
         "initial_field_conversion_s": round(init_conversion_s, 6),
@@ -153,11 +157,11 @@ def main():
     ap.add_argument("--certificate", type=Path, default=engine.CERT)
     ap.add_argument("--max-steps", type=int, default=4)
     args = ap.parse_args()
-    if not 1 <= args.max_steps <= 8:
-        ap.error("--max-steps must be 1..8")
+    if not 1 <= args.max_steps <= 64:
+        ap.error("--max-steps must be 1..64")
     saved, rows, ids = first.validated_inputs(
         args.checkpoint, args.source, args.certificate)
-    result = advance_exact_path(saved, rows, ids, max_steps=args.max_steps)
+    result = advance_exact_path(saved, rows, ids, max_steps=args.max_steps, progress=True)
     if first.sha(args.checkpoint.read_bytes()) != first.EXPECTED_A_CHECKPOINT_SHA256:
         raise RuntimeError("Immutable checkpoint changed during the pilot")
     result["checkpoint_sha256"] = first.EXPECTED_A_CHECKPOINT_SHA256
