@@ -77,6 +77,20 @@ def save_exact_source_checkpoint(args, config, processed, ids, dependent, basis)
   "rank":len(basis),"dependent":dependent,"complete_source_pass":processed==len(ids),
   "checkpoint":str(args.checkpoint),"exact_target_reduction_proven":False},ensure_ascii=True),flush=True)
 
+def field_subtract_pair(cur,trace,brow,btrace,lead,field_state,field):
+ """Persistent exact field arithmetic; return SymPy views for existing caps/replay."""
+ if field_state is None:
+  field_state=({k:field.from_expr(v) for k,v in cur.items()},
+               {k:field.from_expr(v) for k,v in trace.items()})
+ fc,ft=field_state
+ factor=fc[lead]
+ for dest,source in ((fc,brow),(ft,btrace)):
+  for k,v in source.items():
+   value=dest.get(k,field.zero)-factor*field.from_expr(v)
+   if value==field.zero:dest.pop(k,None)
+   else:dest[k]=value
+ return {k:v.as_expr() for k,v in fc.items()}, {k:v.as_expr() for k,v in ft.items()},field_state
+
 def main():
  ap=argparse.ArgumentParser()
  ap.add_argument("--input",type=Path,default=SOURCE)
@@ -93,6 +107,7 @@ def main():
  ap.add_argument("--max-intermediate-expression-chars",type=int,default=None,help="Optional larger expression cap only during elimination; checkpoint pivots remain under --max-expression-chars")
  ap.add_argument("--target",choices=["union","A","B"],default="union")
  ap.add_argument("--resume",action="store_true")
+ ap.add_argument("--experimental-field",action="store_true",help="Opt-in persistent QQ(z,d) arithmetic for isolated A field pilot only")
  ap.add_argument("--factor-elimination",action="store_true",help="Conditionally factor row and provenance expressions during elimination")
  ap.add_argument("--factor-trigger-chars",type=int,default=900)
  ap.add_argument("--factor-normalization",action="store_true",help="Try shorter exact factored forms after new pivot normalization; does not alter existing checkpoint")
@@ -108,6 +123,11 @@ def main():
  ap.add_argument("--trace-fill",action="store_true",help="Record exact elimination fill-in for next row in read-only diagnostic mode")
  ap.add_argument("--fill-output",type=Path,default=BASE/"vp05_sector202_exact_support_fill_trace.json")
  args=ap.parse_args()
+ if args.experimental_field:
+  if (args.target!="A" or not args.resume or not args.checkpoint_every_row or args.fork_from or args.diagnose_next or args.factor_elimination or args.factor_normalization or args.compact_normalization or args.checkpoint.name!="vp05_sector202_A_339_exact_fieldpilot_v1.json" or args.checkpoint.resolve().parent!=BASE.resolve()):
+   ap.error("Experimental field requires isolated A fieldpilot resume with per-row saves and no diagnostic/factoring modes")
+  from sympy.polys.fields import field as make_field
+  exact_field,_,_=make_field("z,d",sp.QQ)
  if not 1<=args.rows_per_run<=100:ap.error("--rows-per-run must be 1..100")
  if args.fork_from and (not args.resume or args.checkpoint.resolve()==args.fork_from.resolve()):ap.error("--fork-from requires --resume and a distinct --checkpoint destination")
  if args.trace_fill and (not args.diagnose_next or not args.resume):ap.error("--trace-fill requires --resume --diagnose-next")
@@ -515,6 +535,7 @@ def main():
    if val:cur[key]=val
    else:cur.pop(key,None)
   trace={rid:sp.S.One}
+  field_state=None
   check(cur,trace,"initial",rid)
   while cur:
    lead=min(cur)
@@ -529,12 +550,17 @@ def main():
    profile_step=args.trace_source_timing and elimination_count>=30
    if profile_step:
     profile_t0=time.monotonic()
-   subtract(cur,brow,factor)
-   if profile_step:
-    profile_t1=time.monotonic()
-   subtract(trace,btrace,factor)
-   if profile_step:
-    profile_t2=time.monotonic()
+   if args.experimental_field:
+    cur,trace,field_state=field_subtract_pair(cur,trace,brow,btrace,lead,field_state,exact_field)
+    if lead in cur:raise AssertionError("Field elimination failed to remove lead")
+    if profile_step:profile_t1=profile_t2=time.monotonic()
+   else:
+    subtract(cur,brow,factor)
+    if profile_step:
+     profile_t1=time.monotonic()
+    subtract(trace,btrace,factor)
+    if profile_step:
+     profile_t2=time.monotonic()
    elimination_count+=1
    if args.trace_source_timing and elimination_count%10==0:
     now=time.monotonic()
@@ -560,6 +586,7 @@ def main():
    if profile_step:
     print("VP05_SECTOR202_EXACT_STEP_PROFILE "+json.dumps({
      "original_id":rid,"step":elimination_count,
+     "arithmetic_backend":"QQ(z,d)_combined_row_trace" if args.experimental_field else "sympy_cancel",
      "row_subtract_s":round(profile_t1-profile_t0,3),
      "source_subtract_s":round(profile_t2-profile_t1,3),
      "post_subtract_checks_s":round(time.monotonic()-profile_t2,3),
