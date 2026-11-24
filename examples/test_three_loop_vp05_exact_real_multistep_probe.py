@@ -38,7 +38,7 @@ class RealMultistepProbeTests(unittest.TestCase):
         self.assertEqual(result["completed_steps"], 2)
         self.assertEqual([r["pivot"] for r in result["steps"]], [[0], [1]])
         self.assertEqual(result["next_lead"], [2])
-        self.assertEqual(result["stopped_because"], "max_steps")
+        self.assertEqual(result["stopped_because"], "no_saved_pivot")
         for step in result["steps"]:
             self.assertTrue(step["strict_exact_row_equal"])
             self.assertTrue(step["strict_exact_trace_equal"])
@@ -57,10 +57,16 @@ class RealMultistepProbeTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "provenance mismatch"):
             pilot.advance_exact_path(saved, rows, ids, max_steps=2)
 
+    def test_extended_limit_stops_at_actual_path_end(self):
+        saved, rows, ids = self.fixture()
+        result = pilot.advance_exact_path(saved, rows, ids, max_steps=64)
+        self.assertEqual(result["completed_steps"], 2)
+        self.assertEqual(result["stopped_because"], "no_saved_pivot")
+
     def test_step_limit_is_enforced(self):
         saved, rows, ids = self.fixture()
-        with self.assertRaisesRegex(ValueError, "1..8"):
-            pilot.advance_exact_path(saved, rows, ids, max_steps=9)
+        with self.assertRaisesRegex(ValueError, "1..64"):
+            pilot.advance_exact_path(saved, rows, ids, max_steps=65)
 
 
 if __name__ == "__main__":
