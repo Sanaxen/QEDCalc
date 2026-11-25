@@ -643,3 +643,16 @@ python -m unittest examples.test_three_loop_vp05_adaptive_ibp -v
 .\run_vp05_adaptive_ibp.bat --smax 6 --hours 12 2>&1 | Tee-Object -FilePath log_vp05_adaptive_ibp.txt
 ```
 Expected VP05_ADAPTIVE_IBP_NOT_CLOSURE; verify migration log and actual resource/term behavior.
+
+
+### 2026-11-25 adaptive03 actual results and packed04 continuation
+
+Actual log_vp05_adaptive_ibp.txt: all six s2 and three partial s3 migrations succeeded. All six s3 jobs complete, ranks 15115/15908/15908 for 69/196/200 at both points. s4 point0 stops at 12M term cap: sector69 cursor64998 rank40049 terms11996933 elapsed6158.05s; 196 cursor32813 rank25011 terms11998825 elapsed3276.81s; 200 cursor51110 rank37145 terms11999831 elapsed4132.30s. Total148921 completed rows, 66.86% of three point0 shells; point1 not begun. Max sampled Windows host RAM used13.595GiB. No exact rank or parent closure.
+
+Packed04 implementation f6437b9, launcher a33b7dc, tests 4b87120. Preserve adaptive03 and all earlier outputs. Same field points, row order, static integral ordering, normalization and reduction. Original packed complexity keys exceed 64 bits; use interned uint32 IDs (full original keys retained in mapping) and uint32 coefficients, 8 bytes per fixed pivot term excluding metadata. Working row remains dict of original keys. Read old streamed JSON one row at a time, check SHA/count/observed s4 cursor/rank/terms, migrate to separate packed04 binary checkpoint with SHA256, little-endian arrays, atomic replacement. 60M term cap (not dynamically growing), 20k working fill cap unchanged, existing available RAM 8GiB guard, extra checks every256 elimination steps, 2GiB disk reserve plus checkpoint estimate. Save every5000 rows or 300s at row boundaries and handled stops. 12h budget sampled, checkpoint IO can exceed deadline. Start s4, preserve completed s2/s3 rather than duplicate; proceed to s6 per successful sector. No full source replay, symmetry/LI or cumulative rank closure. New tests compare old/new elimination on deterministic synthetic rows and binary roundtrip/corruption; tests not run in assistant environment, Windows performance unmeasured. Compression may trade CPU time for RAM.
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_packed_ibp -v
+.\run_vp05_packed_ibp.bat --smax 6 --hours 12 2>&1 | Tee-Object -FilePath log_vp05_packed_ibp.txt
+```
+Expected VP05_PACKED_IBP_NOT_CLOSURE. Original checkpoints untouched; stale locks/temp require review.
