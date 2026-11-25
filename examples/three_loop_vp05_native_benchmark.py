@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import struct
@@ -80,8 +81,10 @@ def compare(exe,work,store,rows,label):
             if proc.returncode:raise RuntimeError("Native exit "+str(proc.returncode))
         except BaseException:
             # Terminate the specific Linux executable, never the whole WSL VM.
-            subprocess.run(["wsl","pkill","-f","^"+cmd[1]+" "],timeout=15,check=False)
-            proc.kill()
+            try:
+                subprocess.run(["wsl","pkill","-f","^"+re.escape(cmd[1])+" "],timeout=15,check=False)
+            finally:
+                if proc.poll() is None:proc.kill()
             raise
     native_total=time.monotonic()-t
     with out.open("rb") as f:
