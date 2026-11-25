@@ -487,3 +487,16 @@ git pull --ff-only origin feature/master-basis-initiate-only
 .\run_vp05_a_confirmed_archive.bat 2>&1 | Tee-Object -FilePath log_vp05_a_confirmed_archive.txt
 ```
 Expected VP05_A_CONFIRMED_ARCHIVE with status VP05_A_CONFIRMED_PROOF_ARCHIVE and proof/manifest SHA. Subsequent work: reconcile archived A and B evidence, establish C retention and sector202 closure, then complete standard Stage-2 and registry audit. Neither C retention nor VP05 63-master closure is established by this archive.
+
+
+### 2026-11-25 VP05 A archive confirmed; C restricted-system retention diagnostic
+
+User supplied log_vp05_a_confirmed_archive.txt: VP05_A_CONFIRMED_PROOF_ARCHIVE, proof SHA256 9393696362fb2e22c011e734fe92393d845ac0055d2f6a9a1114c8e21b308858, manifest SHA256 c4b285f0066160f0bf443ad2278b6e9dfe183fd033aa78bcbde078ddaf43529e, 339 original multipliers, registry_promotion_completed=false. A archived and independently replayed, B Step93 formal archive unchanged. No user backup/move/delete action required.
+
+Implemented examples/three_loop_vp05_c_retention_probe.py (8b7c65c), regression tests (fb9114e) and run_vp05_c_retention_probe.bat (6c507ee). Pins confirmed A archive, replays existing A audit, checks B formal post-audit, uses original restricted project's own codec, all 2678 saved SYSTEM equations, three finite-field points, and rank increments for C alone and modulo opaque key (4,73). Records input SYSTEM hashes before/after; these are runtime inventory hashes, not previously pinned source equivalence. No Kira or writes. Finite-field rank increments alone do not prove generic rank upper bound or C independence over QQ(z,d). Need exact rank upper-bound/dependency certificate or exact annihilator witness, and independently address new r7s5d3 scope and whole-family closure. A/B identities are insufficient for this. M remains opaque, not a physically identified master. Tests added but not run here; Windows data unavailable. Run:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_c_retention_probe -v
+.\run_vp05_c_retention_probe.bat 2>&1 | Tee-Object -FilePath log_vp05_c_retention_probe.txt
+```
+Expected VP05_C_RESTRICTED_RANK_DIAGNOSTIC_NOT_PROOF. No internal timeout or RAM guard; sparse fill cap 20000. Review all three results before choosing exact witness method; no canonical registry update.
