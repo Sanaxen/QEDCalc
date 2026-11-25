@@ -68,16 +68,30 @@ def compare(exe,work,store,rows,label):
         expected.append((v or {},len(store.piv),store.terms))
     py_s=time.monotonic()-t
     t=time.monotonic()
-    subprocess.run(["wsl",wslpath(exe),wslpath(inp),wslpath(out)],check=True,timeout=1560)
+    cmd=["wsl",wslpath(exe),wslpath(inp),wslpath(out)]
+    peak_host=0
+    with subprocess.Popen(cmd) as proc:
+        try:
+            while proc.poll() is None:
+                total,available=b.a.memory()
+                peak_host=max(peak_host,(total-available)/b.a.GIB)
+                if time.monotonic()-t>1560:raise TimeoutError("Native process budget")
+                time.sleep(1)
+            if proc.returncode:raise RuntimeError("Native exit "+str(proc.returncode))
+        except BaseException:
+            # Terminate the specific Linux executable, never the whole WSL VM.
+            subprocess.run(["wsl","pkill","-f","^"+cmd[1]+" "],timeout=15,check=False)
+            proc.kill()
+            raise
     native_total=time.monotonic()-t
     with out.open("rb") as f:
         if struct.unpack("<II",exact(f,8))!=(MAGIC,len(rows)):raise RuntimeError("Native output header")
         for (index,_),e in zip(rows,expected):
             v=read_row(f);rank,terms=struct.unpack("<IQ",exact(f,12))
             if (v,rank,terms)!=e:raise RuntimeError("Native mismatch at source index "+str(index))
-        ns,=struct.unpack("<Q",exact(f,8))
+        ns,ram,swap=struct.unpack("<QQQ",exact(f,24))
         if f.read(1):raise RuntimeError("Trailing native result")
-    print("VP05_NATIVE_COMPARE "+json.dumps({"label":label,"rows":len(rows),"all_rows_equal":True,"rank":len(store.piv),"terms":store.terms,"python_reduce_s":py_s,"native_reduce_and_output_s":ns/1e9,"native_process_s":native_total,"export_s":export_s}),flush=True)
+    print("VP05_NATIVE_COMPARE "+json.dumps({"label":label,"rows":len(rows),"all_rows_equal":True,"rank":len(store.piv),"terms":store.terms,"python_reduce_s":py_s,"native_reduce_and_output_s":ns/1e9,"native_process_s":native_total,"export_s":export_s,"peak_wsl_ram_gib":ram/1048576,"peak_wsl_swap_gib":swap/1048576,"peak_windows_ram_gib":peak_host}),flush=True)
 
 def synthetic(exe,work):
     # Raw exponents exercise the actual packed key codec, including >64-bit keys.
