@@ -464,3 +464,14 @@ python -m unittest examples.test_three_loop_vp05_a_fieldpilot_target_proof -v
 .\run_vp05_a_fieldpilot_target_proof.bat 2>&1 | Tee-Object -FilePath log_vp05_a_fieldpilot_target_proof.txt
 ```
 Expected success tag VP05_A_TARGET_EXACT_PROOF, status VP05_A_EXACT_TARGET_PROOF_CANDIDATE, remainder_terms=0, original_ibp_replay_verified=true. Candidate output vp05_sector202_target_a_fieldpilot_exact_proof.json. On error preserve logs and all existing files; no forced promotion. Target C retention and full 63-master closure remain open.
+
+
+### 2026-11-25 VP05 Target A exact zero remainder and original-IBP replay PASS; saved proof audit introduced
+
+Windows log_vp05_a_fieldpilot_target_proof.txt decoded from uploaded UTF-16 file. VP05_A_EXACT_TARGET_PROOF_CANDIDATE: 70 actual target elimination steps, zero exact remainder, 339 nonzero original-source multipliers, original_ibp_replay_verified=true. Reduction 111.2398752s; independent SymPy replay 9.5281364s. Proof file vp05_sector202_target_a_fieldpilot_exact_proof.json SHA256 9393696362fb2e22c011e734fe92393d845ac0055d2f6a9a1114c8e21b308858. Completed checkpoint pinned SHA 945547ba7e166d41932041d2ca34917c7dacf883b20765e7551d013a863ff755. This establishes the reported exact Target A identity against exported original IBP equations; the serialized file itself has not yet been independently reread and audited. Formal promotion remains false; B unchanged, C retention and VP05 63-master closure remain open.
+
+Added examples/three_loop_vp05_a_saved_proof_audit.py (93dce6b) and run_vp05_a_saved_proof_audit.bat (ca6cff2). Read-only: pins proof/checkpoint/source/certificate SHA, reconstructs target terms from existing definitions/formulas and codec, validates serialized target terms and all 339 distinct nonzero original multipliers against A support, performs independent original SymPy replay from disk, rechecks hashes. No elimination rerun or Kira. Not yet executed in Windows; no formal promotion. Run after pull:
+```powershell
+.\run_vp05_a_saved_proof_audit.bat 2>&1 | Tee-Object -FilePath log_vp05_a_saved_proof_audit.txt
+```
+Expected VP05_A_SAVED_PROOF_READ_ONLY_AUDIT_PASS. Actual proof file not available to assistant, only run log; local audit required before promotion. Preserve original files.
