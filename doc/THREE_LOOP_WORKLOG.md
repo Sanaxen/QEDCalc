@@ -543,3 +543,15 @@ git pull --ff-only origin feature/master-basis-initiate-only
 .\run_vp05_abc_stage2_scope_inventory.bat 2>&1 | Tee-Object -FilePath log_vp05_abc_stage2_scope_inventory.txt
 ```
 Expected VP05_ABC_STAGE2_SCOPE_INVENTORY_NOT_CLOSURE. This is an evidence inventory, not another A/B/C proof computation. Note existing non202 batch evidence may live outside standard gap review filenames; inspect separately if missing. No automatic timeout or Kira.
+
+
+### 2026-11-25 VP05 ABC inventory received; reconcile isolated sector evidence and review candidate independence
+
+Actual log_vp05_abc_stage2_scope_inventory.txt: A/B/C are all present in both 63-candidate manifest and closure targets. 26 candidate sectors, 3 in sector202. Standard r9s5d2 stable 63 and sector-local 26-sector PASS; standard r8s6d2 and r8s5d3 both missing verified master lists, local standard aggregate audits absent, promotion_ready absent. Do not rerun r9s5d2. Crucial: restricted A/B exact relations use C and opaque M=(4,73); cannot automatically delete A/B or claim 61 or 63 independent physical masters without mapping M and confirming the source relations apply to the physical family. Restricted C independence modulo M does not establish independence modulo full candidate basis.
+
+Added examples/three_loop_vp05_boundary_evidence_reconcile.py (ffcae8f) and launcher (b00d48b). Reuses verified first01, medium01, next01 and no202a isolated runs, merges their r8s5d3 local retention statuses with existing standard sector inventories, reports missing local evidence separately for two outstanding seeds. No Kira, no file writes, no closure pass. Raw codec decode of opaque weight4 is deliberately only a trial, not a physical identification. Next use actual remaining sector list and resolve M via authoritative source ID mapping/physical relation before choosing candidate revision and bounded new runs. Tests not run, local outputs unavailable.
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+.\run_vp05_boundary_evidence_reconcile.bat 2>&1 | Tee-Object -FilePath log_vp05_boundary_evidence_reconcile.txt
+```
+Expected VP05_BOUNDARY_EVIDENCE_RECONCILED_NOT_CLOSURE.
