@@ -500,3 +500,16 @@ python -m unittest examples.test_three_loop_vp05_c_retention_probe -v
 .\run_vp05_c_retention_probe.bat 2>&1 | Tee-Object -FilePath log_vp05_c_retention_probe.txt
 ```
 Expected VP05_C_RESTRICTED_RANK_DIAGNOSTIC_NOT_PROOF. No internal timeout or RAM guard; sparse fill cap 20000. Review all three results before choosing exact witness method; no canonical registry update.
+
+
+### 2026-11-25 VP05 C full-row-rank diagnostic PASS; deterministic restricted independence certificate
+
+User uploaded log_vp05_c_retention_probe.txt. Three regular-looking finite-field points (1000003,17,7), (1000033,19,11), (1000037,21,15), each 2678 SYSTEM rows, 2954 specialized columns, rank2678, C increment true, opaque M increment true, C increment modulo M true. Times 3.9405953, 3.9804316, 3.9369393 seconds. Fourteen SYSTEM files hashed in log. No Kira or writes. Unlike a general rank-increment diagnostic, the augmented matrix here has full row rank at specialization. A nonzero 2680-row minor at a verified regular specialization proves generic full row rank over QQ(z,d), with upper bound supplied by the number of rows, not probabilistic reconstruction. Thus restricted C/M independence can be certified without giant symbolic elimination. Still not a proof of independence modulo the entire 63 candidate basis or extended seed IBPs; opaque M identification and boundary equivalence remain open.
+
+Added examples/three_loop_vp05_c_exact_rank_certificate.py (f6d52e7), tests (a7c5cdb) and launcher (3040013). Pins all fourteen original SYSTEM hashes from actual log, confirms C codec, independently evaluates literal coefficients as exact rational functions via QQ(z,d) numerator/denominator polynomial specialization, checks p-adic denominator regularity and cross-checks prior AST modular evaluator. Uses discovery-ordered pivot columns and pivot products to certify a nonzero augmented square minor, saves column order, residues, determinant, prime/point, source hashes, scope-limited exact ranks. No Kira or mutation of existing outputs; exclusive new certificate JSON. Windows tests and certificate run not observed yet. No timeout/RAM guard, sparse fill cap 20000. Output may not be overwritten. Run:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_c_exact_rank_certificate -v
+.\run_vp05_c_exact_rank_certificate.bat 2>&1 | Tee-Object -FilePath log_vp05_c_exact_rank_certificate.txt
+```
+Expected VP05_C_RESTRICTED_EXACT_INDEPENDENCE_CERTIFICATE with nonzero determinant_mod_p and augmented_rank=2680. Independently audit saved certificate before using it as restricted evidence. No family promotion.
