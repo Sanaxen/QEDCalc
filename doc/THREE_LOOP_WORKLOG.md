@@ -630,3 +630,16 @@ python -m unittest examples.test_three_loop_vp05_compact_ibp -v
 .\run_vp05_compact_ibp.bat --smax 6 --hours 12 2>&1 | Tee-Object -FilePath log_vp05_compact_ibp.txt
 ```
 Expected VP05_COMPACT_IBP_NOT_CLOSURE. Review actual rank and fill before further expansion.
+
+
+### 2026-11-25 VP05 compact02 measured results and adaptive03 continuation
+
+Actual log_vp05_compact_ibp.txt: s2 six point jobs complete, both points ranks 4363/4553/4553 for sectors69/196/200 respectively. Point0 stored terms 177515/371514/179835; vs old completed 293491/368506 for69/200, reductions39.5%/51.2%, sector196 old incomplete. s3 point0 partial cursor/rank/terms: 69 21334/13752/1499224; 196 11093/8646/1499479; 200 17952/13222/1499810. All stopped by stored term cap, total50379 completed rows preserved, max sampled host used RAM12.084465GiB, not process-only RSS. No measured swap from this run. s3 point1 not begun. No closure.
+
+Adaptive03 engine 42481bc, launcher 6fcfef6, tests fb01c19. Separate directory, original compact02 read-only, same kernel/point/row order/pivot order. Legacy checksum and structure validated and s2/s3 actual observed cursor/rank/terms checked; migration to streaming per-pivot line checkpoint with checksum. Initial cap5M, growth1M to max12M conditional on >=10GiB available RAM and heuristic 256bytes/term allowance above 8GiB reserve. Retain host available8GiB guard; sampled/heuristic, not hard process memory cap. Fill cap remains20k. Save every5000 rows and handled stop; checkpoint serialization avoids whole JSON copies. Legacy load still reads old JSON whole once. Atomic replacement of adaptive checkpoint only; stale temporary/lock requires review. No full mathematical source replay, no cumulative-shell reduction/closure. Added tests not executed in assistant environment; Windows runtime unverified.
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_adaptive_ibp -v
+.\run_vp05_adaptive_ibp.bat --smax 6 --hours 12 2>&1 | Tee-Object -FilePath log_vp05_adaptive_ibp.txt
+```
+Expected VP05_ADAPTIVE_IBP_NOT_CLOSURE; verify migration log and actual resource/term behavior.
