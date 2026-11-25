@@ -606,3 +606,14 @@ python -m unittest examples.test_three_loop_vp05_subsector_pilot -v
 .\run_vp05_subsector_pilot.bat run --hours 12 2>&1 | Tee-Object -FilePath log_vp05_subsector_pilot.txt
 ```
 Expected VP05_SUBSECTOR_PILOT_NOT_CLOSURE; inspect actual per-job state, setting blocker, and saved equation/master inventory. Audit mode available without Kira.
+
+
+### 2026-11-25 VP05 isolated plain generation failed; documented truncate_sp pilot
+
+Actual log_vp05_subsector_pilot.txt: plain sector69 565.8s peak22.01GiB, sector196 655.9s peak22.08GiB, sector200 645.9s peak22.11GiB, all RAM stops Kira -15, swap0, no SYSTEM/master files. Total1867.6s. All three trunc2 skipped because old scalar-setting assumption failed, not because truncated Kira failed. Kira 3 paper arXiv:2505.20197 documents truncate_sp list entries with topologies and integer l and discourages recursive mandatory selection with truncation. Use documented syntax, not assumed historical scalar. Added examples/three_loop_vp05_subsector_truncate_batch.py (8156e2b), launcher dcedbdc, tests d47c5ff. New isolated projects, explicit ten scalar/dot targets per sector, r5s6d2 seed, l=2,0,-2 in sequence, weaker truncation only after successful previous run; preserve/skip guard-stopped, unexpected stop fails closed. No numerator target coverage, no parent equivalence or closure, no guarantee of SYSTEM export. Same monitor thresholds and scheduling limits. Windows tests not executed here. Original plain projects preserved. Run:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_subsector_truncate_batch -v
+.\run_vp05_subsector_truncate_batch.bat run --hours 12 2>&1 | Tee-Object -FilePath log_vp05_subsector_truncate_batch.txt
+```
+Expected VP05_SUBSECTOR_TRUNCATE_DIAGNOSTIC_NOT_CLOSURE. Inspect actual results before extending targets.
