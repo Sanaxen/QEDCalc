@@ -531,3 +531,15 @@ python -m unittest examples.test_three_loop_vp05_c_saved_rank_audit -v
 .\run_vp05_c_saved_rank_audit.bat 2>&1 | Tee-Object -FilePath log_vp05_c_saved_rank_audit.txt
 ```
 Expected VP05_C_SAVED_EXACT_RANK_CERTIFICATE_AUDIT_PASS. Next reconcile A/B/C evidence against newer sector202 boundary scope before claiming closure; do not rerun large Kira without specific evidence gap.
+
+
+### 2026-11-25 VP05 C saved exact rank audit PASS reported; ABC Stage-2 integration inventory
+
+User reports VP05_C_SAVED_EXACT_RANK_CERTIFICATE_AUDIT_PASS. The status is emitted only after pinned saved certificate, all 2680 pivot residues, determinant residue 937916 and all 21836 original terms have been verified. Full audit JSON not supplied, so record user-reported PASS, not assistant independently executed audit. A and B confirmed archives and C restricted certificate are now available. No additional C calculation requested.
+
+Added examples/three_loop_vp05_abc_stage2_scope_inventory.py (aaf213b) and launcher (6283ca9). Read-only inventory: pin A archive manifest/proof and C certificate hashes, reuse existing B formal archive post-audit and Stage-2 gap review, report candidate/closure coverage for A/B/C, existing standard and sector-local boundary evidence. No proof of expanded-seed equivalence or full closure, no mutation/promotion. Existing gap review is reused, no new regression test executed here. Need actual user's local output before selecting next boundary scope bridge. Execute:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+.\run_vp05_abc_stage2_scope_inventory.bat 2>&1 | Tee-Object -FilePath log_vp05_abc_stage2_scope_inventory.txt
+```
+Expected VP05_ABC_STAGE2_SCOPE_INVENTORY_NOT_CLOSURE. This is an evidence inventory, not another A/B/C proof computation. Note existing non202 batch evidence may live outside standard gap review filenames; inspect separately if missing. No automatic timeout or Kira.
