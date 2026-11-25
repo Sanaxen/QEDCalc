@@ -593,3 +593,16 @@ Expected VP05_SAFE_STOP_FORENSICS_READ_ONLY. Use actual partial SYSTEM availabil
 ### 2026-11-25 remaining_safe01 saved-state audit received
 
 User supplied log_vp05_remaining_safe_audit.txt, status VP05_REMAINING_SAFE_AUDIT_NOT_CLOSURE. All ten saved job states agree with execution log: r8s5d3 sectors 78,101,116 completed_local_retained (four candidate integrals total); r8s6d2 sectors 204,205,228,229,230,231,237 guard_stopped, reason ram_stop, Kira returncode -15, success=false, unchanged last logged sector groups 200/196/69. Saved input manifests and candidate lists passed existing status checks. No rerun of these jobs needed for inventory. This is the earlier standalone audit, NOT log_vp05_safe_stop_forensics.txt; it does not contain partial SYSTEM inventory, bounded Kira log tails or resource peak data. The already committed safe-stop forensics launcher is the next operation, read-only, no new Kira. No new mathematical closure or promotion.
+
+
+### 2026-11-25 VP05 stopped-job forensics received; isolated subsector generation pilot
+
+Actual log_vp05_safe_stop_forensics.txt: all ten states verified; stopped seven show recursive equation selection/generation, no saved SYSTEM gzip files or masters, DB 28672 bytes each. RAM peaks 22.02,22.16,22.12,22.02,22.08,22.17,22.08 GiB; sampled swap peak zero. Last logged sectors 69 (229,231),196 (228,230),200 (204,205,237), all bitwise subsectors of corresponding parent; not proof of direct allocation cause. All three have three positive lines and proposed local seed r5s6d2. No rerun of parent jobs.
+
+Added examples/three_loop_vp05_subsector_pilot.py (f3bd29c), launcher (58d58ce), tests (6eafa3b). Three isolated r5s6d2 projects with recursive selection explicitly set to local top sector, initiate-only solver. Plain variant first, optional trunc2 variant only after guard stop and if old saved q.P/jobs.yaml contains uniquely confirmed scalar truncate_sp: 2 at six-space indentation. Historical actual YAML not accessible here; unsupported layout blocks truncation and is reported, not guessed. Not a direct extraction of all original IBP rows: initiate-only may produce master list but no SYSTEM gzip; actual output inventory determines subsequent export plan. Each project hashes input files and preserves existing outputs; completed/guard-stopped skipped, interrupted/unexpected failure requires review. 18/22 GiB RAM, 4/8 GiB swap, 5s interval, 5400s per job, 12h scheduling budget; preparation/termination overhead can exceed budget slightly. No whole-family or parent-scope equivalence, no registry change, no M mapping. Tests added but not executed here; Windows Kira execution unverified.
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_subsector_pilot -v
+.\run_vp05_subsector_pilot.bat run --hours 12 2>&1 | Tee-Object -FilePath log_vp05_subsector_pilot.txt
+```
+Expected VP05_SUBSECTOR_PILOT_NOT_CLOSURE; inspect actual per-job state, setting blocker, and saved equation/master inventory. Audit mode available without Kira.
