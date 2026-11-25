@@ -588,3 +588,8 @@ python -m unittest examples.test_three_loop_vp05_safe_stop_forensics -v
 .\run_vp05_safe_stop_forensics.bat 2>&1 | Tee-Object -FilePath log_vp05_safe_stop_forensics.txt
 ```
 Expected VP05_SAFE_STOP_FORENSICS_READ_ONLY. Use actual partial SYSTEM availability and log phases to choose next computational approach; do not assume last logged subsector is exact allocation source. M identity remains unresolved.
+
+
+### 2026-11-25 remaining_safe01 saved-state audit received
+
+User supplied log_vp05_remaining_safe_audit.txt, status VP05_REMAINING_SAFE_AUDIT_NOT_CLOSURE. All ten saved job states agree with execution log: r8s5d3 sectors 78,101,116 completed_local_retained (four candidate integrals total); r8s6d2 sectors 204,205,228,229,230,231,237 guard_stopped, reason ram_stop, Kira returncode -15, success=false, unchanged last logged sector groups 200/196/69. Saved input manifests and candidate lists passed existing status checks. No rerun of these jobs needed for inventory. This is the earlier standalone audit, NOT log_vp05_safe_stop_forensics.txt; it does not contain partial SYSTEM inventory, bounded Kira log tails or resource peak data. The already committed safe-stop forensics launcher is the next operation, read-only, no new Kira. No new mathematical closure or promotion.
