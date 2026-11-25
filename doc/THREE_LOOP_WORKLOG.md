@@ -513,3 +513,8 @@ python -m unittest examples.test_three_loop_vp05_c_exact_rank_certificate -v
 .\run_vp05_c_exact_rank_certificate.bat 2>&1 | Tee-Object -FilePath log_vp05_c_exact_rank_certificate.txt
 ```
 Expected VP05_C_RESTRICTED_EXACT_INDEPENDENCE_CERTIFICATE with nonzero determinant_mod_p and augmented_rank=2680. Independently audit saved certificate before using it as restricted evidence. No family promotion.
+
+
+### 2026-11-25 VP05 C restricted exact rank certificate success status reported
+
+User reports VP05_C_RESTRICTED_EXACT_INDEPENDENCE_CERTIFICATE from Windows execution. This is the success status of the pinned full-row-rank minor program: conditional on the reported run, exact ranks E=2678, E+M=2679, E+M+C=2680 over QQ(z,d), proving C independence modulo M in the original restricted SYSTEM only. Full console JSON, determinant residue, certificate SHA256 and actual certificate file have not yet been supplied; do not claim independent saved-certificate audit or formal promotion. Request existing log_vp05_c_exact_rank_certificate.txt (no recomputation needed). New boundary equivalence, opaque M physical identification, full 63-basis independence and Stage-2 closure remain open.
