@@ -475,3 +475,15 @@ Added examples/three_loop_vp05_a_saved_proof_audit.py (93dce6b) and run_vp05_a_s
 .\run_vp05_a_saved_proof_audit.bat 2>&1 | Tee-Object -FilePath log_vp05_a_saved_proof_audit.txt
 ```
 Expected VP05_A_SAVED_PROOF_READ_ONLY_AUDIT_PASS. Actual proof file not available to assistant, only run log; local audit required before promotion. Preserve original files.
+
+
+### 2026-11-25 VP05 A serialized proof independent audit PASS; confirmed proof archive preparation
+
+User uploaded log_vp05_a_saved_proof_audit.txt, read directly as UTF-16. VP05_A_SAVED_PROOF_READ_ONLY_AUDIT_PASS; proof SHA256 9393696362fb2e22c011e734fe92393d845ac0055d2f6a9a1114c8e21b308858, completed checkpoint SHA256 945547ba7e166d41932041d2ca34917c7dacf883b20765e7551d013a863ff755, original_support=339, original_ibp_replay_verified=true, replay_s=9.399406600001385, files_modified=false. Target A exact identity and serialized proof replay complete. Formal promotion false and whole-family 63 closure false in actual log.
+
+Added examples/three_loop_vp05_a_confirmed_archive.py (2c044fe) and run_vp05_a_confirmed_archive.bat (e994725). The script re-runs the pinned read-only proof audit, exclusively creates vp05_sector202_target_a_confirmed_v1 under the existing audit output directory, copies exact proof JSON (including all 339 source multipliers), verifies both hashes, saves a manifest including the audit result and source/checkpoint/certificate pins, reads back manifest and verifies archived proof hash. Original files and canonical registry not modified. This is a confirmed proof archive, not family promotion. Script not executed here; Windows output needed. No automatic overwrite or retry of an existing archive; incomplete directory after failure requires inspection, not deletion. No automatic timeout. Next command:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+.\run_vp05_a_confirmed_archive.bat 2>&1 | Tee-Object -FilePath log_vp05_a_confirmed_archive.txt
+```
+Expected VP05_A_CONFIRMED_ARCHIVE with status VP05_A_CONFIRMED_PROOF_ARCHIVE and proof/manifest SHA. Subsequent work: reconcile archived A and B evidence, establish C retention and sector202 closure, then complete standard Stage-2 and registry audit. Neither C retention nor VP05 63-master closure is established by this archive.
