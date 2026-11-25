@@ -575,3 +575,16 @@ Review actual audit before planning further jobs. Do not confuse local retention
 ### 2026-11-25 VP05 remaining_safe01 actual execution: three local retained, seven RAM stops
 
 Actual uploaded log_vp05_remaining_safe_batch.txt: all ten planned jobs attempted. r8s5d3: sector78 145.1s (1 candidate), 101 190.1s (2), 116 10.0s (1), all exit0 and exact candidate-set match in initiate-only master lists. r8s6d2: 204 625.8s last logged sector200, 205 660.8s last200, 228 635.8s last196, 229 560.8s last69, 230 620.8s last196, 231 555.7s last69, 237 630.8s last200; all RAM guard stop exit125, Kira -15, success=false. Sum monitored elapsed 4635.7s (77m15.7s), successful jobs 345.2s, stopped jobs 4290.5s. No family closure. Local evidence provisional totals r9s5d2 26/26, r8s5d3 19/26, r8s6d2 12/26 =57/78. Seven s6 failures cluster at logged subsectors 69,196,200 even without sector202; last logged progress does not prove exact internal cause. Do not rerun same jobs or increase RAM/swap caps. Preserve stopped directories. Need existing read-only audit log_vp05_remaining_safe_audit.txt, then inspect saved metrics, SYSTEM inventory and possible reusable subsector reductions, with scope equivalence checked. M mapping still unresolved. No new calculation implementation or closure claim in this entry.
+
+
+### 2026-11-25 VP05 RAM guard visualization and stopped-job forensics
+
+User supplied memory graph showing repeated rise and release, displayed configured maximum 30.00 GB and observed peak 21.92 GB. Consistent with seven RAM guard stops and sequential recovery in remaining_safe01 execution; graph alone does not identify allocation cause or guarantee absence of inter-sample overshoot. Keep existing 18/22 GiB RAM and 4/8 GiB swap warning/stop thresholds.
+
+Implemented examples/three_loop_vp05_safe_stop_forensics.py (a23a896), launcher (8ff5293), grouping tests (dfdaa2b). Reopens all ten saved jobs via existing scope/status checks, verifies three retained and seven RAM-stopped jobs with observed last-sector IDs, reads metrics and bounded log tails, inventories partial SYSTEM and database metadata without decompression or Kira execution. Reports bitwise inclusion and possible effective exact-sector seed for logged subsector; not proof of cause, equivalence or reuse. No writes to existing outputs. This supersedes the previously requested standalone remaining_safe audit for this triage. No new Kira run yet; local regression tests and Windows actual audit not executed by assistant. Execute:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_safe_stop_forensics -v
+.\run_vp05_safe_stop_forensics.bat 2>&1 | Tee-Object -FilePath log_vp05_safe_stop_forensics.txt
+```
+Expected VP05_SAFE_STOP_FORENSICS_READ_ONLY. Use actual partial SYSTEM availability and log phases to choose next computational approach; do not assume last logged subsector is exact allocation source. M identity remains unresolved.
