@@ -104,8 +104,9 @@ def synthetic(exe,work):
     rows=[(0,{x:2,y:3}),(1,{x:4,y:6}),(2,{x:-1,z:7}),(3,{y:1,z:2}),(4,{})]
     compare(exe,work,b.Packed(),rows,"synthetic")
     bad=work/"bad.in";bad.write_bytes(b"bad")
-    proc=subprocess.run(["wsl","--exec",wslpath(exe),wslpath(bad),wslpath(work/"bad.out")],timeout=30)
-    if proc.returncode==0:raise RuntimeError("Truncated input accepted")
+    proc=subprocess.run(["wsl","--exec",wslpath(exe),wslpath(bad),wslpath(work/"bad.out")],timeout=30,capture_output=True,text=True)
+    if proc.returncode!=1 or proc.stderr.strip()!="truncated input":raise RuntimeError("Unexpected malformed-input result: "+proc.stderr)
+    print("VP05_NATIVE_NEGATIVE_TEST_PASS",flush=True)
 
 def main():
     parser=argparse.ArgumentParser()
