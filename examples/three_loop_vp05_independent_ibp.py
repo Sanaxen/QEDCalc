@@ -7,7 +7,7 @@ import argparse,hashlib,itertools,json,os,time
 from pathlib import Path
 import sympy as sp
 from three_loop.master_basis_api import build_family_spec
-from examples import three_loop_vp05_subsector_truncate_batch as prior
+ROOT=Path(__file__).resolve().parents[1]
 
 SECTORS=(69,196,200)
 Z=sp.Symbol("z")
@@ -17,8 +17,8 @@ PAIRS=tuple((i,j) for i in range(3) for j in range(i,5))
 X=sp.symbols("x0:12")
 Y=sp.symbols("P0:12")
 POINTS=((1000003,17,7),(1000033,19,11))
-MAX_TERMS=2000000
-MAX_FILL=10000
+MAX_TERMS=500000
+MAX_FILL=5000
 
 def dot(i,j):
     a,b=sorted((i,j))
@@ -51,7 +51,7 @@ def build_kernel(propagators):
                 raw=sp.expand(2*v[i]*sum(v[t]*dot(j,t) for t in range(5)))
                 # Independent component-level derivative of the scalar products.
                 check=sp.expand(sum(p.diff(x)*((dot(j,b) if a==i else 0)+(dot(a,j) if b==i else 0)) for x,(a,b) in zip(X,PAIRS)))
-                if raw!=check:raise RuntimeError("Derivative cross-check failed")
+                if sp.expand(raw-check)!=0:raise RuntimeError("Derivative cross-check failed")
                 val=sp.expand(raw.subs(sub,simultaneous=True))
                 cs=tuple(val.coeff(y) for y in Y)
                 c0=sp.expand(val-sum(c*y for c,y in zip(cs,Y)))
@@ -117,10 +117,26 @@ def insert(r,pivots,p,stored):
     return 0,False
 
 def atomic(path,obj):
+    if path.exists():raise RuntimeError("Checkpoint already exists")
     tmp=path.with_suffix(".tmp")
     with tmp.open("x",encoding="utf-8") as f:
         json.dump(obj,f,separators=(",",":"));f.flush();os.fsync(f.fileno())
-    os.replace(tmp,path)
+    if path.exists():raise RuntimeError("Checkpoint appeared during write")
+    tmp.rename(path)
+
+def memory_guard():
+    # Windows host physical memory, conservative stop independent of WSL.
+    if os.name=="nt":
+        import ctypes
+        class MemoryStatus(ctypes.Structure):
+            _fields_=[("length",ctypes.c_ulong),("load",ctypes.c_ulong)]+[(name,ctypes.c_ulonglong) for name in ("total","available","total_page","available_page","total_virtual","available_virtual","extended")]
+        info=MemoryStatus();info.length=ctypes.sizeof(info)
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(info)):
+            raise RuntimeError("Windows RAM measurement failed")
+        if info.available<8*1024**3:raise RuntimeError("Windows available RAM below 8 GiB")
+    else:
+        info=dict((x.split(":")[0],int(x.split()[1])) for x in Path("/proc/meminfo").read_text().splitlines() if x.startswith(("MemAvailable:","SwapTotal:","SwapFree:","MemTotal:")))
+        if info["MemAvailable"]<8*1024**2 or info["MemTotal"]-info["MemAvailable"]>=22*1024**2 or info["SwapTotal"]-info["SwapFree"]>=8*1024**2:raise RuntimeError("Linux RAM/swap guard")
 
 def run_sector(sec,kernel,smax,budget,dest):
     dest.mkdir(exist_ok=True)
@@ -128,6 +144,7 @@ def run_sector(sec,kernel,smax,budget,dest):
     # No large in-memory matrix: finite-field pivot state bounded by term cap.
     for shell in range(smax+1):
         out=dest/f"shell{shell}.json"
+        if out.is_symlink():raise RuntimeError("Linked checkpoint")
         if out.exists():
             saved=json.loads(out.read_text(encoding="utf-8"))
             if saved.get("status")!="VP05_IBP_SHELL_COMPLETE" or saved.get("sector")!=sec or saved.get("shell")!=shell or saved.get("kernel_sha256")!=digest(kernel):
@@ -141,6 +158,7 @@ def run_sector(sec,kernel,smax,budget,dest):
             for a in seeds(sec,shell):
                 if sum(-x for x in a if x<0)!=shell:continue
                 nseed+=1
+                if nseed%10==1:memory_guard()
                 for i,j in kernel:
                     if time.monotonic()>=budget:raise TimeoutError("Time budget")
                     count+=1
@@ -169,9 +187,10 @@ def main():
     spec=build_family_spec("VP05_full")
     kernel=build_kernel(spec.propagators)
     print("VP05_IBP_KERNEL "+json.dumps({"sha256":digest(kernel),"propagators":[[x.momentum,x.mass] for x in spec.propagators],"derivative_checks":180,"inverse_verified":True}),flush=True)
-    dest=prior.OLD.OUTPUT/"vp05_independent_ibp_pilot01"
+    dest=ROOT/"output"/"vp05_independent_ibp_pilot01"
     dest.mkdir(exist_ok=True)
     end=time.monotonic()+a.hours*3600
+    memory_guard()
     for sec in SECTORS:run_sector(sec,kernel,a.smax,end,dest/f"sec{sec}")
     print("VP05_INDEPENDENT_IBP_DIAGNOSTIC_NOT_CLOSURE",flush=True)
 
