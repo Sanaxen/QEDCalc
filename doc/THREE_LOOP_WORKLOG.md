@@ -617,3 +617,16 @@ python -m unittest examples.test_three_loop_vp05_subsector_truncate_batch -v
 .\run_vp05_subsector_truncate_batch.bat run --hours 12 2>&1 | Tee-Object -FilePath log_vp05_subsector_truncate_batch.txt
 ```
 Expected VP05_SUBSECTOR_TRUNCATE_DIAGNOSTIC_NOT_CLOSURE. Inspect actual results before extending targets.
+
+
+### 2026-11-25 VP05 independent IBP actual pilot and compact checkpoint engine
+
+Actual log_vp05_subsector_truncate_batch.txt: all l=2 jobs RAM stopped, no SYSTEM/master output, 565.8/630.8/630.8s, peaks22.01/22.06/22.12 GiB, swap0. Independent generator implemented 910212d, launcher 3b4187c, tests 54c9028, guard aaeaece. Actual log_vp05_independent_ibp.txt confirms propagator inversion and 180 derivative comparisons, kernel SHA 09244783a9ce300ffbdd6b3e4c0f9eb216295eda9f7237b5c8e6ed513c85624b. Eight completed independent shells, Completed rows 18000 (=24750-6750); attempted 23178 (=18000+5178), last attempted row may not have completed both points. Earlier response incorrectly stated 19500 completed. Sector69 ranks 127/959/4363; 196 ranks127/987, s2 stopped at attempted row5178 due to stored term cap; 200 ranks127/987/4553. Both points agree for completed shells. No measured RAM peak or time in this log. Shells independent, not cumulative rank or exact closure.
+
+Compact engine c4ef2b0, launcher fc38e9c, tests 2007fb7. Collision-free packed integer key (12 five-bit exponents with static sector population/r/s complexity prefix); harder-first pivot ordering, one evaluation point at a time, per-point 1.5M stored terms and 20k fill cap; previous 500k cap per point was simultaneous two-point engine. Separate output vp05_independent_ibp_compact02, kernel pin, checksummed row-cursor/pivot checkpoints every1000 rows and on handled stop. Host available RAM guard unchanged, sampled host used RAM peak and elapsed time logged. Benchmark s2 all three, compare known ranks, advance each successful sector up to s6; stop blocked sector and continue others. Checkpoint checksum is integrity not mathematical proof; resume validates structure, not full source replay. Abrupt termination may leave lock or tmp, requiring review. No Kira, no exact closure, no symmetry/LI/zero-sector proof, no cross-shell union. Tests added but not run here. 
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_compact_ibp -v
+.\run_vp05_compact_ibp.bat --smax 6 --hours 12 2>&1 | Tee-Object -FilePath log_vp05_compact_ibp.txt
+```
+Expected VP05_COMPACT_IBP_NOT_CLOSURE. Review actual rank and fill before further expansion.
