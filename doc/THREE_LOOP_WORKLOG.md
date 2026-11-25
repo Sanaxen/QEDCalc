@@ -570,3 +570,8 @@ python -m unittest examples.test_three_loop_vp05_remaining_safe_batch -v
 .\run_vp05_remaining_safe_batch.bat audit 2>&1 | Tee-Object -FilePath log_vp05_remaining_safe_audit.txt
 ```
 Review actual audit before planning further jobs. Do not confuse local retention with full Stage-2 closure.
+
+
+### 2026-11-25 VP05 remaining_safe01 actual execution: three local retained, seven RAM stops
+
+Actual uploaded log_vp05_remaining_safe_batch.txt: all ten planned jobs attempted. r8s5d3: sector78 145.1s (1 candidate), 101 190.1s (2), 116 10.0s (1), all exit0 and exact candidate-set match in initiate-only master lists. r8s6d2: 204 625.8s last logged sector200, 205 660.8s last200, 228 635.8s last196, 229 560.8s last69, 230 620.8s last196, 231 555.7s last69, 237 630.8s last200; all RAM guard stop exit125, Kira -15, success=false. Sum monitored elapsed 4635.7s (77m15.7s), successful jobs 345.2s, stopped jobs 4290.5s. No family closure. Local evidence provisional totals r9s5d2 26/26, r8s5d3 19/26, r8s6d2 12/26 =57/78. Seven s6 failures cluster at logged subsectors 69,196,200 even without sector202; last logged progress does not prove exact internal cause. Do not rerun same jobs or increase RAM/swap caps. Preserve stopped directories. Need existing read-only audit log_vp05_remaining_safe_audit.txt, then inspect saved metrics, SYSTEM inventory and possible reusable subsector reductions, with scope equivalence checked. M mapping still unresolved. No new calculation implementation or closure claim in this entry.
