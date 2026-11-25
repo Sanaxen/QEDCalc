@@ -555,3 +555,18 @@ git pull --ff-only origin feature/master-basis-initiate-only
 .\run_vp05_boundary_evidence_reconcile.bat 2>&1 | Tee-Object -FilePath log_vp05_boundary_evidence_reconcile.txt
 ```
 Expected VP05_BOUNDARY_EVIDENCE_RECONCILED_NOT_CLOSURE.
+
+
+### 2026-11-25 VP05 remaining 202-free boundary batch
+
+Actual log_vp05_boundary_evidence_reconcile.txt: local evidence counts r8s6d2 12/26 and r8s5d3 16/26; standard r9s5d2 26/26 previously. Missing r8s6d2: 202,203,204,205,206,207,228,229,230,231,234,237,238,239. Missing r8s5d3: 78,101,116,202,203,206,207,234,238,239. M weight4 decode failed (ppw 4 out of range (1 comps)); M remains opaque, no physical identity assignment. A/B/C archives unchanged.
+
+Implemented examples/three_loop_vp05_remaining_safe_batch.py (2c46e0b, scope correction 5c38b05), run_vp05_remaining_safe_batch.bat (b0f2fab), scope tests (9f207fc). Exactly ten new isolated jobs: r8s5d3 sectors 78,101,116; r8s6d2 sectors 204,205,228,229,230,231,237. Sector238 excluded because (238 & 202)==202. All jobs are missing from prior local inventory, do not contain sector202, and exclude prior RAM-stopped 206/234. Effective r=min(8,popcount(sector)+d); scope is exact-sector diagnostic, not global closure. Existing monitor with sampled RAM warn/stop18/22 GiB, swap4/8 GiB, 5s interval, per-job5400s and batch scheduling budget12h. Budget is not a hard wall clock guarantee (preflight/preparation/termination overhead). Reopen SHA-pinned inputs, exclusive dirs, no overwrite. Reuse completed or preserve guard-stopped; interrupted or changed master sets require review. Windows integration/tests not executed here. No M mapping implementation in this change, and no promotion.
+
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_remaining_safe_batch -v
+.\run_vp05_remaining_safe_batch.bat run --hours 12 2>&1 | Tee-Object -FilePath log_vp05_remaining_safe_batch.txt
+.\run_vp05_remaining_safe_batch.bat audit 2>&1 | Tee-Object -FilePath log_vp05_remaining_safe_audit.txt
+```
+Review actual audit before planning further jobs. Do not confuse local retention with full Stage-2 closure.
