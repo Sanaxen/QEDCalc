@@ -518,3 +518,16 @@ Expected VP05_C_RESTRICTED_EXACT_INDEPENDENCE_CERTIFICATE with nonzero determina
 ### 2026-11-25 VP05 C restricted exact rank certificate success status reported
 
 User reports VP05_C_RESTRICTED_EXACT_INDEPENDENCE_CERTIFICATE from Windows execution. This is the success status of the pinned full-row-rank minor program: conditional on the reported run, exact ranks E=2678, E+M=2679, E+M+C=2680 over QQ(z,d), proving C independence modulo M in the original restricted SYSTEM only. Full console JSON, determinant residue, certificate SHA256 and actual certificate file have not yet been supplied; do not claim independent saved-certificate audit or formal promotion. Request existing log_vp05_c_exact_rank_certificate.txt (no recomputation needed). New boundary equivalence, opaque M physical identification, full 63-basis independence and Stage-2 closure remain open.
+
+
+### 2026-11-25 VP05 C exact rank certificate full log received; independent fixed-minor audit
+
+User supplied log_vp05_c_exact_rank_certificate.txt (UTF-16 read). VP05_C_COEFFICIENT_CHECK: 2678 rows, 21836 terms, all_regular_and_independently_equal=true. VP05_C_RESTRICTED_EXACT_INDEPENDENCE_CERTIFICATE: determinant_mod_p=937916 at pinned point (1000003,17,7), augmented_rank=2680, certificate SHA256 1ef90dbda58cff51f1e055c1908f71f422f3c2016e0b17b04a47d09cfffa9f5f. This certifies exact full row rank and C independence modulo opaque M for original restricted SYSTEM, conditional on saved certificate audit; not extended seed/full basis retention. A/B unchanged.
+
+Added examples/three_loop_vp05_c_saved_rank_audit.py (d3c7a7a), launcher (d933628), tests (ef8b26c). Pins certificate and original SYSTEM hashes, reads all terms with existing regular-specialization cross-check, independently restricts rows to the saved ordered columns and performs fixed-column triangular elimination with a separate integer-index algorithm, verifies all 2680 pivot residues and determinant 937916, rechecks hashes. No new pivot selection, Kira, file mutation or family registration. Tests added but not executed here; local data unavailable. No automatic timeout. Next:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_c_saved_rank_audit -v
+.\run_vp05_c_saved_rank_audit.bat 2>&1 | Tee-Object -FilePath log_vp05_c_saved_rank_audit.txt
+```
+Expected VP05_C_SAVED_EXACT_RANK_CERTIFICATE_AUDIT_PASS. Next reconcile A/B/C evidence against newer sector202 boundary scope before claiming closure; do not rerun large Kira without specific evidence gap.
