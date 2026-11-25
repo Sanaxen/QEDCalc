@@ -449,3 +449,18 @@ python -m unittest examples.test_three_loop_vp05_a_field_pilot examples.test_thr
 .\run_vp05_a_field_pilot.bat --rows 43 --timeout-seconds 43200
 ```
 Monitor RAM/swap and stop if needed. On ordinary timeout or interruption, re-run same batch to resume from verified durable row, unless .tmp or audit failure requires review. Existing checkpoint validation replays all saved pivots at startup. The scratch result must be independently audited before any promotion. Even 339/339 does not prove Target A reduction, C master retention or VP05 closure.
+
+
+### 2026-11-25 VP05 A 339/339 source completion, independent resume replay, and exact target proof implementation
+
+User supplied log(20261125-003359).txt: fieldpilot completed 296 -> 339/339, rank339, dependent0, exit0, no timeout, original checkpoint unchanged, target_A_proven=false. Completed fieldpilot SHA256 945547ba7e166d41932041d2ca34917c7dacf883b20765e7551d013a863ff755. Original 296-row SHA remains 90c81c6d418cd7c5abad30ec178429aea3075c83a54d874b457335baa985d297. User supplied log_vp05_a_fieldpilot_independent_audit.txt: resume_validation_complete, saved_processed339, saved_rank339, resume_elapsed_s2063.02 (34m23s). The existing nonexperimental SymPy resume validation replays all saved pivots against original exported IBP rows; this confirms source pivot replay, not target proof. Audit log does not independently print checkpoint SHA, so next program explicitly pins completed checkpoint hash.
+
+Implemented separate examples/three_loop_vp05_a_fieldpilot_target_proof.py (e86788a), regression tests (1bc09c2), launcher run_vp05_a_fieldpilot_target_proof.bat (e4dbe1c). Existing union target program remains unchanged. Reuses its exact target definitions, candidate rational formulas, codec and original SymPy replay, validates completed A-only 339-row state and original source/certificate hashes, executes persistent QQ(z,d) target reduction with 339-step/256-column/339-support caps, requires zero remainder and successful original-source replay, writes exclusive proof-candidate JSON including original-source multipliers, target terms and SHA. No production promotion or VP05 closure claim; no Kira. The proof candidate is not yet executed on actual Windows inputs. Added four offline regression tests, not run here. No hard wall-clock/RAM or intermediate polynomial-size cap; monitor process. Interrupted proof run recomputes from beginning; no internal resume; existing output must not be overwritten. Next independently audit serialized proof candidate before formal promotion.
+
+Windows:
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_a_fieldpilot_target_proof -v
+.\run_vp05_a_fieldpilot_target_proof.bat 2>&1 | Tee-Object -FilePath log_vp05_a_fieldpilot_target_proof.txt
+```
+Expected success tag VP05_A_TARGET_EXACT_PROOF, status VP05_A_EXACT_TARGET_PROOF_CANDIDATE, remainder_terms=0, original_ibp_replay_verified=true. Candidate output vp05_sector202_target_a_fieldpilot_exact_proof.json. On error preserve logs and all existing files; no forced promotion. Target C retention and full 63-master closure remain open.
