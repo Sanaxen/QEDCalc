@@ -18,6 +18,8 @@ struct Hash { size_t operator()(K k) const {
 }};
 using Pivot=std::vector<std::pair<K,U>>;
 static constexpr U FILL=20000, CAP=60000000;
+static uint64_t peak_ram=0,peak_swap=0;
+static bool warned=false;
 static auto start=std::chrono::steady_clock::now();
 void guard(){
     if(std::chrono::steady_clock::now()-start>std::chrono::minutes(25)) throw std::runtime_error("native time cap");
@@ -27,6 +29,8 @@ void guard(){
         auto read=[&](const char* name,uint64_t& v){std::string n(name);if(line.rfind(n,0)==0)v=std::stoull(line.substr(n.size()));};
         read("MemTotal:",total);read("MemAvailable:",avail);read("SwapTotal:",st);read("SwapFree:",sf);
     }
+    if(total>=avail && st>=sf){peak_ram=std::max(peak_ram,total-avail);peak_swap=std::max(peak_swap,st-sf);}
+    if(!warned && (peak_ram>=18ull*1024*1024 || peak_swap>=4ull*1024*1024)){std::cerr<<"native memory warning\n";warned=true;}
     if(!total || !avail || avail>total || sf>st || total-avail>=22ull*1024*1024 || st-sf>=8ull*1024*1024)
         throw std::runtime_error("native memory guard");
 }
@@ -78,6 +82,7 @@ int main(int argc,char**argv){
         }
         if(in.peek()!=EOF)throw std::runtime_error("trailing input");
         put(out,std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()-t).count(),8);
+        guard();put(out,peak_ram,8);put(out,peak_swap,8);
         out.flush();if(!out)throw std::runtime_error("flush");
         return 0;
     }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}
