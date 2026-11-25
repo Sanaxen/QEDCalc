@@ -696,3 +696,7 @@ git pull --ff-only origin feature/master-basis-initiate-only
 .\run_vp05_native_benchmark.bat 2>&1 | Tee-Object -FilePath log_vp05_native_benchmark.txt
 ```
 Expected VP05_NATIVE_BENCHMARK_PASS_NOT_CLOSURE with synthetic_only=false. Next review actual comparison, optimize native representation if necessary, then build verified resumable native production path; no Stage-2 closure claim.
+
+### 2026-11-26 — Native benchmark WSL path fix
+
+User actual launch failed before compilation: wslpath received C:UsersyamatoDesktopQEDCalcexamplesvp05_native_benchmark.cpp (backslashes stripped by WSL shell). Fix abeaadf: Path.resolve().as_posix() for Windows path conversion, explicit wsl --exec for wslpath, GCC, native execution, malformed-input test and scoped pkill; adjusted executable argument index in cleanup. No production calculation occurred in failed run. Windows/WSL retest pending; run original benchmark BAT again after git pull. No closure or performance claim.
