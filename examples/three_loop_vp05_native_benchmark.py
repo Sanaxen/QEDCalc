@@ -18,7 +18,7 @@ BASE=b.c.old.ROOT
 ROOT=BASE/"output"/"vp05_native_benchmark01"
 
 def wslpath(path):
-    return subprocess.check_output(["wsl","wslpath","-a",str(path.resolve())],text=True,timeout=30).strip()
+    return subprocess.check_output(["wsl","--exec","wslpath","-a",path.resolve().as_posix()],text=True,timeout=30).strip()
 
 def write_row(f,items):
     items=list(items)
@@ -69,7 +69,7 @@ def compare(exe,work,store,rows,label):
         expected.append((v or {},len(store.piv),store.terms))
     py_s=time.monotonic()-t
     t=time.monotonic()
-    cmd=["wsl",wslpath(exe),wslpath(inp),wslpath(out)]
+    cmd=["wsl","--exec",wslpath(exe),wslpath(inp),wslpath(out)]
     peak_host=0
     with subprocess.Popen(cmd) as proc:
         try:
@@ -82,7 +82,7 @@ def compare(exe,work,store,rows,label):
         except BaseException:
             # Terminate the specific Linux executable, never the whole WSL VM.
             try:
-                subprocess.run(["wsl","pkill","-f","^"+re.escape(cmd[1])+" "],timeout=15,check=False)
+                subprocess.run(["wsl","--exec","pkill","-f","^"+re.escape(cmd[2])+" "],timeout=15,check=False)
             finally:
                 if proc.poll() is None:proc.kill()
             raise
@@ -104,7 +104,7 @@ def synthetic(exe,work):
     rows=[(0,{x:2,y:3}),(1,{x:4,y:6}),(2,{x:-1,z:7}),(3,{y:1,z:2}),(4,{})]
     compare(exe,work,b.Packed(),rows,"synthetic")
     bad=work/"bad.in";bad.write_bytes(b"bad")
-    proc=subprocess.run(["wsl",wslpath(exe),wslpath(bad),wslpath(work/"bad.out")],timeout=30)
+    proc=subprocess.run(["wsl","--exec",wslpath(exe),wslpath(bad),wslpath(work/"bad.out")],timeout=30)
     if proc.returncode==0:raise RuntimeError("Truncated input accepted")
 
 def main():
@@ -124,7 +124,7 @@ def main():
         with tempfile.TemporaryDirectory(prefix="compare_",dir=ROOT) as folder:
             work=Path(folder);exe=work/"native"
             t=time.monotonic()
-            subprocess.run(["wsl","g++","-std=c++17","-O3","-Wall","-Wextra",wslpath(BASE/"examples"/"vp05_native_benchmark.cpp"),"-o",wslpath(exe)],check=True,timeout=120)
+            subprocess.run(["wsl","--exec","g++","-std=c++17","-O3","-Wall","-Wextra",wslpath(BASE/"examples"/"vp05_native_benchmark.cpp"),"-o",wslpath(exe)],check=True,timeout=120)
             print("VP05_NATIVE_BUILD "+json.dumps({"elapsed_s":time.monotonic()-t}),flush=True)
             synthetic(exe,work)
             if not args.synthetic_only:
