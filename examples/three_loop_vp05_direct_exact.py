@@ -95,6 +95,33 @@ class Exact:
         self.memo[tag]=(row,certificate);self.terms+=len(row)+len(certificate)
         self.guard()
         return row,certificate
+    def verify_saved(self,payload,result,other):
+        if payload["source_sha256"]!=SHA or payload["kernel_sha256"]!=b.c.PIN or payload["sector"]!=self.sec or payload["target"]!=result["target"] or payload["original_symbolic_replay"] is not True or payload["second_point_match"] is not True:
+            raise RuntimeError("Saved proof scope")
+        def parse(expr):
+            return self.F.from_expr(sp.sympify(expr,locals={"z":old.Z,"d":old.D}))
+        remainder={b.c.key(k):parse(c) for k,c in payload["remainder"]}
+        if len(remainder)!=len(payload["remainder"]) or not all(remainder.values()):raise RuntimeError("Saved remainder")
+        if self.modular(remainder)!={b.c.key(k):c for k,c in result["remainder"]}:raise RuntimeError("Saved first point")
+        p,z,d=other["field"]
+        def ev(c):
+            num,den=sp.fraction(c.as_expr().subs({old.Z:z,old.D:d}))
+            return int(num)%p*pow(int(den)%p,-1,p)%p
+        if {k:ev(c) for k,c in remainder.items()}!={b.c.key(k):c for k,c in other["remainder"]}:raise RuntimeError("Saved second point")
+        replay={};seen=set()
+        for term in payload["multipliers"]:
+            s,i=term["shell"],term["index"]
+            if not 0<=s<len(self.sources) or not 0<=i<len(self.sources[s]) or (s,i) in seen:raise RuntimeError("Saved source index")
+            seen.add((s,i))
+            ex,j,k=self.sources[s][i]
+            if term["seed"]!=list(ex) or term["derivative"]!=[j,k]:raise RuntimeError("Saved source provenance")
+            factor=parse(term["coefficient"])
+            if not factor:raise RuntimeError("Zero multiplier")
+            axpy(replay,self.original(s,i),factor);self.guard()
+        want={b.c.key(result["target"]):self.F.one}
+        axpy(want,remainder,-self.F.one)
+        if replay!=want:raise RuntimeError("Saved original replay mismatch")
+
     def prove(self,result,other):
         self.guard()
         target=b.c.key(result["target"])
@@ -184,11 +211,15 @@ def main():
                 ex=tuple(result["target"])
                 dest=ROOT/("sec"+str(sec)+"_"+str(left.index(result))+".json")
                 try:
-                    proof=engine.prove(result,right[ex])
-                    payload={"source_sha256":SHA,"kernel_sha256":b.c.PIN,**proof}
                     if dest.exists():
-                        if gap.read(dest)!=payload:raise RuntimeError("Existing proof differs")
-                    else:old.atomic(dest,payload)
+                        payload=gap.read(dest)
+                        engine.verify_saved(payload,result,right[ex])
+                        proof=payload
+                    else:
+                        proof=engine.prove(result,right[ex])
+                        payload={"source_sha256":SHA,"kernel_sha256":b.c.PIN,**proof}
+                        old.atomic(dest,payload)
+                        engine.verify_saved(gap.read(dest),result,right[ex])
                     proofs.append({"target":list(ex),"sha256":n.sha(dest)})
                     v.log("VP05_DIRECT_EXACT_PROOF",sector=sec,target=list(ex),remainder=proof["remainder"],original_multipliers=len(proof["multipliers"]),original_symbolic_replay=True)
                 except (RuntimeError,TimeoutError,ZeroDivisionError) as exc:
