@@ -149,13 +149,18 @@ def main():
             exact[tuple(obj["target"])]=sp.sympify(obj["remainder"][0][1],locals={"d":D,"z":Z})
         exact[tuple(a.BLOCK)]=D-2
         if len(exact)!=12:raise RuntimeError("Expected 12 identities")
-        data=gap.read(e.SOURCE);results=[];maps=[]
+        data=gap.read(e.SOURCE);results=[];maps=[];unsupported=[]
         for sec in SECTORS:
-            reducer=Reducer(spec.propagators,sec,deadline)
+            try:
+                reducer=Reducer(spec.propagators,sec,deadline)
+            except RuntimeError as exc:
+                if sec!=69:raise
+                unsupported.append({"sector":sec,"reason":str(exc)})
+                v.log("VP05_FACTORIZED_UNSUPPORTED",**unsupported[-1]);continue
             maps.append(reducer.map);v.log("VP05_FACTORIZED_MAP",sector=sec,**reducer.map)
             targets={tuple(x) for x in exact if gap.sector(x)==sec}
             # Actual prior partial envelope, deterministic stratified sample.
-            parent=e.m.q.SOURCE if hasattr(e.m.q,"SOURCE") else e.m.SOURCE
+            parent=e.m.SOURCE
             if n.sha(parent)!=e.m.SHA:raise RuntimeError("Parent demand SHA")
             pins[parent]=e.m.SHA
             potential=gap.read(parent)["potential"]
@@ -184,12 +189,12 @@ def main():
             reducer.close()
         if any(n.sha(p)!=h for p,h in pins.items()):raise RuntimeError("Protected input changed")
         if sum(r["existing_exact_match"] for r in results)!=12 or sum(r["modular_checks"] for r in results)!=24:raise RuntimeError("Regression coverage")
-        payload={"status":"VP05_FACTORIZED_PILOT_NOT_CLOSURE","inputs":{str(p):h for p,h in pins.items()},"maps":maps,"results":results,"max_numerator_degree":MAX_DEGREE,"max_dot_degree":MAX_DOTS,"full_closure_proven":False,"recursive_parent_reduction_proven":False}
+        payload={"status":"VP05_FACTORIZED_PILOT_NOT_CLOSURE","inputs":{str(p):h for p,h in pins.items()},"maps":maps,"unsupported":unsupported,"results":results,"max_numerator_degree":MAX_DEGREE,"max_dot_degree":MAX_DOTS,"full_closure_proven":False,"recursive_parent_reduction_proven":False}
         dest=ROOT/"pilot.json"
         if dest.exists():
             if gap.read(dest)!=payload:raise RuntimeError("Existing pilot differs")
         else:old.atomic(dest,payload)
-        v.log("VP05_FACTORIZED_PILOT_NOT_CLOSURE",targets=len(results),exact_matches=12,modular_checks=24,maps=3,sha256=n.sha(dest),inputs_unchanged=True,full_closure_proven=False)
+        v.log("VP05_FACTORIZED_PILOT_NOT_CLOSURE",targets=len(results),exact_matches=12,modular_checks=24,maps=len(maps),unsupported=unsupported,sha256=n.sha(dest),inputs_unchanged=True,full_closure_proven=False)
     finally:lock.unlink()
 
 if __name__=="__main__":main()
