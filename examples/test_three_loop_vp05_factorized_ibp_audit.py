@@ -25,6 +25,16 @@ class AuditTests(unittest.TestCase):
                 row=m.f.e.m.q.exact_row(m.f.scalar(sec),entries,*ij)
                 self.assertEqual(m.audit_row(row,sec,r.reduce)["status"],"PASS")
             r.close()
+    def test_begin_seed_resets_budget_not_cache(self):
+        class Stub:
+            count=2000001
+            cache={"existing":1}
+            def guard(self):
+                if self.count>0:raise RuntimeError("budget not reset")
+        r=Stub()
+        m.begin_seed(r)
+        self.assertEqual(r.count,0)
+        self.assertEqual(r.cache,{"existing":1})
     def test_checksum(self):
         self.assertNotEqual(m.checksum({"a":1}),m.checksum({"a":2}))
 
