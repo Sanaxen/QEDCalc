@@ -93,9 +93,9 @@ def scan_envelope(kernel,demand,deadline):
             for sec in t.SECTORS:
                 for intermediate in one_line_parents(sec,parent):
                     jobs[seed,intermediate].add(parent)
-    points=old.POINTS
-    ev=[{ij:[(old.evaluate(c,p,z),tuple(old.evaluate(x,p,z) for x in cs)) for c,cs in entries] for ij,entries in kernel.items()} for p,z,d in points]
     rows=0
+    # Pre-index only derivative terms capable of pinching a line.
+    pinch={ij:[(h,k,c) for h,(_,cs) in enumerate(entries) for k,c in enumerate(cs) if h!=k and c!=0] for ij,entries in kernel.items()}
     for (seed,intermediate),parents in sorted(jobs.items()):
         r,s,d=(8,6,2) if seed=="r8s6d2" else (8,5,3)
         count=0;before=len(demand)
@@ -112,13 +112,11 @@ def scan_envelope(kernel,demand,deadline):
                 # For h != k, a[h] must be positive or negative; if negative
                 # it may also become zero but cannot add a positive line.
                 raw={}
-                for h,(c0,cs) in enumerate(entries):
-                    if not ex[h]:continue
-                    for k,c in enumerate(cs):
-                        if h==k or ex[k]!=1 or not c:continue
-                        key=list(ex);key[h]+=1;key[k]-=1;key=tuple(key)
-                        if sector(key) in t.SECTORS:
-                            raw[key]=raw.get(key,0)-ex[h]*c
+                for h,k,c in pinch[i,j]:
+                    if not ex[h] or ex[k]!=1:continue
+                    key=list(ex);key[h]+=1;key[k]-=1;key=tuple(key)
+                    if sector(key) in t.SECTORS:
+                        raw[key]=raw.get(key,0)-ex[h]*c
                 for key,val in raw.items():
                     if old.sp.expand(val)==0:continue
                     record(demand,key,{"kind":"potential_envelope","seed":seed,"intermediate":intermediate,"parents":sorted(parents),"ex":ex,"derivative":[i,j]})
