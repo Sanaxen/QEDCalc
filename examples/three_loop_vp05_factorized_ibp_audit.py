@@ -67,6 +67,11 @@ def seeds(pilot,sec):
                 targets.add(tuple(ex))
     return sorted(targets)
 
+def begin_seed(reducer):
+    """Reset only the work counter, not the cached exact results or guards."""
+    reducer.count=0
+    reducer.guard()
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--hours",type=float,default=12)
@@ -97,6 +102,7 @@ def main():
             targets=seeds(pilot,sec);counts=collections.Counter();classes=collections.Counter()
             base_meta={"version":VERSION,"pilot_sha256":SHA,"kernel_sha256":f.e.b.c.PIN,"sector":sec}
             coverage=collections.Counter()
+            run_contractions=0
             for i,ex in enumerate(targets):
                 if time.monotonic()>=deadline:raise TimeoutError("Audit time budget; rerun resumes completed seed files")
                 f.e.b.a.memory()
@@ -116,6 +122,7 @@ def main():
                         replay=audit_row(raw,sec,lambda k:coeffs[k])
                         if record!={"derivative":list(ij),**replay}:raise RuntimeError("Saved row replay mismatch")
                 else:
+                    begin_seed(reducer)
                     rows=[]
                     for ij,entries in sorted(kernel.items()):
                         if time.monotonic()>=deadline:raise TimeoutError("Audit time budget")
@@ -125,6 +132,7 @@ def main():
                         if result["status"]=="FAIL":
                             v.log("VP05_FACTORIZED_IBP_FAIL",sector=sec,seed=list(ex),**record)
                             raise RuntimeError("Nonzero exact IBP residual")
+                    run_contractions+=reducer.count
                     payload={"meta":meta,"rows":rows}
                     envelope={"payload":payload,"sha256":checksum(payload)}
                     old.atomic(dest,envelope)
@@ -134,10 +142,10 @@ def main():
                     counts[r["status"]]+=1
                     classes.update(t["classification"] for t in r["terms"])
                     if r["status"]=="PASS":coverage[degrees(ex)]+=1
-                v.log("VP05_FACTORIZED_IBP_SEED",sector=sec,index=i+1,expected=len(targets),seed=list(ex),counts=dict(counts),reused=reused)
+                v.log("VP05_FACTORIZED_IBP_SEED",sector=sec,index=i+1,expected=len(targets),seed=list(ex),counts=dict(counts),reused=reused,seed_contractions=0 if reused else reducer.count,run_contractions=run_contractions)
             summary={"sector":sec,"seeds":len(targets),"rows":sum(counts.values()),"counts":dict(counts),
                      "term_classes":dict(classes),"pass_degree_coverage":[[list(k),c] for k,c in sorted(coverage.items())]}
-            summaries.append(summary);v.log("VP05_FACTORIZED_IBP_SECTOR",**summary)
+            summaries.append(summary);v.log("VP05_FACTORIZED_IBP_SECTOR",**summary,run_contractions=run_contractions)
             reduce.cache_clear();reducer.close()
         if any(n.sha(p)!=h for p,h in pins.items()):raise RuntimeError("Protected input changed")
         # Pin all per-seed evidence, reject extra seed files.
