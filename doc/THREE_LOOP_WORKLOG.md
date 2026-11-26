@@ -714,3 +714,7 @@ python -m unittest examples.test_three_loop_vp05_native_production -v
 .\\run_vp05_native_production.bat 2>&1 | Tee-Object -FilePath log_vp05_native_production.txt
 ```
 Expected VP05_NATIVE_PRODUCTION_COMPLETE_NOT_CLOSURE rows74250 source_unchanged=true after saved-state reload. Review actual rank, resource/time and checkpoint before expanding scope.
+
+### 2026-11-26 — Native05 production pilot actual completion
+
+User supplied log_vp05_native_production.txt: original cursor73949 rank46175 terms37179224 SHA256 81b6cdc7cdc770bcd49150925378bc09b25aa65c0cd04061968d32b0939655bd; synthetic 5/5 equal and VP05_NATIVE_NEGATIVE_TEST_PASS; remaining301 rows completed in one batch. Saved cursor74250 rank46280 terms37355607, native reduction+output48.857669437s, reported batch elapsed74.380829s (before checkpoint save, not entire wall clock), sampled WSL RAM2.177257538GiB swap0, Windows peak16.239471436GiB. Final VP05_NATIVE_PRODUCTION_COMPLETE_NOT_CLOSURE rows74250 expected74250 source_unchanged=true after structural/checksum reload. No separate unittest output supplied; no independent coefficient replay of all301 rows. Point0 complete only; point1 rank comparison pending. Native05 checkpoint must be preserved, not overwritten. Next implement persistent or larger bounded native batches with resumable atomic storage for sector196 point1 and sector200 both points; validate point0 rank46280 against point1, retain sector69 completed pair. No closure or registry promotion.
