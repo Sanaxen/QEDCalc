@@ -728,3 +728,17 @@ python -m unittest examples.test_three_loop_vp05_native_batch -v
 .\\run_vp05_native_batch.bat --hours 12 2>&1 | Tee-Object -FilePath log_vp05_native_batch.txt
 ```
 Expected VP05_NATIVE06_S4_COMPLETE_NOT_CLOSURE or VP05_NATIVE06_PAUSED_NOT_CLOSURE; resume same command after normal budget stop, inspect stale locks/tmp or unexpected failure first. No registry promotion.
+
+### 2026-11-26 — Native06 s4 actual completion; target-oriented stage ②-8a
+
+User log log_vp05_native_batch.txt confirms 171640 additional source rows and final VP05_NATIVE06_S4_COMPLETE_NOT_CLOSURE, s4_complete=true, prior_unchanged=true. All six s4 points complete (445500 rows). Sector69 ranks43732/43732 terms15365823/15368744; 196 ranks46280/46280 terms37355607/37361354; 200 ranks46280/46280 terms18828945/18830204. Native06 batch elapsed before save sums: 196 p1 3635.9906744s, 200 p0 remaining802.4854285s, 200 p1 1284.4217999s; aggregate5722.8979028s excluding checkpoint saves, compilation/preflight/final audit. Sampled max WSL RAM2.2181778GiB, swap0, Windows RAM16.0832596GiB. First64 fresh rows matched Python at both point1 jobs. Existing source files unchanged per actual log; no remote bytes inspected. Local evidence 57/78 remains, no family closure.
+
+Progress tracking agreed with user: ②-1 sector-local candidates; ②-2 sector203 limited exact; ②-3 sector202 limited exact; ②-4 non202 boundary verification incomplete until ②-10; ②-5 investigate Kira RAM; ②-6 independent IBP/native speedup; ②-7 s4 now complete; ②-8 necessary s5/s6 evaluation and computation; ②-9 target-oriented reduction and exact certificates; ②-10 fill parent/boundary gaps and opaque M identity (finish ②-4); ②-11 audit handoff to standard Stage-2 ③. No assertion of 63 final masters; no registry change.
+
+New ②-8a target reuse probe a1f1d71, launcher d35bd32, tests d7da073. Read-only: reload all six s4 checkpoints with actual rank/term/cursor checks; load existing s2/s3 packed-from-stream relations, regenerate small s0/s1 pivot stores with known rank check, use actual standard manifest candidate/closure targets in exact sectors69/196/200 plus ten scalar/dot diagnostics each. Substitute highest integral using first available shell pivot (s0 first) then retain free terms; bounded2M term operations per target (sampled at pivot boundaries), fill20k and one-hour probe budget, host RAM guard. Reports target labels, direct pivot shells, remainder degree/sector, support and coefficient hashes per point, bounded sample of degree4..7 frontier, and two-point support comparison. Nonzero remainder is not irreducibility; independent shell pivots have not been merged into full cumulative echelon basis. Parent bitwise ancestry is not scope equivalence. No s5/s6 rows computed and no proof promotion. Existing outputs preserved. Tests added but not executed here; user environment verification pending. Review actual target and remainder evidence before selecting ②-8b/8c s5/s6 computation, including needed parent-induced targets not present in exact-sector manifest, cumulative rowspace dependencies and capacity. C++ persistent state optimization deferred until target scope established. No blanket full s5/s6 run yet.
+```powershell
+git pull --ff-only origin feature/master-basis-initiate-only
+python -m unittest examples.test_three_loop_vp05_target_reuse_probe -v
+.\\run_vp05_target_reuse_probe.bat 2>&1 | Tee-Object -FilePath log_vp05_target_reuse_probe.txt
+```
+Expected VP05_TARGET_REUSE_PROBE_NOT_CLOSURE with inputs_unchanged=true. No exact proof, closure, or registry promotion.
