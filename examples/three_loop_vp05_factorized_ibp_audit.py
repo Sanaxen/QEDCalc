@@ -8,6 +8,7 @@ or out-of-envelope terms remain explicitly unresolved.
 import argparse
 import collections
 import functools
+import hashlib
 import json
 import os
 import time
@@ -22,6 +23,9 @@ ROOT=n.BASE/"output"/"vp05_factorized_ibp06"
 PILOT=f.ROOT/"pilot.json"
 SHA="1802d41f5102473e20bec8c1863a590a664d961dde7db88fcd50f8372c09c6ac"
 VERSION=1
+
+def checksum(payload):
+    return hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 
 def degrees(ex):
     return sum(-x for x in ex if x<0),sum(max(x-1,0) for x in ex)
@@ -100,7 +104,8 @@ def main():
                 meta={**base_meta,"seed":list(ex)}
                 reused=dest.exists()
                 if reused:
-                    payload=gap.read(dest)
+                    envelope=gap.read(dest);payload=envelope["payload"]
+                    if checksum(payload)!=envelope["sha256"]:raise RuntimeError("Saved seed checksum")
                     if payload["meta"]!=meta or len(payload["rows"])!=15:raise RuntimeError("Saved seed scope")
                     # Replay saved coefficients and regenerated original rows,
                     # without expensive repeated tensor calculation.
@@ -121,10 +126,11 @@ def main():
                             v.log("VP05_FACTORIZED_IBP_FAIL",sector=sec,seed=list(ex),**record)
                             raise RuntimeError("Nonzero exact IBP residual")
                     payload={"meta":meta,"rows":rows}
-                    old.atomic(dest,payload)
-                    if gap.read(dest)!=payload:raise RuntimeError("Saved seed mismatch")
+                    envelope={"payload":payload,"sha256":checksum(payload)}
+                    old.atomic(dest,envelope)
+                    if gap.read(dest)!=envelope:raise RuntimeError("Saved seed mismatch")
                 for r in payload["rows"]:
-                    if r["status"]=="FAIL":raise RuntimeError("Saved nonzero residual")
+                    if r["status"] not in ("PASS","UNSUPPORTED"):raise RuntimeError("Saved nonzero or unknown residual")
                     counts[r["status"]]+=1
                     classes.update(t["classification"] for t in r["terms"])
                     if r["status"]=="PASS":coverage[degrees(ex)]+=1
