@@ -84,8 +84,12 @@ def expand_integral(poly,to_original,props,inverse):
     raw=transform(poly,to_original)
     pp=s.polys(props)
     num=sp.Poly(sp.expand(raw.subs(inverse,simultaneous=True)),*old.Y)
-    if sp.expand(num.as_expr().subs(dict(zip(old.Y,pp)),simultaneous=True)-raw)!=0:
-        raise RuntimeError("Original propagator polynomial replay")
+    # Coefficients lie in QQ(z,d); expand alone is insufficient for
+    # cancellations between rational coefficients with different denominators.
+    residual=sp.Poly(sp.expand(num.as_expr().subs(dict(zip(old.Y,pp)),simultaneous=True)-raw),*old.X)
+    nonzero=[(mon,str(sp.cancel(coef))) for mon,coef in residual.terms() if sp.cancel(coef)!=0]
+    if nonzero:
+        raise RuntimeError("Original propagator polynomial replay: "+str(nonzero[:5]))
     return {tuple(x-y for x,y in zip(BASE,mon)):sp.cancel(coef) for mon,coef in num.terms() if coef},num.as_expr()
 
 def reduce_pinches(row,props,deadline):
@@ -122,7 +126,7 @@ def calculate(props,target,deadline):
         results.append(item)
         v.log("VP05_BANANA_TARGET",name=name,top_terms=len(top),pinch_terms=len(lower),unresolved_pinches=len(remaining),top=p.encode(top),pinch_reduced=p.encode(lower))
     check,_=expand_integral(sp.expand(combined_poly),original,props,inverse)
-    if combined!=check:raise RuntimeError("Combined polynomial replay")
+    if set(combined)!=set(check) or any(sp.cancel(combined[k]-check[k])!=0 for k in combined):raise RuntimeError("Combined polynomial replay")
     top,lower,remaining,proofs=reduce_pinches(combined,props,deadline)
     relation=dict(top);add(relation,lower,1);add(relation,remaining,1)
     return {"geometry":{"center_map":[str(x) for x in center],"inverse_map":[str(x) for x in original],"lines":[str(x) for x in lines],"permutations":maps},
