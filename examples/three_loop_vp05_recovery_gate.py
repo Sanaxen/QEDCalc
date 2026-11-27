@@ -56,22 +56,44 @@ def main():
     manifest=gap.AUDIT/f"{gap.PREFIX}_candidate_{gap.CANDIDATE_SEED}_closure_manifest.json"
     candidates,targets=coverage.manifest_scope(gap.read(manifest))
     if manifest not in pins or weight.CANDIDATE not in pins:raise RuntimeError("Unpinned candidate evidence")
-    if set(weight.parse_file_integrals(weight.CANDIDATE))!=candidates:raise RuntimeError("Candidate inventory mismatch")
+    legacy_list=weight.parse_file_integrals(weight.CANDIDATE)
+    legacy=set(legacy_list)
+    if not legacy or len(legacy)!=len(legacy_list) or any(len(k)!=12 for k in legacy):raise RuntimeError("Invalid legacy candidate inventory")
+    comparison={"legacy_count":len(legacy),"manifest_count":len(candidates),"common_count":len(legacy&candidates),
+                "legacy_only":[list(k) for k in sorted(legacy-candidates)],
+                "manifest_only":[list(k) for k in sorted(candidates-legacy)],
+                "exact_set_match":legacy==candidates}
+    a.v.log("VP05_RECOVERY_CANDIDATE_COMPARISON",**comparison)
+    # The pinned Stage-2 manifest is authoritative for the recovery gate.
+    # Legacy list disagreement is retained explicitly, not used as a proof of equivalence.
     decoded=gap.read(prev.prev.SOURCE)
     if not all(t["decoded_original_system_replay"] for t in decoded["results"]):raise RuntimeError("ABC replay scope")
     field,z,d=sp.polys.fields.field("z,d",sp.QQ)
     def coef(x):return field.from_expr(sp.sympify(x.replace("^","**"),locals={"z":old.Z,"d":old.D}))
     rows=[{tuple(k):coef(c) for k,c in t["remainder"]} for t in decoded["results"]]
     if len(rows)!=2 or [tuple(t["target"]) for t in decoded["results"]]!=list(gap.TARGETS[:2]):raise RuntimeError("ABC target scope")
-    det,rules=basis_exchange(candidates,gap.TARGETS[:2],rows,field)
+    # Report actual scope even when the earlier assumed 2x2 exchange is not applicable.
+    abc_missing=set().union(*(set(r) for r in rows))-candidates
+    abc_membership=[k in candidates for k in gap.TARGETS]
+    a.v.log("VP05_RECOVERY_ABC_SCOPE",ABC_in_manifest=abc_membership,
+            remainder_outside_manifest=[list(k) for k in sorted(abc_missing)])
+    det=None;rules={};issues=[]
+    if len(abc_missing)==2 and all(abc_membership[:2]):
+        try:det,rules=basis_exchange(candidates,gap.TARGETS[:2],rows,field)
+        except RuntimeError as exc:issues.append(str(exc))
+    else:
+        issues.append("ABC basis exchange scope differs from assumption")
     relation={tuple(k):coef(c) for k,c in data["target"]}
     noncandidate=set(relation)-candidates
-    if len(noncandidate)!=1:raise RuntimeError("203 candidate relation scope")
-    k=next(iter(noncandidate));scale=relation[k]
-    rules[k]={j:-c/scale for j,c in relation.items() if j!=k}
-    if any(not set(r)<=candidates for r in rules.values()):raise RuntimeError("203 candidate scope")
+    a.v.log("VP05_RECOVERY_203_SCOPE",relation_in_manifest=[list(k) for k in sorted(set(relation)&candidates)],
+            relation_outside_manifest=[list(k) for k in sorted(noncandidate)])
+    if len(noncandidate)==1:
+        k=next(iter(noncandidate));scale=relation[k]
+        rules[k]={j:-c/scale for j,c in relation.items() if j!=k}
+    else:issues.append("203 relation scope differs from assumption")
+    if any(not set(r)<=candidates for r in rules.values()):raise RuntimeError("Noncandidate remainder")
     enc=lambda row:[[list(k),str(c.as_expr())] for k,c in sorted(row.items())]
-    a.v.log("VP05_RECOVERY_BASIS_EXCHANGE",determinant=str(det.as_expr()),rules=[[list(k),enc(r)] for k,r in sorted(rules.items())])
+    a.v.log("VP05_RECOVERY_BASIS_EXCHANGE",determinant=str(det.as_expr()) if det is not None else None,issues=issues,rules=[[list(k),enc(r)] for k,r in sorted(rules.items())])
     # Re-run original read-only local master-list and archive validators.
     fresh=recovery.inspect()
     oldrows={(r["seed"],r["sector"]):r for r in boundary["boundaries"]}
@@ -94,7 +116,7 @@ def main():
     if any(n.sha(k)!=v for k,v in pins.items()):raise RuntimeError("Protected input changed")
     payload={"status":"VP05_RECOVERY_GATE_REVIEW_REQUIRED","inputs":{str(k):v for k,v in pins.items()},
              "candidate_count":len(candidates),"closure_target_count":len(targets),
-             "ABC_basis_exchange_determinant":str(det.as_expr()),"candidate_rules":[[list(k),enc(r)] for k,r in sorted(rules.items())],
+             "ABC_basis_exchange_determinant":str(det.as_expr()) if det is not None else None,"candidate_comparison":comparison,"ABC_in_manifest":abc_membership,"review_issues":issues,"candidate_rules":[[list(k),enc(r)] for k,r in sorted(rules.items())],
              "local_evidence_total":57,"local_evidence_sources":sources,"boundary_counts":fresh["counts"],
              "boundary_scope":"local evidence only; restricted retention audits not whole seed closure",
              "remaining_boundaries":[list(k) for k,r in sorted(newrows.items()) if not r["local_evidence_present"]],
@@ -102,6 +124,6 @@ def main():
     ROOT.mkdir(exist_ok=True);dest=ROOT/f"report_{time.time_ns()}.json";digest=a.scope.c.save(dest,payload)
     a.v.log(payload["status"],candidate_count=len(candidates),local_evidence_total=57,local_evidence_sources=sources,
             boundary_counts=fresh["counts"],remaining_boundaries=payload["remaining_boundaries"],
-            determinant=payload["ABC_basis_exchange_determinant"],report=dest.name,sha256=digest,
+            determinant=payload["ABC_basis_exchange_determinant"],candidate_comparison=comparison,review_issues=issues,report=dest.name,sha256=digest,
             elapsed_s=time.monotonic()-start,inputs_unchanged=True,full_closure_proven=False)
 if __name__=="__main__":main()
