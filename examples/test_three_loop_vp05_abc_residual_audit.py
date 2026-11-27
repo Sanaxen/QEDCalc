@@ -24,4 +24,13 @@ class ResidualTests(unittest.TestCase):
             self.assertEqual(result["residual"],[[list(C),2]])
             self.assertEqual(result["rank"],1)
 
+    def test_saved_schedule_scope(self):
+        initial=[list(x) for x in m.gap.TARGETS]
+        self.assertEqual(m.validate_schedule(initial,0),list(m.gap.TARGETS))
+        self.assertEqual(m.validate_schedule(initial[:1],5),[m.gap.TARGETS[0]])
+        self.assertEqual(len(m.validate_schedule(initial*8,4)),24)
+        for raw,rid in ((initial[:2],0),(initial[::-1],0),([],5),(initial*9,5)):
+            with self.assertRaisesRegex(RuntimeError,"Schedule scope"):
+                m.validate_schedule(raw,rid)
+
 if __name__=="__main__":unittest.main()
