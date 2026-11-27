@@ -57,13 +57,23 @@ def pin_prior(common,pins):
         if (sec,key) in done or n.sha(path)!=digest:raise RuntimeError("Prior certificate SHA or duplicate")
         pins[path]=digest;done[sec,key]=digest
         inventory.append({"sector":sec,"target":target,"path":str(path),"sha256":digest})
-    # sec204 source proof summary uses index order in inverse summary.
+    # Locate sec204 proofs by their actual audited hashes, not by a
+    # positional index in a different stage summary.
     source=gap.read(c.audit.SOURCE)
-    inverse=gap.read(c.inv.SOURCE)
-    targets=inverse["targets"]
+    by_target={tuple(x["target"]):x["sha256"] for x in source["results"]}
+    files={}
+    for path in sorted(c.audit.PROOFS.glob("target[0-9][0-9].json")):
+        digest=n.sha(path)
+        if digest in files:raise RuntimeError("Duplicate sec204 certificate hash")
+        files[digest]=path
+    if len(by_target)!=16 or len(files)!=16:raise RuntimeError("Sec204 proof inventory")
     for item in sec204["results"]:
-        idx=targets.index(item["target"])
-        put(204,item["target"],c.audit.PROOFS/f"target{idx:02d}.json",item["certificate_sha256"])
+        digest=item["certificate_sha256"]
+        if by_target.get(tuple(item["target"]))!=digest or digest not in files:
+            raise RuntimeError("Sec204 proof summary mismatch")
+        path=files[digest]
+        if gap.read(path)["target"]!=item["target"]:raise RuntimeError("Sec204 target mismatch")
+        put(204,item["target"],path,digest)
     for job in previous["jobs"]:
         sec=job["sector"]
         targets=next(x["diagnostic_targets"] for x in common["jobs"] if x["sector"]==sec)
