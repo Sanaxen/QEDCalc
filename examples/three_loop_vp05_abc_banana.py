@@ -27,6 +27,7 @@ def product(x,y):
     return sp.expand((sq(x+y)-sq(x)-sq(y))/2)
 
 def transform(poly,mapping):
+    poly=sp.sympify(poly)
     replacement={x:product(mapping[i],mapping[j]) for x,(i,j) in zip(old.X,old.PAIRS)}
     return sp.expand(poly.subs(replacement,simultaneous=True))
 
@@ -106,7 +107,7 @@ def calculate(props,target,deadline):
     pp=s.polys(props)
     results=[];combined={};combined_poly=sp.S.Zero
     for name,key in zip("ABC",gap.TARGETS):
-        raw=sp.prod(pp[i]**(-x) for i,x in enumerate(key) if x<0)
+        raw=sp.sympify(sp.prod(pp[i]**(-x) for i,x in enumerate(key) if x<0))
         if tuple(max(0,x) for x in key)!=BASE:raise RuntimeError("Target denominator")
         centered=transform(raw,center)
         projected=covariance(centered)
