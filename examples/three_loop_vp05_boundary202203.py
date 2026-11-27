@@ -79,7 +79,11 @@ def main():
             jobs.append({"sector":sec,"seed":seed,"target_count":len(targets),"counts":counts,"targets":parts})
             a.v.log("VP05_BOUNDARY_ENVELOPE",sector=sec,seed=seed,target_count=len(targets),**counts)
     # Retain custom columns and any actual candidate columns present.
-    free.update(reverse[ex] for ex in candidates if ex in reverse)
+    for ex in candidates:
+        if ex in reverse:free.add(reverse[ex]);continue
+        try:key=(codec.encode(ex),sector(ex))
+        except (ValueError,AssertionError,OverflowError,IndexError,KeyError):continue
+        if key in seen:free.add(key)
     trials=[]
     for point in ff.POINTS:
         result=ff.probe(rows,point,sorted(wanted),free,deadline,2000)
