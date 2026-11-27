@@ -13,6 +13,17 @@ class BananaTests(unittest.TestCase):
         self.assertEqual(m.covariance(2*x),-m.old.dot(0,4))
         with self.assertRaises(RuntimeError):
             m.covariance(x*x)
+    def test_python_integer_and_empty_product(self):
+        props=m.old.build_family_spec("VP05_full").propagators
+        center,original,lines,_=m.geometry(props)
+        self.assertEqual(m.transform(1,center),m.sp.S.One)
+        self.assertEqual(m.transform(0,center),m.sp.S.Zero)
+        raw=m.sp.prod([])  # may return a native int depending on SymPy version
+        projected=m.covariance(m.transform(raw,center))
+        averaged=m.average(projected,lines)
+        self.assertEqual(averaged,m.sp.S.One)
+        row,_=m.expand_integral(averaged,original,props,m.s.inverse_polys(props))
+        self.assertEqual(row,{m.BASE:m.sp.S.One})
     def test_scalar_roundtrip(self):
         props=m.old.build_family_spec("VP05_full").propagators
         _,original,_,_=m.geometry(props)
