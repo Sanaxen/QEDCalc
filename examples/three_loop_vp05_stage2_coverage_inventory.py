@@ -21,6 +21,19 @@ def keys(items):
     if None in result or len(set(result))!=len(result):raise RuntimeError("Invalid or duplicate integral list")
     return set(result)
 
+def manifest_scope(data):
+    candidates=keys(data["candidate_masters"]);targets=keys(data["closure_targets"])
+    declared=data.get("closure_target_count")
+    info={"family":data.get("family"),"candidate_count":len(candidates),
+          "closure_target_count":len(targets),"declared_closure_target_count":declared,
+          "historical_union_target_count":530}
+    v.log("VP05_COVERAGE_MANIFEST",**info)
+    if data.get("family")!="VP05_full" or len(candidates)!=63 or not targets:
+        raise RuntimeError("Manifest scope: "+str(info))
+    if data.get("candidate_master_count")!=63 or (declared is not None and declared!=len(targets)):
+        raise RuntimeError("Manifest declared count mismatch: "+str(info))
+    return candidates,targets
+
 def classify(targets,candidates,proofs,rules,restricted,local):
     rows=[]
     for k in sorted(targets):
@@ -76,8 +89,7 @@ def inspect():
     manifest=gap.AUDIT/f"{gap.PREFIX}_candidate_{gap.CANDIDATE_SEED}_closure_manifest.json"
     if manifest not in pins:raise RuntimeError("Manifest not pinned")
     data=gap.read(manifest)
-    candidates=keys(data["candidate_masters"]);targets=keys(data["closure_targets"])
-    if data.get("family")!="VP05_full" or len(candidates)!=63 or len(targets)!=530:raise RuntimeError("Manifest scope")
+    candidates,targets=manifest_scope(data)
     groups=inventory._groups(data["candidate_masters"])
     if len(groups)!=26:raise RuntimeError("Sector scope")
     stage=gap.inspect()
@@ -129,7 +141,7 @@ def inspect():
         sector_counts[str(sec)]=dict(Counter(x["classification"] for x in rows if x["sector"]==sec))
     if any(n.sha(k)!=d for k,d in pins.items()):raise RuntimeError("Protected input changed")
     payload={"status":"VP05_STAGE2_COVERAGE_INVENTORY_NOT_CLOSURE","inputs":{str(k):d for k,d in pins.items()},
-             "target_count":530,"candidate_count":63,"diagnostic_proofs":64,
+             "target_count":len(targets),"candidate_count":len(candidates),"diagnostic_proofs":64,
              "diagnostic_manifest_overlap":len(targets&set(proofs)),"analytic_manifest_overlap":len(targets&set(rules)),
              "target_classification_counts":counts,"sector_counts":sector_counts,"targets":rows,
              "missing_direct_target_certificates":missing,"boundary_count":len(boundaries),"boundaries":boundaries,
@@ -146,7 +158,7 @@ def main():
     payload,elapsed=inspect()
     ROOT.mkdir(exist_ok=True)
     dest=ROOT/f"report_{time.time_ns()}.json";digest=c.save(dest,payload)
-    v.log("VP05_STAGE2_COVERAGE_INVENTORY_NOT_CLOSURE",targets=530,candidates=63,diagnostic_proofs=64,
+    v.log("VP05_STAGE2_COVERAGE_INVENTORY_NOT_CLOSURE",targets=payload["target_count"],candidates=payload["candidate_count"],diagnostic_proofs=64,
           diagnostic_manifest_overlap=payload["diagnostic_manifest_overlap"],analytic_manifest_overlap=payload["analytic_manifest_overlap"],
           target_counts=payload["target_classification_counts"],boundary_counts=payload["boundary_classification_counts"],
           missing_direct_target_certificates=len(payload["missing_direct_target_certificates"]),sector202_scope=payload["sector202_scope"],
