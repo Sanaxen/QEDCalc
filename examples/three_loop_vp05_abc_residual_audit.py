@@ -61,6 +61,19 @@ def replay(rows,ends,target,point,deadline):
             break
     return checks
 
+def validate_schedule(raw,rid):
+    if not isinstance(raw,list) or any(not isinstance(x,(list,tuple)) or len(x)!=12 or any(type(y)!=int for y in x) for x in raw):
+        raise RuntimeError(f"Malformed schedule: round={rid}")
+    schedule=[tuple(x) for x in raw]
+    expected=tuple(tuple(x) for x in gap.TARGETS)
+    if rid==0:
+        valid=tuple(schedule)==expected
+    else:
+        valid=1<=len(schedule)<=physical.BATCH
+    if not valid:
+        raise RuntimeError(f"Schedule scope: round={rid}, count={len(schedule)}, schedule={schedule}, initial_expected={expected if rid==0 else None}")
+    return schedule
+
 def load_rounds(kernel,pins,deadline):
     paths=sorted(physical.ROOT.glob("round[0-9][0-9].json"))
     if len(paths) not in (5,6):raise RuntimeError("Unexpected saved round count")
@@ -69,8 +82,10 @@ def load_rounds(kernel,pins,deadline):
         if path.name!=f"round{rid:02d}.json" or path.is_symlink():raise RuntimeError("Round path")
         pins[path]=n.sha(path);saved=gap.read(path)
         if saved["source_sha256"]!=physical.SHA or saved["kernel_sha256"]!=f.e.b.c.PIN:raise RuntimeError("Round provenance")
-        schedule=[tuple(x) for x in saved["schedule"]]
-        if len(schedule)!=(3 if rid==0 else 24) or (rid==0 and schedule!=list(gap.TARGETS)):raise RuntimeError("Schedule scope")
+        schedule=validate_schedule(saved["schedule"],rid)
+        v.log("VP05_ABC_SAVED_SCHEDULE",round=rid,seed_count=len(schedule),cumulative_seeds=len(seen)+len(schedule),saved_rows=len(saved["rows"]))
+        if len(seen)+len(schedule)>physical.MAX_SEEDS:raise RuntimeError(f"Total seed cap: round={rid}")
+        if len(saved["rows"])!=len(schedule)*len(kernel):raise RuntimeError(f"Saved row count mismatch: round={rid}")
         expected=[]
         for ex in schedule:
             if ex in seen or not physical.seed_ok(ex):raise RuntimeError("Seed scope")
