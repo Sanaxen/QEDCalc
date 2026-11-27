@@ -5,6 +5,12 @@ from pathlib import Path
 from examples import three_loop_vp05_abc_mapping_audit as m
 
 class MappingAuditTests(unittest.TestCase):
+    def test_sector_map_json_roundtrip(self):
+        import json
+        from collections import Counter
+        sectors={139:Counter({202:290}),73:Counter({11:90})}
+        result={str(k):{str(sec):count for sec,count in c.items()} for k,c in sectors.items()}
+        self.assertEqual(json.loads(json.dumps(result)),result)
     def test_proportional(self):
         field,z,d=m.sp.polys.fields.field("z,d",m.sp.QQ)
         a={(1,):z,(2,):d}
