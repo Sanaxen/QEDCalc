@@ -115,7 +115,7 @@ def inspect(pins,deadline):
     # consistency of rank labels alone.
     ambiguous={k for ks in collisions.values() for k in ks}
     v.log("VP05_ABC_MAPPING_COLUMNS",columns=len(keys),decoded=len(decoded),opaque=len(opaque),collisions=len(collisions),
-          sector_map={str(k):dict(c) for k,c in sectors.items()})
+          sector_map={str(k):{str(sec):count for sec,count in c.items()} for k,c in sectors.items()})
     props=old.build_family_spec("VP05_full").propagators;kernel=old.build_kernel(props)
     if old.digest(kernel)!=ph.f.e.b.c.PIN:raise RuntimeError("Kernel")
     field,z,d=sp.polys.fields.field("z,d",sp.QQ)
@@ -144,7 +144,7 @@ def inspect(pins,deadline):
             "decoded":[[list(k),list(ex)] for k,ex in sorted(decoded.items())],
             "opaque":[[list(k),reason] for k,reason in sorted(opaque.items())],
             "collisions":[[list(ex),[list(k) for k in ks]] for ex,ks in sorted(collisions.items())],
-            "sector_map":{str(k):dict(c) for k,c in sectors.items()},"checks":checks,
+            "sector_map":{str(k):{str(sec):count for sec,count in c.items()} for k,c in sectors.items()},"checks":checks,
             "config_text":cfg,"physical_propagators":[{"momentum":str(ph.f.a.momentum(prop)),"mass":prop.mass} for prop in props],
             "target_keys":[list(k) for k in targets],"counts":dict(Counter(r["status"] for r in checks)),
             "physical_source_mapping_independently_verified":False}
