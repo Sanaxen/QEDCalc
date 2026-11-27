@@ -20,4 +20,15 @@ class CoverageTests(unittest.TestCase):
         self.assertEqual(rows[0]["classification"],"local_inventory_only")
         self.assertFalse(rows[0]["full_seed_closure_proven"])
 
+    def test_manifest_actual_count(self):
+        candidates=["VP05_full["+str(i+1)+",0,0,0,0,0,0,0,0,0,0,0]" for i in range(63)]
+        data={"family":"VP05_full","candidate_master_count":63,
+              "candidate_masters":candidates,"closure_targets":candidates[:2],"closure_target_count":2}
+        with patch.object(m.v,"log"):
+            c,t=m.manifest_scope(data)
+            self.assertEqual((len(c),len(t)),(63,2))
+            data["closure_target_count"]=530
+            with self.assertRaisesRegex(RuntimeError,"declared count mismatch"):
+                m.manifest_scope(data)
+
 if __name__=="__main__":unittest.main()
